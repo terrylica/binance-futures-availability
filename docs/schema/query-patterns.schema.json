@@ -1,0 +1,371 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/terryli/binance-futures-availability/schemas/query-patterns.schema.json",
+  "title": "Availability Database Query Patterns",
+  "description": "Common query patterns and their specifications for the Binance futures availability database",
+  "version": "1.0.0",
+  "type": "object",
+  "properties": {
+    "queries": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/queryPattern"
+      },
+      "description": "Catalog of supported query patterns"
+    }
+  },
+  "definitions": {
+    "queryPattern": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Query pattern identifier"
+        },
+        "category": {
+          "type": "string",
+          "enum": ["snapshot", "timeline", "analytics", "validation"],
+          "description": "Query category"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable description of query purpose"
+        },
+        "sqlTemplate": {
+          "type": "string",
+          "description": "Parameterized SQL query template"
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": ["date", "symbol", "boolean", "integer"]
+              },
+              "required": {
+                "type": "boolean"
+              },
+              "description": {
+                "type": "string"
+              }
+            },
+            "required": ["name", "type", "required", "description"]
+          },
+          "description": "Query parameter specifications"
+        },
+        "performanceTarget": {
+          "type": "object",
+          "properties": {
+            "latency": {
+              "type": "string",
+              "pattern": "^<\\d+(ms|s)$",
+              "description": "Maximum acceptable latency"
+            },
+            "explanation": {
+              "type": "string",
+              "description": "Rationale for performance target"
+            }
+          },
+          "required": ["latency", "explanation"]
+        },
+        "example": {
+          "type": "object",
+          "properties": {
+            "parameters": {
+              "type": "object",
+              "description": "Example parameter values"
+            },
+            "result": {
+              "type": "object",
+              "description": "Example result structure"
+            }
+          },
+          "required": ["parameters", "result"]
+        }
+      },
+      "required": ["name", "category", "description", "sqlTemplate", "parameters", "performanceTarget", "example"]
+    }
+  },
+  "examples": [
+    {
+      "queries": [
+        {
+          "name": "get_available_symbols_on_date",
+          "category": "snapshot",
+          "description": "Get all symbols available on a specific date (snapshot query)",
+          "sqlTemplate": "SELECT symbol, file_size_bytes, last_modified FROM daily_availability WHERE date = ? AND available = true ORDER BY symbol",
+          "parameters": [
+            {
+              "name": "date",
+              "type": "date",
+              "required": true,
+              "description": "Target date for snapshot (YYYY-MM-DD)"
+            }
+          ],
+          "performanceTarget": {
+            "latency": "<1ms",
+            "explanation": "Primary use case, returns ~708 rows with idx_available_date index"
+          },
+          "example": {
+            "parameters": {
+              "date": "2024-01-15"
+            },
+            "result": {
+              "row_count": 708,
+              "sample_rows": [
+                {
+                  "symbol": "BTCUSDT",
+                  "file_size_bytes": 8421945,
+                  "last_modified": "2024-01-16T02:15:32Z"
+                },
+                {
+                  "symbol": "ETHUSDT",
+                  "file_size_bytes": 5123456,
+                  "last_modified": "2024-01-16T02:15:33Z"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "get_symbol_availability_timeline",
+          "category": "timeline",
+          "description": "Get availability timeline for a single symbol across all dates",
+          "sqlTemplate": "SELECT date, available, file_size_bytes, status_code FROM daily_availability WHERE symbol = ? ORDER BY date",
+          "parameters": [
+            {
+              "name": "symbol",
+              "type": "symbol",
+              "required": true,
+              "description": "Symbol to query (e.g., BTCUSDT)"
+            }
+          ],
+          "performanceTarget": {
+            "latency": "<10ms",
+            "explanation": "Returns ~2240 rows (2019-09-25 to present) with idx_symbol_date index"
+          },
+          "example": {
+            "parameters": {
+              "symbol": "BTCUSDT"
+            },
+            "result": {
+              "row_count": 2240,
+              "sample_rows": [
+                {
+                  "date": "2019-09-25",
+                  "available": true,
+                  "file_size_bytes": 7845123,
+                  "status_code": 200
+                },
+                {
+                  "date": "2019-09-26",
+                  "available": true,
+                  "file_size_bytes": 7923456,
+                  "status_code": 200
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "get_symbols_in_date_range",
+          "category": "snapshot",
+          "description": "Get all symbols available within a date range",
+          "sqlTemplate": "SELECT DISTINCT symbol FROM daily_availability WHERE date BETWEEN ? AND ? AND available = true ORDER BY symbol",
+          "parameters": [
+            {
+              "name": "start_date",
+              "type": "date",
+              "required": true,
+              "description": "Range start date (inclusive)"
+            },
+            {
+              "name": "end_date",
+              "type": "date",
+              "required": true,
+              "description": "Range end date (inclusive)"
+            }
+          ],
+          "performanceTarget": {
+            "latency": "<100ms",
+            "explanation": "Scans up to 90 days × 708 symbols = 63,720 rows with column pruning"
+          },
+          "example": {
+            "parameters": {
+              "start_date": "2024-01-01",
+              "end_date": "2024-03-31"
+            },
+            "result": {
+              "row_count": 708,
+              "sample_rows": ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
+            }
+          }
+        },
+        {
+          "name": "get_availability_summary",
+          "category": "analytics",
+          "description": "Get daily symbol count aggregated over time",
+          "sqlTemplate": "SELECT date, COUNT(*) as available_count FROM daily_availability WHERE available = true GROUP BY date ORDER BY date",
+          "parameters": [],
+          "performanceTarget": {
+            "latency": "<50ms",
+            "explanation": "Aggregates ~1.6M rows, but DuckDB columnar aggregation is efficient"
+          },
+          "example": {
+            "parameters": {},
+            "result": {
+              "row_count": 2240,
+              "sample_rows": [
+                {
+                  "date": "2019-09-25",
+                  "available_count": 1
+                },
+                {
+                  "date": "2024-01-15",
+                  "available_count": 708
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "detect_new_listings",
+          "category": "analytics",
+          "description": "Identify symbols that became available on a specific date (first appearance)",
+          "sqlTemplate": "SELECT symbol, date as listing_date FROM daily_availability WHERE available = true AND symbol NOT IN (SELECT DISTINCT symbol FROM daily_availability WHERE date < ? AND available = true) AND date = ?",
+          "parameters": [
+            {
+              "name": "date",
+              "type": "date",
+              "required": true,
+              "description": "Date to check for new listings"
+            }
+          ],
+          "performanceTarget": {
+            "latency": "<50ms",
+            "explanation": "Requires NOT IN subquery, but small result set"
+          },
+          "example": {
+            "parameters": {
+              "date": "2024-01-15"
+            },
+            "result": {
+              "row_count": 3,
+              "sample_rows": [
+                {
+                  "symbol": "NEWCOINUSDT",
+                  "listing_date": "2024-01-15"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "detect_delistings",
+          "category": "analytics",
+          "description": "Identify symbols that became unavailable on a specific date (last appearance)",
+          "sqlTemplate": "SELECT symbol, ? as delisting_date FROM daily_availability WHERE available = true AND date = (? - INTERVAL '1 day') AND symbol NOT IN (SELECT DISTINCT symbol FROM daily_availability WHERE date = ? AND available = true)",
+          "parameters": [
+            {
+              "name": "date",
+              "type": "date",
+              "required": true,
+              "description": "Date to check for delistings (first date unavailable)"
+            }
+          ],
+          "performanceTarget": {
+            "latency": "<50ms",
+            "explanation": "Requires NOT IN subquery with small result set"
+          },
+          "example": {
+            "parameters": {
+              "date": "2024-01-15"
+            },
+            "result": {
+              "row_count": 1,
+              "sample_rows": [
+                {
+                  "symbol": "OLDCOINUSDT",
+                  "delisting_date": "2024-01-15"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "check_continuity",
+          "category": "validation",
+          "description": "Detect missing dates in the database (gaps in coverage)",
+          "sqlTemplate": "WITH date_range AS (SELECT unnest(generate_series(?, ?, INTERVAL '1 day')::DATE[]) AS expected_date) SELECT expected_date FROM date_range WHERE expected_date NOT IN (SELECT DISTINCT date FROM daily_availability) ORDER BY expected_date",
+          "parameters": [
+            {
+              "name": "start_date",
+              "type": "date",
+              "required": true,
+              "description": "Expected coverage start date"
+            },
+            {
+              "name": "end_date",
+              "type": "date",
+              "required": true,
+              "description": "Expected coverage end date"
+            }
+          ],
+          "performanceTarget": {
+            "latency": "<100ms",
+            "explanation": "Generates date series and checks for missing dates"
+          },
+          "example": {
+            "parameters": {
+              "start_date": "2019-09-25",
+              "end_date": "2025-11-11"
+            },
+            "result": {
+              "row_count": 0,
+              "comment": "Empty result = no gaps, all dates present"
+            }
+          }
+        },
+        {
+          "name": "check_completeness",
+          "category": "validation",
+          "description": "Verify expected symbol count for recent dates (should be ~708)",
+          "sqlTemplate": "SELECT date, COUNT(*) as symbol_count FROM daily_availability WHERE date >= ? AND available = true GROUP BY date HAVING COUNT(*) < ? ORDER BY date",
+          "parameters": [
+            {
+              "name": "start_date",
+              "type": "date",
+              "required": true,
+              "description": "Start date for completeness check"
+            },
+            {
+              "name": "min_symbol_count",
+              "type": "integer",
+              "required": true,
+              "description": "Minimum expected symbol count (e.g., 700)"
+            }
+          ],
+          "performanceTarget": {
+            "latency": "<50ms",
+            "explanation": "Aggregates recent dates only (e.g., last 90 days)"
+          },
+          "example": {
+            "parameters": {
+              "start_date": "2024-01-01",
+              "min_symbol_count": 700
+            },
+            "result": {
+              "row_count": 0,
+              "comment": "Empty result = all dates have ≥700 symbols"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

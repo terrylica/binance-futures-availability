@@ -1,0 +1,136 @@
+version: "1.0.0"
+spec_version: "3.2.0"
+date: "2025-11-12"
+title: "Binance Futures Availability Database - Implementation Plan"
+
+x-adr-links:
+  - id: "0001"
+    title: "Schema design: daily table pattern"
+    path: "docs/decisions/0001-schema-design-daily-table.md"
+  - id: "0002"
+    title: "Storage technology: DuckDB"
+    path: "docs/decisions/0002-storage-technology-duckdb.md"
+  - id: "0003"
+    title: "Error handling: strict raise policy"
+    path: "docs/decisions/0003-error-handling-strict-policy.md"
+  - id: "0004"
+    title: "Automation: APScheduler"
+    path: "docs/decisions/0004-automation-apscheduler.md"
+
+objective: |
+  Build standalone DuckDB database tracking daily availability of all 708 USDT 
+  perpetual futures from Binance Vision S3 repository. Date range: 2019-09-25 
+  (first UM-futures launch) to present, with automated daily updates via APScheduler.
+
+slos:
+  availability:
+    metric: "Database update success rate"
+    target: "95% of daily updates complete successfully"
+    measurement: "Monitor scheduler logs for successful probe completions"
+    
+  correctness:
+    metric: "Data accuracy vs Binance exchangeInfo API"
+    target: ">95% match for current date snapshot"
+    measurement: "Daily validation cross-check with exchangeInfo endpoint"
+    
+  observability:
+    metric: "Error visibility and debugging capability"
+    target: "All failures logged with full context (symbol, date, HTTP status, error message)"
+    measurement: "Structured logs with timestamp, level, component, error details"
+    
+  maintainability:
+    metric: "Code testability and documentation completeness"
+    target: "80%+ test coverage, all public functions documented"
+    measurement: "pytest --cov, docstring coverage check"
+
+architecture:
+  storage:
+    technology: "DuckDB 1.0+"
+    location: "~/.cache/binance-futures/availability.duckdb"
+    schema_ref: "../schema/availability-database.schema.json"
+    estimated_size: "50-150 MB (compressed columnar)"
+    growth_rate: "~50 MB/year (708 rows/day × ~200 bytes/row compressed)"
+    
+  data_source:
+    name: "Binance Vision S3"
+    method: "HTTP HEAD requests to check file existence"
+    url_pattern: "https://data.binance.vision/data/futures/um/daily/klines/{symbol}/1m/{symbol}-1m-{YYYY-MM-DD}.zip"
+    authentication: "None (public bucket)"
+    rate_limit: "Conservative 2 req/sec (avoid throttling)"
+    
+  error_handling:
+    policy: "Raise and propagate all errors immediately"
+    rationale: "ADR-0003: Strict error policy enables fail-fast, explicit visibility"
+    no_retries: true
+    no_fallbacks: true
+    no_silent_failures: true
+    
+  automation:
+    scheduler: "APScheduler 3.10+"
+    frequency: "Daily at 2:00 AM UTC"
+    persistence: "SQLite job store (scheduler state)"
+    daemon_mode: true
+    update_target: "Yesterday's data (S3 Vision T+1 availability)"
+
+implementation_phases:
+  phase_1_core_infrastructure:
+    duration: "2 days"
+    status: "pending"
+    deliverables:
+      - "DuckDB schema creation (database/schema.py)"
+      - "Core database operations (database/availability_db.py)"
+      - "Basic insert/query methods with UPSERT"
+    validation:
+      - "Schema creates successfully with indexes"
+      - "Insert 1000 test rows, verify <5ms single-date query"
+      - "Upsert idempotency (insert same data twice, verify single row)"
+
+dependencies:
+  required:
+    - name: "duckdb"
+      version: ">=1.0.0"
+      purpose: "Columnar database engine"
+    - name: "apscheduler"
+      version: ">=3.10.0"
+      purpose: "Task scheduling and automation"
+    - name: "urllib3"
+      version: ">=2.0.0"
+      purpose: "HTTP client for S3 HEAD requests"
+      
+  development:
+    - name: "pytest"
+      version: ">=8.0.0"
+      purpose: "Testing framework"
+    - name: "pytest-cov"
+      version: ">=5.0.0"
+      purpose: "Coverage reporting (enforce 80%+ target)"
+    - name: "pytest-mock"
+      version: ">=3.14.0"
+      purpose: "Mocking for unit tests"
+    - name: "ruff"
+      version: ">=0.4.0"
+      purpose: "Linting and formatting"
+
+success_criteria:
+  functional:
+    - "Database contains complete data (2019-09-25 to yesterday)"
+    - "No missing dates (continuity validation passes)"
+    - ">95% match with Binance exchangeInfo API"
+    - "All 4 MADRs documented with approved status"
+    
+  performance:
+    - "Snapshot query <1ms (708 symbols for single date)"
+    - "Timeline query <10ms (2240 days for single symbol)"
+    - "Date range query <100ms (90 days × 708 symbols)"
+    - "Daily update <2 minutes (708 probes)"
+    
+  reliability:
+    - "Automated updates for 7 consecutive days without manual intervention"
+    - "Error logging captures all failures with context"
+    - "Validation checks pass after each update"
+    
+  maintainability:
+    - "80%+ test coverage (unit + integration)"
+    - "All public functions documented (docstrings)"
+    - "All 4 MADRs committed and linked in commits"
+    - "README explains setup in <10 steps"

@@ -1,0 +1,240 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/terryli/binance-futures-availability/schemas/availability-database.schema.json",
+  "title": "Binance Futures Availability Database Schema",
+  "description": "Schema definition for the DuckDB database tracking daily availability of Binance USDT perpetual futures from Vision S3",
+  "version": "1.0.0",
+  "type": "object",
+  "properties": {
+    "table": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "const": "daily_availability",
+          "description": "Primary table name"
+        },
+        "columns": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Column name"
+              },
+              "type": {
+                "type": "string",
+                "enum": ["DATE", "VARCHAR", "BOOLEAN", "BIGINT", "TIMESTAMP", "INTEGER"],
+                "description": "DuckDB data type"
+              },
+              "nullable": {
+                "type": "boolean",
+                "description": "Whether column accepts NULL values"
+              },
+              "description": {
+                "type": "string",
+                "description": "Column purpose and semantics"
+              }
+            },
+            "required": ["name", "type", "nullable", "description"]
+          },
+          "minItems": 8,
+          "description": "Column definitions"
+        },
+        "primaryKey": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "Composite primary key columns"
+        },
+        "indexes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Index name"
+              },
+              "columns": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1,
+                "description": "Indexed columns in order"
+              },
+              "purpose": {
+                "type": "string",
+                "description": "Query optimization purpose"
+              }
+            },
+            "required": ["name", "columns", "purpose"]
+          },
+          "description": "Index definitions"
+        }
+      },
+      "required": ["name", "columns", "primaryKey", "indexes"]
+    }
+  },
+  "required": ["table"],
+  "definitions": {
+    "daily_availability": {
+      "description": "Concrete schema instance for daily_availability table",
+      "type": "object",
+      "properties": {
+        "table": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "const": "daily_availability"
+            },
+            "columns": {
+              "const": [
+                {
+                  "name": "date",
+                  "type": "DATE",
+                  "nullable": false,
+                  "description": "Trading date (UTC) being probed"
+                },
+                {
+                  "name": "symbol",
+                  "type": "VARCHAR",
+                  "nullable": false,
+                  "description": "Futures symbol (e.g., BTCUSDT, ETHUSDT)"
+                },
+                {
+                  "name": "available",
+                  "type": "BOOLEAN",
+                  "nullable": false,
+                  "description": "Whether 1m klines file exists on S3 Vision (true=200 OK, false=404)"
+                },
+                {
+                  "name": "file_size_bytes",
+                  "type": "BIGINT",
+                  "nullable": true,
+                  "description": "File size from Content-Length header (NULL if unavailable)"
+                },
+                {
+                  "name": "last_modified",
+                  "type": "TIMESTAMP",
+                  "nullable": true,
+                  "description": "S3 Last-Modified timestamp (NULL if unavailable)"
+                },
+                {
+                  "name": "url",
+                  "type": "VARCHAR",
+                  "nullable": false,
+                  "description": "Full S3 URL probed (for audit trail)"
+                },
+                {
+                  "name": "status_code",
+                  "type": "INTEGER",
+                  "nullable": false,
+                  "description": "HTTP status code (200, 404, etc.)"
+                },
+                {
+                  "name": "probe_timestamp",
+                  "type": "TIMESTAMP",
+                  "nullable": false,
+                  "description": "UTC timestamp when probe was executed"
+                }
+              ]
+            },
+            "primaryKey": {
+              "const": ["date", "symbol"]
+            },
+            "indexes": {
+              "const": [
+                {
+                  "name": "idx_symbol_date",
+                  "columns": ["symbol", "date"],
+                  "purpose": "Fast timeline queries (get_symbol_availability_timeline)"
+                },
+                {
+                  "name": "idx_available_date",
+                  "columns": ["available", "date"],
+                  "purpose": "Fast snapshot queries (get_available_symbols_on_date)"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "table": {
+        "name": "daily_availability",
+        "columns": [
+          {
+            "name": "date",
+            "type": "DATE",
+            "nullable": false,
+            "description": "Trading date (UTC) being probed"
+          },
+          {
+            "name": "symbol",
+            "type": "VARCHAR",
+            "nullable": false,
+            "description": "Futures symbol (e.g., BTCUSDT, ETHUSDT)"
+          },
+          {
+            "name": "available",
+            "type": "BOOLEAN",
+            "nullable": false,
+            "description": "Whether 1m klines file exists on S3 Vision (true=200 OK, false=404)"
+          },
+          {
+            "name": "file_size_bytes",
+            "type": "BIGINT",
+            "nullable": true,
+            "description": "File size from Content-Length header (NULL if unavailable)"
+          },
+          {
+            "name": "last_modified",
+            "type": "TIMESTAMP",
+            "nullable": true,
+            "description": "S3 Last-Modified timestamp (NULL if unavailable)"
+          },
+          {
+            "name": "url",
+            "type": "VARCHAR",
+            "nullable": false,
+            "description": "Full S3 URL probed (for audit trail)"
+          },
+          {
+            "name": "status_code",
+            "type": "INTEGER",
+            "nullable": false,
+            "description": "HTTP status code (200, 404, etc.)"
+          },
+          {
+            "name": "probe_timestamp",
+            "type": "TIMESTAMP",
+            "nullable": false,
+            "description": "UTC timestamp when probe was executed"
+          }
+        ],
+        "primaryKey": ["date", "symbol"],
+        "indexes": [
+          {
+            "name": "idx_symbol_date",
+            "columns": ["symbol", "date"],
+            "purpose": "Fast timeline queries (get_symbol_availability_timeline)"
+          },
+          {
+            "name": "idx_available_date",
+            "columns": ["available", "date"],
+            "purpose": "Fast snapshot queries (get_available_symbols_on_date)"
+          }
+        ]
+      }
+    }
+  ]
+}
