@@ -23,10 +23,11 @@ def temp_db_path() -> Path:
     Create temporary database path for tests.
 
     Returns:
-        Path to temporary .duckdb file
+        Path to temporary .duckdb file (file not created, only path)
     """
-    with tempfile.NamedTemporaryFile(suffix=".duckdb", delete=False) as f:
-        return Path(f.name)
+    temp_dir = Path(tempfile.gettempdir())
+    db_path = temp_dir / f"test_{tempfile.mktemp(suffix='.duckdb').split('/')[-1]}"
+    return db_path
 
 
 @pytest.fixture

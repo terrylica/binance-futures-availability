@@ -1,5 +1,7 @@
 """Batch probing with parallel execution for efficient data collection."""
 
+from __future__ import annotations
+
 import datetime
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
