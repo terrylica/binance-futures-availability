@@ -8,13 +8,14 @@
 
 ## Overview
 
-Standalone DuckDB database tracking historical availability of Binance USDT-Margined (UM) perpetual futures contracts from Binance Vision S3 repository. Provides sub-second queries for "which symbols were available on date X?" with automated daily updates.
+Standalone DuckDB database tracking historical availability of Binance USDT-Margined (UM) perpetual futures contracts from Binance Vision S3 repository. Provides sub-second queries for "which symbols were available on date X?" with automated daily updates and volume metrics.
 
 ### Key Features
 
 - **Complete Historical Data**: 2019-09-25 (first UM-futures launch) to present (~2240 days)
 - **All Perpetual Futures**: 708 USDT perpetual contracts tracked
 - **Fast Queries**: <1ms snapshot queries, <10ms timelines
+- **Volume Metrics**: Track file size growth and S3 freshness over time
 - **Small Footprint**: 50-150MB database (compressed columnar)
 - **Automated Updates**: APScheduler daemon for daily 2AM UTC updates
 - **High Reliability**: 80%+ test coverage, strict error handling
@@ -73,13 +74,20 @@ print(q.get_available_symbols_on_date('2024-01-15'))
 
 ### Database Schema
 
-Single table: `daily_availability(date, symbol, available, file_size_bytes, last_modified, url, status_code, probe_timestamp)`
+Single table with volume metrics (ADR-0006):
+
+`daily_availability(date, symbol, available, file_size_bytes, last_modified, url, status_code, probe_timestamp)`
 
 **Primary Key**: (date, symbol)
 **Indexes**:
 
 - idx_symbol_date (symbol, date) - fast timeline queries
 - idx_available_date (available, date) - fast symbol listings
+
+**Volume Metrics**:
+
+- `file_size_bytes`: ZIP file size from S3 (enables trend analysis)
+- `last_modified`: S3 upload timestamp (enables freshness monitoring)
 
 **Storage**: `~/.cache/binance-futures/availability.duckdb`
 
@@ -166,6 +174,7 @@ All decisions documented as MADRs:
 - **[ADR-0003](docs/decisions/0003-error-handling-strict-policy.md)**: Strict error handling
 - **[ADR-0004](docs/decisions/0004-automation-apscheduler.md)**: APScheduler for automation
 - **[ADR-0005](docs/decisions/0005-aws-cli-bulk-operations.md)**: AWS CLI for bulk operations
+- **[ADR-0006](docs/decisions/0006-volume-metrics-collection.md)**: Volume metrics collection
 
 ## SLOs (Service Level Objectives)
 

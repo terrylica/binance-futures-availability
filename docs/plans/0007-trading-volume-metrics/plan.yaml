@@ -1,0 +1,388 @@
+info:
+  title: "Trading Volume Metrics Collection"
+  version: "1.1.0"
+  status: "proposed"
+  created: "2025-11-14"
+  x-adr-id: "0007"
+  x-adr-ref: "docs/decisions/0007-trading-volume-metrics.md"
+  description: >
+    Extend daily_availability table with 9 trading volume metrics from
+    Binance Vision 1d kline files to enable volume ranking and market
+    activity analysis.
+
+metadata:
+  deciders:
+    - "Terry Li"
+    - "Claude Code"
+    - "Sub-Agent Analysis Team"
+  stakeholders:
+    - "Data analysts (volume ranking queries)"
+    - "Quant researchers (universe selection)"
+    - "Operations (database maintenance)"
+  related_adrs:
+    - "0001"  # Schema Design
+    - "0002"  # DuckDB
+    - "0003"  # Error Handling
+    - "0005"  # AWS CLI
+
+objectives:
+  primary: "Enable symbol ranking by trading volume"
+  secondary:
+    - "Eliminate survivorship bias in historical analysis"
+    - "Validate data quality via volume anomaly detection"
+    - "Support market research (volume trends, new listings)"
+
+slos:
+  availability:
+    target: "95%"
+    metric: "Successful volume collections per day"
+    measurement: "Monitor scheduler logs for collection success rate"
+
+  correctness:
+    target: ">95%"
+    metric: "Match rate with Binance Vision 1d kline files"
+    measurement: "Sample validation: BTCUSDT 2024-01-15 quote_volume = $10.24B ± 1%"
+
+  observability:
+    target: "100%"
+    metric: "All collection failures logged with full context"
+    measurement: "Structured logs include symbol, date, URL, error message, stack trace"
+
+  maintainability:
+    target: "80%+"
+    metric: "Test coverage maintained"
+    measurement: "pytest --cov reports ≥80% after changes"
+
+phases:
+  - id: "phase-0"
+    name: "Code Organization Cleanup"
+    status: "pending"
+    duration: "2 hours"
+    risk: "low"
+    tasks:
+      - name: "Extract symbol data to JSON"
+        description: "Move hardcoded symbol list from symbol_discovery.py to data/symbols.json"
+        deliverables:
+          - "src/binance_futures_availability/data/symbols.json"
+          - "src/binance_futures_availability/config/symbol_loader.py"
+        validation: "pytest tests/ passes, symbols loaded correctly"
+
+      - name: "Organize scripts directory"
+        description: "Create operations/ and legacy/ subdirectories"
+        deliverables:
+          - "scripts/operations/backfill.py"
+          - "scripts/operations/scheduler_daemon.py"
+          - "scripts/operations/validate.py"
+          - "scripts/legacy/backfill_head.py"
+        validation: "All scripts still executable, documentation updated"
+
+  - id: "phase-1"
+    name: "Schema Migration"
+    status: "pending"
+    duration: "1 hour"
+    risk: "low"
+    dependencies: []
+    tasks:
+      - name: "Create migration script"
+        description: "ALTER TABLE statements for 9 volume columns + index"
+        deliverables:
+          - "migrations/v1.1.0_add_volume_metrics.sql"
+        validation: "Dry-run on test database succeeds"
+
+      - name: "Execute migration"
+        description: "Apply schema changes to production database"
+        deliverables:
+          - "Updated daily_availability table"
+          - "New idx_quote_volume_date index"
+        validation: "DESCRIBE daily_availability shows 17 columns, index exists"
+
+      - name: "Verify backward compatibility"
+        description: "Confirm existing code works with new nullable columns"
+        deliverables:
+          - "Test report: existing tests pass"
+        validation: "pytest -m 'not integration' passes 100%"
+
+  - id: "phase-2"
+    name: "Volume Collection Implementation"
+    status: "pending"
+    duration: "4 hours"
+    risk: "medium"
+    dependencies: ["phase-1"]
+    tasks:
+      - name: "Extend AWSS3Lister for 1d klines"
+        description: "Add download_1d_kline() method to fetch and parse CSV"
+        deliverables:
+          - "src/binance_futures_availability/probing/aws_s3_lister.py (updated)"
+          - "Unit tests for CSV parsing"
+        validation: "Sample file parsed: BTCUSDT 2024-01-15 → quote_volume=$10.24B"
+
+      - name: "Update database insert logic"
+        description: "Modify insert_batch() to include volume columns"
+        deliverables:
+          - "src/binance_futures_availability/database/availability_db.py (updated)"
+          - "Integration test for volume insert"
+        validation: "Test insert with volume data, query confirms values persisted"
+
+      - name: "Add error handling for missing klines"
+        description: "Raise if 1d kline missing when availability=True"
+        deliverables:
+          - "Error handling logic in aws_s3_lister.py"
+          - "Test cases for error scenarios"
+        validation: "Missing file raises RuntimeError with symbol, date, URL"
+
+  - id: "phase-3"
+    name: "Historical Backfill"
+    status: "pending"
+    duration: "1 hour"
+    risk: "medium"
+    dependencies: ["phase-2"]
+    tasks:
+      - name: "Create volume backfill script"
+        description: "Script to download all 1d klines and populate volume columns"
+        deliverables:
+          - "scripts/operations/backfill_volume.py"
+        validation: "Dry-run on 2024-01-01 to 2024-01-31 succeeds"
+
+      - name: "Run historical backfill"
+        description: "Collect volume for all 327 symbols, 2019-09-25 to 2025-11-13"
+        deliverables:
+          - "1.6M rows with volume metrics populated"
+        validation: "Query: COUNT(*) WHERE quote_volume_usdt IS NOT NULL > 300,000"
+
+      - name: "Validate data quality"
+        description: "Cross-check sample data against Binance Vision files"
+        deliverables:
+          - "Validation report: 10 random samples match S3 files"
+        validation: "All 10 samples within ±1% of S3 source data"
+
+  - id: "phase-4"
+    name: "Query & Scheduler Updates"
+    status: "pending"
+    duration: "2 hours"
+    risk: "low"
+    dependencies: ["phase-3"]
+    tasks:
+      - name: "Add volume ranking queries"
+        description: "Create VolumeQueries class with ranking methods"
+        deliverables:
+          - "src/binance_futures_availability/queries/volume.py"
+          - "Unit tests for volume queries"
+        validation: "get_top_by_volume('2024-01-15', limit=10) returns 10 symbols"
+
+      - name: "Update daily scheduler"
+        description: "Modify daily update to collect volume metrics"
+        deliverables:
+          - "src/binance_futures_availability/scheduler/daily_update.py (updated)"
+        validation: "Manual run collects availability + volume for yesterday"
+
+      - name: "Update validation checks"
+        description: "Add volume data quality validators"
+        deliverables:
+          - "src/binance_futures_availability/validation/volume_validator.py"
+          - "Tests for validation logic"
+        validation: "Validator detects missing volume when available=True"
+
+  - id: "phase-5"
+    name: "Documentation Updates"
+    status: "pending"
+    duration: "2 hours"
+    risk: "low"
+    dependencies: ["phase-4"]
+    tasks:
+      - name: "Update CLAUDE.md"
+        description: "Add volume metrics section with query examples"
+        deliverables:
+          - "CLAUDE.md (updated)"
+        validation: "Volume section includes ranking queries, performance notes"
+
+      - name: "Update README.md"
+        description: "Highlight volume ranking capabilities in features list"
+        deliverables:
+          - "README.md (updated)"
+        validation: "Key Features includes 'Volume ranking and activity metrics'"
+
+      - name: "Update query examples guide"
+        description: "Add volume ranking examples to QUERY_EXAMPLES.md"
+        deliverables:
+          - "docs/guides/QUERY_EXAMPLES.md (updated)"
+        validation: "Examples include top N by volume, volume trends over time"
+
+      - name: "Update schema JSON"
+        description: "Add 9 volume columns to JSON Schema spec"
+        deliverables:
+          - "docs/schema/availability-database.schema.json (updated)"
+        validation: "Schema validation passes, version bumped to 2.0.0"
+
+  - id: "phase-6"
+    name: "Release & Validation"
+    status: "pending"
+    duration: "1 hour"
+    risk: "low"
+    dependencies: ["phase-5"]
+    tasks:
+      - name: "Run full test suite"
+        description: "Execute all unit and integration tests"
+        deliverables:
+          - "Test report: all tests passing"
+        validation: "pytest --cov ≥80%, all tests green"
+
+      - name: "Run check_system.sh"
+        description: "Validate system health with volume metrics"
+        deliverables:
+          - "System health report"
+        validation: "Database size ~96 MB, >300K rows with volume data"
+
+      - name: "Commit with conventional commits"
+        description: "feat: add trading volume metrics collection (ADR-0007)"
+        deliverables:
+          - "Git commit with detailed message"
+        validation: "Commit message follows conventional commits format"
+
+      - name: "Semantic release"
+        description: "Trigger semantic-release for v1.1.0"
+        deliverables:
+          - "GitHub release v1.1.0"
+          - "Changelog entry"
+        validation: "Release created, tag pushed, changelog updated"
+
+dependencies:
+  runtime:
+    - name: "aws-cli"
+      version: ">=2.0"
+      purpose: "Download 1d kline files from S3"
+      installation: "brew install awscli"
+
+    - name: "duckdb"
+      version: ">=1.0.0"
+      purpose: "Store volume metrics in columnar format"
+      installation: "uv pip install duckdb>=1.0.0"
+
+  development:
+    - name: "pytest"
+      version: ">=8.0.0"
+      purpose: "Test volume collection logic"
+      installation: "uv pip install pytest>=8.0.0"
+
+risks:
+  - id: "risk-1"
+    description: "Historical backfill takes >60 min"
+    probability: "low"
+    impact: "low"
+    mitigation: "Run as background job, monitor progress"
+    fallback: "Backfill in batches (monthly chunks)"
+
+  - id: "risk-2"
+    description: "Daily collection increases from 5 sec to 60 sec"
+    probability: "high"
+    impact: "low"
+    mitigation: "Still within 5-min SLO, acceptable trade-off"
+    fallback: "None needed (within SLO)"
+
+  - id: "risk-3"
+    description: "CSV parsing fails for malformed files"
+    probability: "low"
+    impact: "medium"
+    mitigation: "Strict error handling per ADR-0003, log + raise"
+    fallback: "Scheduler retries next cycle"
+
+  - id: "risk-4"
+    description: "Database size grows beyond single-file limits"
+    probability: "low"
+    impact: "medium"
+    mitigation: "DuckDB handles 96 MB easily (<1 GB limit)"
+    fallback: "Vacuum database, archive old data"
+
+validation_criteria:
+  unit_tests:
+    - "CSV parser extracts quote_volume correctly"
+    - "Database insert includes all 9 volume columns"
+    - "Volume queries return correct rankings"
+    - "Error handling raises for missing klines"
+
+  integration_tests:
+    - "Download real 1d kline from S3, parse successfully"
+    - "Full collection cycle: list → download → parse → insert"
+    - "Query top 10 by volume returns correct symbols"
+
+  performance_tests:
+    - "Snapshot query with volume <10ms"
+    - "Historical backfill completes in <60 min"
+    - "Database size <150 MB after full backfill"
+
+  data_quality:
+    - "Sample validation: BTCUSDT 2024-01-15 quote_volume ~$10.24B"
+    - "No NULL volumes when available=True (after backfill)"
+    - ">95% coverage for all dates with available=True"
+
+success_metrics:
+  - metric: "Volume collection success rate"
+    target: "≥95%"
+    measurement: "Daily scheduler logs"
+
+  - metric: "Data accuracy"
+    target: ">95% match with S3 source"
+    measurement: "Sample validation (10 random files per week)"
+
+  - metric: "Query performance"
+    target: "Top 100 by volume <10ms"
+    measurement: "Automated performance tests"
+
+  - metric: "Test coverage"
+    target: "≥80%"
+    measurement: "pytest --cov report"
+
+rollback_plan:
+  level_1:
+    name: "Stop volume collection"
+    duration: "Instant"
+    actions:
+      - "Set COLLECT_VOLUME=false in scheduler config"
+      - "Restart scheduler"
+    impact: "Volume columns remain NULL for new data"
+
+  level_2:
+    name: "Revert code changes"
+    duration: "5 min"
+    actions:
+      - "git revert <commit-sha>"
+      - "uv sync"
+      - "Restart scheduler"
+    impact: "Volume collection disabled, existing data preserved"
+
+  level_3:
+    name: "Schema rollback (NOT RECOMMENDED)"
+    duration: "10 min"
+    actions:
+      - "Drop 9 volume columns"
+      - "Drop idx_quote_volume_date index"
+    impact: "All volume data lost permanently"
+    warning: "Only use if schema causes corruption"
+
+  level_4:
+    name: "Restore from backup"
+    duration: "30 min"
+    actions:
+      - "Stop all services"
+      - "Restore database from pre-migration backup"
+      - "Restart services"
+    impact: "All changes since backup lost"
+
+changelog:
+  - version: "1.1.0"
+    date: "2025-11-14"
+    changes:
+      - type: "feat"
+        description: "Add trading volume metrics collection (ADR-0007)"
+        breaking: false
+      - type: "feat"
+        description: "Add 9 volume columns to daily_availability table"
+        breaking: false
+      - type: "feat"
+        description: "Add volume ranking queries"
+        breaking: false
+      - type: "chore"
+        description: "Reorganize scripts directory (operations/legacy)"
+        breaking: false
+      - type: "docs"
+        description: "Update CLAUDE.md with volume query examples"
+        breaking: false

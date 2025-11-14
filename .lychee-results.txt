@@ -1,11 +1,11 @@
-[ERROR] file:///Users/terryli/eon/binance-futures-availability/docs/guides/python-api.md | Cannot find file: File not found. Check if file exists and path is correct
 [ERROR] file:///Users/terryli/eon/binance-futures-availability/LICENSE | Cannot find file: File not found. Check if file exists and path is correct
+[ERROR] file:///Users/terryli/eon/binance-futures-availability/docs/guides/python-api.md | Cannot find file: File not found. Check if file exists and path is correct
 # Summary
 
 | Status         | Count |
 |----------------|-------|
-| 🔍 Total       | 62    |
-| ✅ Successful  | 44    |
+| 🔍 Total       | 64    |
+| ✅ Successful  | 46    |
 | ⏳ Timeouts    | 0     |
 | 🔀 Redirected  | 0     |
 | 👻 Excluded    | 16    |

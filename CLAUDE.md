@@ -41,6 +41,11 @@ All architectural decisions documented as MADRs in `docs/decisions/`:
 **Decision**: Hybrid approach - AWS CLI for historical backfill, HTTP HEAD for daily updates
 **Rationale**: AWS CLI is 7.2x faster for bulk operations (25 min vs 3 hours), HEAD requests simpler for incremental updates
 
+### [0006: Volume Metrics Collection](docs/decisions/0006-volume-metrics-collection.md)
+
+**Decision**: Collect file_size_bytes and last_modified from both collection methods
+**Rationale**: Zero marginal cost, enables volume analytics and audit trails, minimal storage overhead (25 MB)
+
 ## Core Principles
 
 ### Error Handling
@@ -84,21 +89,28 @@ Focus on 4 dimensions (explicitly **not** speed/performance/security):
 
 ### Table: `daily_availability`
 
-Primary table storing daily symbol availability checks:
+Primary table storing daily symbol availability checks with volume metrics:
 
 ```sql
 CREATE TABLE daily_availability (
     date DATE NOT NULL,
     symbol VARCHAR NOT NULL,
     available BOOLEAN NOT NULL,
-    file_size_bytes BIGINT,
-    last_modified TIMESTAMP,
+    file_size_bytes BIGINT,              -- Volume metrics (ADR-0006)
+    last_modified TIMESTAMP,             -- S3 freshness tracking (ADR-0006)
     url VARCHAR NOT NULL,
     status_code INTEGER NOT NULL,
     probe_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (date, symbol)
 );
 ```
+
+**Volume Metrics** (ADR-0006):
+
+- `file_size_bytes`: ZIP file size from S3 (NULL for unavailable files)
+- `last_modified`: S3 upload timestamp (NULL for unavailable files or missing headers)
+- **Use Cases**: Volume trend analysis, data freshness monitoring, audit trails
+- **Collection**: Extracted from AWS CLI listings (backfill) and HTTP headers (daily updates)
 
 ### Indexes
 
@@ -109,7 +121,7 @@ CREATE TABLE daily_availability (
 ### Storage
 
 **Location**: `~/.cache/binance-futures/availability.duckdb`
-**Size**: 50-150 MB (compressed columnar storage)
+**Size**: 50-150 MB (compressed columnar storage, includes volume metrics)
 **Growth**: ~50 MB/year
 
 ## Data Collection
@@ -256,11 +268,36 @@ uv run binance-futures-availability query snapshot 2024-01-15
 uv run binance-futures-availability query timeline BTCUSDT
 uv run binance-futures-availability query range 2024-01-01 2024-03-31
 
-# Python API
+# Python API - Basic availability queries
 python -c "
 from binance_futures_availability.queries import AvailabilityQueries
 q = AvailabilityQueries()
 print(q.get_available_symbols_on_date('2024-01-15'))
+"
+
+# Volume metrics queries (ADR-0006)
+python -c "
+from binance_futures_availability.database import AvailabilityDatabase
+
+db = AvailabilityDatabase()
+
+# Average file size growth over time
+growth = db.query('''
+    SELECT date, AVG(file_size_bytes) as avg_size
+    FROM daily_availability
+    WHERE available
+    GROUP BY date
+    ORDER BY date
+''')
+
+# Find symbols with abnormal volume spikes
+spikes = db.query('''
+    SELECT symbol, date, file_size_bytes
+    FROM daily_availability
+    WHERE file_size_bytes > 20000000  -- > 20MB
+    ORDER BY file_size_bytes DESC
+    LIMIT 10
+''')
 "
 ```
 
@@ -470,5 +507,6 @@ When making changes:
 - Initial implementation
 - Historical backfill (2019-09-25 to present)
 - Automated daily updates with APScheduler
-- All 4 MADRs documented and approved
+- All 6 MADRs documented and approved
 - 80%+ test coverage achieved
+- Volume metrics collection (file_size_bytes, last_modified)
