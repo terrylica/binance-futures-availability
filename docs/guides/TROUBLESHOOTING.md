@@ -7,6 +7,7 @@ Common issues and solutions for Binance Futures Availability Database.
 ### Problem: `uv pip install -e .` fails
 
 **Symptoms**:
+
 ```
 ERROR: Could not find a version that satisfies the requirement duckdb>=1.0.0
 ```
@@ -28,6 +29,7 @@ uv pip install -e .
 ### Problem: Import errors after installation
 
 **Symptoms**:
+
 ```python
 ImportError: No module named 'binance_futures_availability'
 ```
@@ -45,56 +47,59 @@ uv pip install -e .
 ### Problem: Backfill interrupted (network timeout, Ctrl+C)
 
 **Symptoms**:
+
 ```
-RuntimeError: S3 probe failed for BTCUSDT on 2024-01-15: Network timeout
+RuntimeError: AWS CLI timeout for BTCUSDT
 ```
 
 **Solution**:
-Resume from checkpoint (automatic):
+Re-run AWS CLI backfill (idempotent - uses UPSERT):
 
 ```bash
-# Checkpoint saved after each successful date
-uv run python scripts/run_backfill.py
+# AWS CLI backfill automatically resumes
+uv run python scripts/run_backfill_aws.py
 
-# Or disable checkpoint resume (start from scratch)
-uv run python scripts/run_backfill.py --no-resume
+# Or backfill specific date range
+uv run python scripts/run_backfill_aws.py --start-date 2024-01-01
 ```
-
-**Checkpoint location**: `~/.cache/binance-futures/backfill_checkpoint.txt`
 
 ### Problem: Backfill takes too long
 
-**Expected time**: 4-6 hours for full backfill (2240 days × 708 symbols)
+**Expected time**: ~25 minutes for full backfill (2240 days × 327 symbols with AWS CLI)
+
+**Legacy method**: HEAD request backfill takes ~3 hours (available in `scripts/run_backfill_head_legacy.py`)
 
 **Optimization**:
 
 ```bash
 # Increase parallel workers (default: 10)
-uv run python scripts/run_backfill.py --workers 20
+uv run python scripts/run_backfill_aws.py --workers 20
 
-# Note: Too many workers may trigger S3 throttling
-# Conservative rate: 2 req/sec = max ~10 workers
+# Note: AWS CLI has much better throughput than HEAD requests
 ```
 
-### Problem: S3 throttling (429 errors)
+### Problem: AWS CLI not installed
 
 **Symptoms**:
+
 ```
-RuntimeError: S3 probe failed for BTCUSDT: HTTP 429 - Too Many Requests
+RuntimeError: AWS CLI not found. Install with: brew install awscli
 ```
 
 **Solution**:
-Reduce parallel workers:
+Install AWS CLI:
 
 ```bash
-uv run python scripts/run_backfill.py --workers 5
-```
+brew install awscli
 
-Or modify `BatchProber.rate_limit` in code (default: 2.0 req/sec).
+# Verify installation
+aws --version
+```
 
 ### Problem: Backfill completes but validation fails
 
 **Symptoms**:
+
 ```
 [1/3] Continuity Check: FAILED: 10 missing dates found
 ```
@@ -104,7 +109,7 @@ Re-run backfill for specific date range:
 
 ```bash
 # Backfill only missing dates
-uv run python scripts/run_backfill.py --start-date 2024-01-01 --end-date 2024-01-10
+uv run python scripts/run_backfill_aws.py --start-date 2024-01-01 --end-date 2024-01-10
 ```
 
 ## Query Issues
@@ -112,6 +117,7 @@ uv run python scripts/run_backfill.py --start-date 2024-01-01 --end-date 2024-01
 ### Problem: Query returns empty results
 
 **Symptoms**:
+
 ```python
 results = q.get_available_symbols_on_date('2024-01-15')
 # results = []
@@ -129,6 +135,7 @@ with AvailabilityDatabase() as db:
 ```
 
 **Solution**:
+
 - If count is 0, run manual update for that date:
 
 ```bash
@@ -138,6 +145,7 @@ uv run binance-futures-availability update manual --date 2024-01-15
 ### Problem: Query performance is slow
 
 **Symptoms**:
+
 - Snapshot query takes >1s (expected: <1ms)
 - Timeline query takes >100ms (expected: <10ms)
 
@@ -164,6 +172,7 @@ db.close()
 ```
 
 **Solution**:
+
 - Expected indexes: `idx_symbol_date`, `idx_available_date`
 - If missing, recreate schema:
 
@@ -180,6 +189,7 @@ db.close()
 ### Problem: Scheduler fails to start
 
 **Symptoms**:
+
 ```
 Address already in use
 ```
@@ -211,6 +221,7 @@ tail -f ~/.cache/binance-futures/scheduler.log
 ```
 
 **Solution**:
+
 - Verify scheduler is running:
 
 ```bash
@@ -248,6 +259,7 @@ uv run python scripts/start_scheduler.py
 ### Problem: Continuity check finds missing dates
 
 **Symptoms**:
+
 ```
 FAILED: 5 missing dates found
   - 2024-01-15
@@ -266,12 +278,13 @@ uv run binance-futures-availability update manual --date 2024-01-16
 Or use backfill script for range:
 
 ```bash
-uv run python scripts/run_backfill.py --start-date 2024-01-15 --end-date 2024-01-20
+uv run python scripts/run_backfill_aws.py --start-date 2024-01-15 --end-date 2024-01-20
 ```
 
 ### Problem: Completeness check fails (low symbol counts)
 
 **Symptoms**:
+
 ```
 FAILED: 2 dates with <700 symbols
   - 2024-01-15: 650 symbols
@@ -294,12 +307,14 @@ with AnalyticsQueries() as q:
 ```
 
 **Solution**:
+
 - If count is unexpectedly low, re-run update for that date
 - Adjust `min_symbol_count` threshold if needed (default: 700)
 
 ### Problem: Cross-check fails (low match percentage)
 
 **Symptoms**:
+
 ```
 FAILED: 92.0% match (SLO: >95%)
 Symbols only in DB: 30
@@ -307,10 +322,12 @@ Symbols only in API: 10
 ```
 
 **Diagnosis**:
+
 - "Only in DB": Possible delistings (symbol removed from API but still in historical data)
 - "Only in API": New listings not yet in database
 
 **Solution**:
+
 - Run manual update for yesterday:
 
 ```bash
@@ -324,6 +341,7 @@ uv run binance-futures-availability update manual
 ### Problem: Database file is missing
 
 **Symptoms**:
+
 ```
 FileNotFoundError: No such file or directory: '~/.cache/binance-futures/availability.duckdb'
 ```
@@ -332,12 +350,13 @@ FileNotFoundError: No such file or directory: '~/.cache/binance-futures/availabi
 Database is created on first use. Run backfill to populate:
 
 ```bash
-uv run python scripts/run_backfill.py
+uv run python scripts/run_backfill_aws.py
 ```
 
 ### Problem: Database is corrupted
 
 **Symptoms**:
+
 ```
 duckdb.IOException: Catalog Error: Table "daily_availability" does not exist
 ```
@@ -357,7 +376,7 @@ If corruption persists, delete database and re-run backfill:
 
 ```bash
 rm ~/.cache/binance-futures/availability.duckdb
-uv run python scripts/run_backfill.py
+uv run python scripts/run_backfill_aws.py
 ```
 
 ### Problem: Database size is too large
@@ -386,11 +405,13 @@ db.close()
 ### Problem: Binance API is down
 
 **Symptoms**:
+
 ```
 RuntimeError: Failed to fetch exchangeInfo from API: HTTP 503 - Service Unavailable
 ```
 
 **Solution**:
+
 - Cross-check validation will fail temporarily
 - Binance Vision S3 and exchangeInfo API are separate services
 - S3 Vision probing should still work
@@ -398,6 +419,7 @@ RuntimeError: Failed to fetch exchangeInfo from API: HTTP 503 - Service Unavaila
 ### Problem: Network timeout during probe
 
 **Symptoms**:
+
 ```
 RuntimeError: Network error probing BTCUSDT on 2024-01-15: timeout
 ```
@@ -416,16 +438,19 @@ Or reduce parallel workers to avoid network congestion.
 **Still stuck?**
 
 1. **Check logs**:
+
    ```bash
    tail -f ~/.cache/binance-futures/scheduler.log
    ```
 
 2. **Run validation**:
+
    ```bash
    uv run python scripts/validate_database.py --verbose
    ```
 
 3. **Check database state**:
+
    ```python
    from binance_futures_availability.database import AvailabilityDatabase
 

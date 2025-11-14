@@ -40,6 +40,7 @@ We will use **DuckDB 1.0+** as the storage technology.
 **Database location**: `~/.cache/binance-futures/availability.duckdb`
 
 **Python integration**:
+
 ```python
 import duckdb
 
@@ -58,6 +59,7 @@ class AvailabilityDatabase:
 **Consequences**:
 
 **Positive**:
+
 - **Columnar compression**: 50-150MB total size (vs 250-500MB uncompressed)
 - **Fast analytical queries**: Column-oriented storage optimized for filtering/aggregation
 - **Zero dependencies**: No server installation or configuration
@@ -66,14 +68,17 @@ class AvailabilityDatabase:
 - **Cross-platform**: Works on macOS, Linux, Windows
 
 **Negative**:
+
 - **Single writer**: No concurrent writes (not an issue for our use case)
 - **Not a transactional database**: Optimized for analytics over ACID guarantees
 
 **Performance validation**:
+
 - Snapshot query (708 symbols for single date): <1ms
 - Timeline query (2240 days for single symbol): <10ms
 - Date range query (90 days × 708 symbols): <100ms
 
 **Related Decisions**:
+
 - ADR-0001: Daily table schema design
 - ADR-0004: APScheduler automation (single-writer requirement)

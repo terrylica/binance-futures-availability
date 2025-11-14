@@ -37,6 +37,7 @@ Three automation approaches were evaluated:
 We will use **APScheduler 3.10+** with SQLite job store for automated daily updates.
 
 **Implementation pattern**:
+
 ```python
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
@@ -93,6 +94,7 @@ scheduler.start()
 ```
 
 **Daemon script** (`scripts/start_scheduler.py`):
+
 ```python
 #!/usr/bin/env python3
 """Start APScheduler daemon for daily updates."""
@@ -133,6 +135,7 @@ except KeyboardInterrupt:
 **Consequences**:
 
 **Positive**:
+
 - **Pure Python**: No external scheduler installation required
 - **State persistence**: SQLite job store survives process restarts
 - **Built-in retry**: Failed jobs automatically retry next cycle (aligns with ADR-0003)
@@ -142,10 +145,12 @@ except KeyboardInterrupt:
 - **Cross-platform**: Works on macOS, Linux, Windows
 
 **Negative**:
+
 - **Process dependency**: Requires daemon process to stay running
 - **No system integration**: Not managed by systemd/launchd (user must start manually)
 
 **Operational usage**:
+
 ```bash
 # Start daemon
 uv run python scripts/start_scheduler.py &
@@ -161,9 +166,11 @@ kill $(cat ~/.cache/binance-futures/scheduler.pid)
 ```
 
 **SLO alignment**:
+
 - **Availability SLO**: "95% of daily updates complete successfully" - scheduler retries failures
 - **Observability SLO**: "All failures logged with full context" - structured logging enabled
 
 **Related Decisions**:
+
 - ADR-0002: DuckDB storage (single-writer compatibility)
 - ADR-0003: Strict error policy (scheduler handles retries)

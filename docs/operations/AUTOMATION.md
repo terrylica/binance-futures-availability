@@ -20,6 +20,7 @@ uv run python scripts/start_scheduler.py
 ```
 
 **Output**:
+
 ```
 Binance Futures Availability - APScheduler Daemon
 Schedule: Daily at 2:00 AM UTC
@@ -83,6 +84,7 @@ kill <PID>
 **Job store location**: `~/.cache/binance-futures/scheduler.db`
 
 APScheduler persists job state to SQLite, allowing:
+
 - Process restart recovery
 - Job execution history
 - Scheduled job state preservation
@@ -100,6 +102,7 @@ trigger = CronTrigger(
 ```
 
 **Why 2:00 AM UTC?**
+
 - Binance Vision S3 uploads previous day's data during T+1 (next day)
 - 2:00 AM provides buffer for S3 upload completion
 - UTC avoids DST time shifts
@@ -136,6 +139,7 @@ grep ERROR ~/.cache/binance-futures/scheduler.log
 ```
 
 **Log format**:
+
 ```
 2025-11-12 02:00:00,123 | INFO | scheduler.daily_update | Starting daily update for 2025-11-11
 2025-11-12 02:02:05,456 | INFO | scheduler.daily_update | Daily update completed: 708 symbols probed, 708 available

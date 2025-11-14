@@ -21,21 +21,34 @@ uv pip install -e ".[dev]"
 Populate the database with historical data (2019-09-25 to yesterday):
 
 ```bash
-uv run python scripts/run_backfill.py
+# AWS CLI-based backfill (RECOMMENDED: 7.2x faster)
+uv run python scripts/run_backfill_aws.py
 ```
 
-**Estimated time**: 4-6 hours for ~2240 days × 708 symbols
+**Estimated time**: ~25 minutes for ~2240 days × 327 symbols
 
-**Progress tracking**: Checkpoint saved after each day (resume-able on failure)
+**Method**: Uses `aws s3 ls` to list all files per symbol in one API call
+
+**Progress tracking**: Real-time progress with per-symbol completion
 
 **Expected output**:
+
 ```
-Backfill starting: 2019-09-25 to 2025-11-11 (2240 days)
-Progress: 2019-09-25 completed (1/708 available)
-Progress: 2019-09-26 completed (1/708 available)
+====================================================
+AWS CLI-Based Historical Backfill (3.5x Faster)
+====================================================
+Date range: 2019-09-25 to 2025-11-13 (2242 days)
+Symbols: 327
+Parallel workers: 10
+Estimated time: ~25 minutes
+====================================================
+[1/327] ✅ BTCUSDT: 2145/2242 dates available
+[2/327] ✅ ETHUSDT: 1998/2242 dates available
 ...
-Backfill completed: 1,586,720 records inserted
+Backfill Complete! Records inserted: 732,534
 ```
+
+**Alternative (Legacy)**: HEAD request backfill available in `scripts/run_backfill_head_legacy.py` (~3 hours)
 
 ### Step 2: Validate Database
 
@@ -46,6 +59,7 @@ uv run python scripts/validate_database.py
 ```
 
 **Expected output**:
+
 ```
 [1/3] Continuity Check: Detecting missing dates...
 PASSED: No missing dates (complete coverage)
@@ -166,12 +180,17 @@ uv run python scripts/start_scheduler.py --stop
 ## Troubleshooting
 
 **Backfill interrupted?**
+
 ```bash
-# Resume from checkpoint
-uv run python scripts/run_backfill.py
+# AWS CLI backfill is idempotent - just re-run
+uv run python scripts/run_backfill_aws.py
+
+# For partial backfills
+uv run python scripts/run_backfill_aws.py --start-date 2024-01-01
 ```
 
 **Missing dates?**
+
 ```bash
 # Check continuity
 python -c "
@@ -183,6 +202,7 @@ print(f'Missing dates: {missing}')
 ```
 
 **Scheduler not running?**
+
 ```bash
 # Check process
 ps aux | grep start_scheduler

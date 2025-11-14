@@ -329,9 +329,9 @@ if __name__ == "__main__":
 
 ```yaml
 scrape_configs:
-  - job_name: 'binance-futures'
+  - job_name: "binance-futures"
     static_configs:
-      - targets: ['localhost:8000']
+      - targets: ["localhost:8000"]
 ```
 
 ## Grafana Dashboard

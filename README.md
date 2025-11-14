@@ -36,8 +36,8 @@ uv pip install -e ".[dev]"
 ### Run Historical Backfill
 
 ```bash
-# One-time backfill from 2019-09-25 to yesterday (~4-6 hours)
-uv run python scripts/run_backfill.py
+# One-time backfill from 2019-09-25 to yesterday (~25 minutes with AWS CLI)
+uv run python scripts/run_backfill_aws.py
 ```
 
 ### Start Automated Updates
@@ -77,22 +77,32 @@ Single table: `daily_availability(date, symbol, available, file_size_bytes, last
 
 **Primary Key**: (date, symbol)
 **Indexes**:
+
 - idx_symbol_date (symbol, date) - fast timeline queries
 - idx_available_date (available, date) - fast symbol listings
 
 **Storage**: `~/.cache/binance-futures/availability.duckdb`
 
-### Data Source
+### Data Collection (Hybrid Strategy)
 
 **Binance Vision S3**: `https://data.binance.vision/data/futures/um/daily/klines/`
 
-**Method**: HTTP HEAD requests to check file existence
-**Rate**: Conservative 2 req/sec (avoid throttling)
-**Authentication**: None required (public bucket)
+**Historical Backfill** (Bulk Operations):
+- Method: AWS CLI S3 listing (`aws s3 ls --no-sign-request`)
+- Performance: 327 symbols × 4.5 sec = ~25 minutes
+- Use case: One-time historical data collection
+
+**Daily Updates** (Incremental Operations):
+- Method: HTTP HEAD requests (parallel batch probing)
+- Performance: 708 symbols in ~5 seconds
+- Use case: Automated daily updates at 2 AM UTC
+
+**See**: [ADR-0005: AWS CLI for Bulk Operations](docs/decisions/0005-aws-cli-bulk-operations.md)
 
 ### Error Handling
 
 **Policy**: Strict raise-on-failure (ADR-0003)
+
 - No retries (scheduler retries next cycle)
 - No fallbacks (no default values)
 - No silent failures (all errors logged)
@@ -105,11 +115,13 @@ Single table: `daily_availability(date, symbol, available, file_size_bytes, last
 **MADRs**: [docs/decisions/](docs/decisions/)
 
 **Guides**:
+
 - [Quick Start](docs/guides/QUICKSTART.md)
 - [Query Examples](docs/guides/QUERY_EXAMPLES.md)
 - [Troubleshooting](docs/guides/TROUBLESHOOTING.md)
 
 **Operations**:
+
 - [Automation Setup](docs/operations/AUTOMATION.md)
 - [Backup & Restore](docs/operations/BACKUP_RESTORE.md)
 - [Monitoring](docs/operations/MONITORING.md)
@@ -151,6 +163,7 @@ All decisions documented as MADRs:
 - **[ADR-0002](docs/decisions/0002-storage-technology-duckdb.md)**: DuckDB for storage
 - **[ADR-0003](docs/decisions/0003-error-handling-strict-policy.md)**: Strict error handling
 - **[ADR-0004](docs/decisions/0004-automation-apscheduler.md)**: APScheduler for automation
+- **[ADR-0005](docs/decisions/0005-aws-cli-bulk-operations.md)**: AWS CLI for bulk operations
 
 ## SLOs (Service Level Objectives)
 
@@ -173,6 +186,7 @@ MIT License - see [LICENSE](LICENSE) file for details
 This is a specialized internal tool. For major changes, please open an issue first to discuss what you would like to change.
 
 Ensure tests pass and coverage remains ≥80%:
+
 ```bash
 pytest --cov --cov-fail-under=80
 ```

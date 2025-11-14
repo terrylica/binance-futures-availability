@@ -221,34 +221,40 @@ print("Restore from Parquet completed")
 ### Full Recovery Procedure
 
 1. **Identify backup file**:
+
    ```bash
    ls -lh ~/backups/binance-futures/
    ```
 
 2. **Verify backup integrity**:
+
    ```bash
    ./verify_backup.sh ~/backups/binance-futures/availability-20251111.duckdb
    ```
 
 3. **Stop scheduler** (if running):
+
    ```bash
    uv run python scripts/start_scheduler.py --stop
    ```
 
 4. **Restore database**:
+
    ```bash
    ./restore_backup.sh ~/backups/binance-futures/availability-20251111.duckdb
    ```
 
 5. **Validate restored database**:
+
    ```bash
    uv run python scripts/validate_database.py
    ```
 
 6. **Backfill missing dates** (if backup is old):
+
    ```bash
-   # Backfill from backup date to yesterday
-   uv run python scripts/run_backfill.py --start-date 2025-11-11
+   # Backfill from backup date to yesterday (~25 minutes with AWS CLI)
+   uv run python scripts/run_backfill_aws.py --start-date 2025-11-11
    ```
 
 7. **Restart scheduler**:
@@ -264,8 +270,8 @@ print("Restore from Parquet completed")
 # Clear everything
 rm -rf ~/.cache/binance-futures/
 
-# Run full backfill (4-6 hours)
-uv run python scripts/run_backfill.py
+# Run full backfill (~25 minutes with AWS CLI)
+uv run python scripts/run_backfill_aws.py
 
 # Validate
 uv run python scripts/validate_database.py

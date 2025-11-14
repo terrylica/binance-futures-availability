@@ -44,6 +44,7 @@ CREATE INDEX idx_available_date ON daily_availability(available, date);
 **Consequences**:
 
 **Positive**:
+
 - **Append-only simplicity**: Daily updates only INSERT new rows (no UPDATE/DELETE)
 - **Audit trail preservation**: Every probe result is permanently recorded
 - **Simple query patterns**: Single WHERE clause for snapshot queries
@@ -51,14 +52,17 @@ CREATE INDEX idx_available_date ON daily_availability(available, date);
 - **Straightforward backfill**: Idempotent UPSERT for historical dates
 
 **Negative**:
+
 - **Higher row count**: 708 symbols × 2240 days = ~1.6M rows (vs ~708 rows for range pattern)
 - **Storage overhead**: Mitigated by DuckDB compression (50-150MB total)
 
 **Trade-offs**:
+
 - Optimizes for **read simplicity** and **data immutability** over storage efficiency
 - Estimated growth: ~50MB/year (708 rows/day × ~200 bytes/row compressed)
 - Query performance target: <1ms for single-date snapshot (easily achievable with indexes)
 
 **Related Decisions**:
+
 - ADR-0002: Storage technology choice (DuckDB)
 - ADR-0003: Error handling policy (strict raise)

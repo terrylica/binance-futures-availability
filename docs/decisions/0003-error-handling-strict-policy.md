@@ -34,6 +34,7 @@ Three error handling strategies were evaluated:
 We will use the **strict raise policy**: raise and propagate all errors immediately with NO retries, fallbacks, or silent failures.
 
 **Implementation pattern**:
+
 ```python
 def check_symbol_availability(symbol: str, date: datetime.date) -> dict:
     """
@@ -66,6 +67,7 @@ def check_symbol_availability(symbol: str, date: datetime.date) -> dict:
 ```
 
 **Logging pattern**:
+
 ```python
 import logging
 
@@ -90,6 +92,7 @@ except RuntimeError as e:
 **Consequences**:
 
 **Positive**:
+
 - **Fail-fast**: Errors surface immediately during development
 - **Explicit visibility**: All failures logged with full context (symbol, date, error)
 - **No silent corruption**: Impossible to record incorrect availability status
@@ -98,17 +101,21 @@ except RuntimeError as e:
 - **Debugging**: Complete error chain preserved via `raise ... from e`
 
 **Negative**:
+
 - **No automatic retry**: Transient failures require manual intervention or waiting for next cycle
 - **Longer backfill on failures**: Must re-run failed date ranges
 
 **Mitigations**:
+
 - **Scheduler retry**: Daily updates retry automatically next day
 - **Checkpoint backfill**: Backfill script saves progress, can resume from last successful date
 - **Structured logging**: All errors captured with context for post-mortem analysis
 
 **SLO alignment**:
+
 - **Observability SLO**: "All failures logged with full context" - satisfied
 - **Availability SLO**: "95% of daily updates complete successfully" - allows 5% failure rate
 
 **Related Decisions**:
+
 - ADR-0004: APScheduler automation (handles retry scheduling)

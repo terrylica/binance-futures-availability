@@ -13,11 +13,13 @@ See also: [Query Patterns Schema](../schema/query-patterns.schema.json)
 **Performance**: <1ms (idx_available_date index)
 
 **CLI**:
+
 ```bash
 uv run binance-futures-availability query snapshot 2024-01-15 --json > snapshot.json
 ```
 
 **Python**:
+
 ```python
 from binance_futures_availability.queries import SnapshotQueries
 
@@ -31,6 +33,7 @@ with SnapshotQueries() as q:
 ```
 
 **Output**:
+
 ```
 Available symbols: 708
   BTCUSDT: 8,421,945 bytes
@@ -45,6 +48,7 @@ Available symbols: 708
 **Performance**: <100ms (90 days × 708 symbols)
 
 **Python**:
+
 ```python
 from binance_futures_availability.queries import SnapshotQueries
 
@@ -64,11 +68,13 @@ with SnapshotQueries() as q:
 **Performance**: <10ms (idx_symbol_date index, ~2240 rows)
 
 **CLI**:
+
 ```bash
 uv run binance-futures-availability query timeline BTCUSDT --json > btcusdt_timeline.json
 ```
 
 **Python**:
+
 ```python
 from binance_futures_availability.queries import TimelineQueries
 
@@ -89,6 +95,7 @@ with TimelineQueries() as q:
 **Use case**: "When was SOLUSDT first listed? Is it still listed?"
 
 **Python**:
+
 ```python
 from binance_futures_availability.queries import TimelineQueries
 
@@ -117,11 +124,13 @@ with TimelineQueries() as q:
 **Performance**: <50ms (NOT IN subquery)
 
 **CLI**:
+
 ```bash
 uv run binance-futures-availability query analytics new-listings 2024-01-15
 ```
 
 **Python**:
+
 ```python
 from binance_futures_availability.queries import AnalyticsQueries
 
@@ -140,11 +149,13 @@ with AnalyticsQueries() as q:
 **Performance**: <50ms
 
 **CLI**:
+
 ```bash
 uv run binance-futures-availability query analytics delistings 2024-01-15
 ```
 
 **Python**:
+
 ```python
 from binance_futures_availability.queries import AnalyticsQueries
 
@@ -163,11 +174,13 @@ with AnalyticsQueries() as q:
 **Performance**: <50ms (aggregates ~2240 days)
 
 **CLI**:
+
 ```bash
 uv run binance-futures-availability query analytics summary --json > summary.json
 ```
 
 **Python**:
+
 ```python
 from binance_futures_availability.queries import AnalyticsQueries
 
@@ -195,6 +208,7 @@ with AnalyticsQueries() as q:
 **Use case**: "What are the symbol counts for the last 7 days?"
 
 **Python**:
+
 ```python
 from binance_futures_availability.validation import CompletenessValidator
 
