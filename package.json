@@ -1,0 +1,42 @@
+{
+  "name": "binance-futures-availability",
+  "version": "1.0.0",
+  "description": "**Track daily availability of 708 USDT perpetual futures from Binance Vision (2019-09-25 to present)**",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "release": "semantic-release",
+    "release:dry": "semantic-release --dry-run",
+    "release:auto": "semantic-release --no-ci"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/terrylica/binance-futures-availability.git"
+  },
+  "keywords": [
+    "binance",
+    "futures",
+    "cryptocurrency",
+    "data-availability",
+    "trading"
+  ],
+  "author": "Terry Li",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/terrylica/binance-futures-availability/issues"
+  },
+  "homepage": "https://github.com/terrylica/binance-futures-availability#readme",
+  "devDependencies": {
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/commit-analyzer": "^13.0.1",
+    "@semantic-release/exec": "^7.1.0",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^12.0.2",
+    "@semantic-release/release-notes-generator": "^14.1.0",
+    "conventional-changelog-conventionalcommits": "^9.1.0",
+    "semantic-release": "^25.0.2"
+  }
+}

@@ -59,6 +59,10 @@ logs/
 .DS_Store
 Thumbs.db
 
+# Node.js (semantic-release)
+node_modules/
+package-lock.json
+
 # Project-specific
 backfill_checkpoint.txt
 scheduler.pid

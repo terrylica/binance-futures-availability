@@ -1,0 +1,55 @@
+# semantic-release configuration for Python project
+# Uses Node.js semantic-release with exec plugin for Python version management
+
+branches:
+  - main
+
+plugins:
+  - "@semantic-release/commit-analyzer"
+  - "@semantic-release/release-notes-generator"
+  - "@semantic-release/changelog"
+
+  # Update Python version files
+  - - "@semantic-release/exec"
+    - prepareCmd: |
+        # Update pyproject.toml version
+        sed -i.bak 's/^version = ".*"/version = "${nextRelease.version}"/' pyproject.toml && rm pyproject.toml.bak
+        # Update __version__.py
+        echo "__version__ = \"${nextRelease.version}\"" > src/binance_futures_availability/__version__.py
+
+  # Commit updated files
+  - - "@semantic-release/git"
+    - assets:
+        - CHANGELOG.md
+        - pyproject.toml
+        - src/binance_futures_availability/__version__.py
+      message: "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+
+  # Create GitHub release
+  - "@semantic-release/github"
+
+# Changelog configuration
+preset: "conventionalcommits"
+releaseRules:
+  - type: "feat"
+    release: "minor"
+  - type: "fix"
+    release: "patch"
+  - type: "perf"
+    release: "patch"
+  - type: "revert"
+    release: "patch"
+  - type: "docs"
+    release: false
+  - type: "style"
+    release: false
+  - type: "chore"
+    release: false
+  - type: "refactor"
+    release: false
+  - type: "test"
+    release: false
+  - type: "build"
+    release: false
+  - type: "ci"
+    release: false
