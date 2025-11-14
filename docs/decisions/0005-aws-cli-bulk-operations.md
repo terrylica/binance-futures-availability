@@ -18,12 +18,14 @@ Use AWS CLI `s3 ls` for bulk operations (historical backfill), keep HTTP HEAD re
 ### Hybrid Strategy
 
 **Historical Backfill**: AWS CLI S3 Listing
+
 - Method: `aws s3 ls s3://data.binance.vision/.../SYMBOL/1m/ --no-sign-request`
 - Returns: All dates for a symbol in one call (~4.5 seconds)
 - Performance: 327 symbols × 4.5 sec = ~25 minutes
 - Use case: One-time historical data collection
 
 **Daily Updates**: HTTP HEAD Requests
+
 - Method: Individual HEAD requests per symbol for single date
 - Returns: Availability status per symbol (~708 requests)
 - Performance: ~5 seconds for all symbols
@@ -33,12 +35,12 @@ Use AWS CLI `s3 ls` for bulk operations (historical backfill), keep HTTP HEAD re
 
 ### Performance Comparison
 
-| Operation | Method | Time | API Calls |
-|-----------|--------|------|-----------|
-| Historical backfill | HEAD requests | ~3 hours | 1,587,336 |
-| Historical backfill | AWS CLI | ~25 minutes | 327 |
-| Daily update | HEAD requests | ~5 seconds | 708 |
-| Daily update | AWS CLI | ~53 minutes | 708 |
+| Operation           | Method        | Time        | API Calls |
+| ------------------- | ------------- | ----------- | --------- |
+| Historical backfill | HEAD requests | ~3 hours    | 1,587,336 |
+| Historical backfill | AWS CLI       | ~25 minutes | 327       |
+| Daily update        | HEAD requests | ~5 seconds  | 708       |
+| Daily update        | AWS CLI       | ~53 minutes | 708       |
 
 **Conclusion**: AWS CLI is 7.2x faster for bulk operations, HEAD requests are faster for single-date operations.
 
@@ -85,6 +87,7 @@ Use AWS CLI `s3 ls` for bulk operations (historical backfill), keep HTTP HEAD re
 ### ADR-0003 (Error Handling)
 
 AWS CLI errors raise immediately:
+
 - `subprocess.TimeoutExpired` → RuntimeError
 - `subprocess.CalledProcessError` → RuntimeError
 - `FileNotFoundError` (AWS CLI missing) → RuntimeError

@@ -39,19 +39,24 @@ class AWSS3Lister:
                 capture_output=True,
                 text=True,
                 timeout=30,
-                check=True,
+                check=False,  # Don't raise on non-zero exit (path may not exist)
             )
         except subprocess.TimeoutExpired as e:
             raise RuntimeError(f"AWS CLI timeout for {symbol}: {e}") from e
-        except subprocess.CalledProcessError as e:
-            raise RuntimeError(
-                f"AWS CLI failed for {symbol}: {e.stderr.strip()}"
-            ) from e
         except FileNotFoundError as e:
             raise RuntimeError(
                 "AWS CLI not found. Install with: brew install awscli"
             ) from e
 
+        # Exit code 1 with empty stdout = path doesn't exist (no files) - this is valid
+        # Exit code 0 = success
+        # Other exit codes with stderr = real errors
+        if result.returncode != 0 and result.stderr.strip():
+            raise RuntimeError(
+                f"AWS CLI failed for {symbol}: {result.stderr.strip()}"
+            )
+
+        # Empty stdout or exit code 1 = no files found (valid for delisted symbols)
         return self._parse_aws_output(result.stdout, symbol)
 
     def _parse_aws_output(self, output: str, symbol: str) -> List[Dict]:

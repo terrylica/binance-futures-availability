@@ -1,0 +1,39 @@
+[ERROR] file:///Users/terryli/eon/binance-futures-availability/LICENSE | Cannot find file: File not found. Check if file exists and path is correct
+[ERROR] file:///Users/terryli/eon/binance-futures-availability/docs/guides/python-api.md | Cannot find file: File not found. Check if file exists and path is correct
+{
+  "total": 62,
+  "successful": 44,
+  "unknown": 0,
+  "unsupported": 0,
+  "timeouts": 0,
+  "redirects": 0,
+  "excludes": 16,
+  "errors": 2,
+  "cached": 0,
+  "success_map": {},
+  "error_map": {
+    "/Users/terryli/eon/binance-futures-availability/docs/guides/QUERY_EXAMPLES.md": [
+      {
+        "url": "file:///Users/terryli/eon/binance-futures-availability/docs/guides/python-api.md",
+        "status": {
+          "text": "Cannot find file",
+          "details": "File not found. Check if file exists and path is correct"
+        }
+      }
+    ],
+    "/Users/terryli/eon/binance-futures-availability/README.md": [
+      {
+        "url": "file:///Users/terryli/eon/binance-futures-availability/LICENSE",
+        "status": {
+          "text": "Cannot find file",
+          "details": "File not found. Check if file exists and path is correct"
+        }
+      }
+    ]
+  },
+  "suggestion_map": {},
+  "redirect_map": {},
+  "excluded_map": {},
+  "duration_secs": 0,
+  "detailed_stats": false
+}

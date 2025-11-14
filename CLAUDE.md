@@ -122,6 +122,7 @@ CREATE TABLE daily_availability (
 ### Hybrid Collection Strategy (ADR-0005)
 
 **Historical Backfill** (Bulk Operations):
+
 - **Method**: AWS CLI S3 listing (`aws s3 ls --no-sign-request`)
 - **Module**: `probing/aws_s3_lister.py`
 - **Script**: `scripts/run_backfill_aws.py`
@@ -129,6 +130,7 @@ CREATE TABLE daily_availability (
 - **Use Case**: One-time bulk data collection (2019-09-25 to present)
 
 **Daily Updates** (Incremental Operations):
+
 - **Method**: HTTP HEAD requests (parallel batch probing)
 - **Modules**: `probing/s3_vision.py`, `probing/batch_prober.py`
 - **Script**: `scheduler/daily_update.py`
@@ -138,11 +140,13 @@ CREATE TABLE daily_availability (
 ### Symbol Discovery
 
 **Static List** (Current):
+
 - **Module**: `probing/symbol_discovery.py`
 - **Source**: Hardcoded list from `discovered_futures_symbols.json`
 - **Count**: 327 perpetual USDT futures
 
 **Dynamic Discovery** (Future Enhancement):
+
 - **Source**: `vision-futures-explorer/futures_discovery.py`
 - **Method**: S3 bucket listing (0.51 seconds for all symbols)
 - **Benefit**: Auto-detect new listings

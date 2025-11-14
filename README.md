@@ -88,11 +88,13 @@ Single table: `daily_availability(date, symbol, available, file_size_bytes, last
 **Binance Vision S3**: `https://data.binance.vision/data/futures/um/daily/klines/`
 
 **Historical Backfill** (Bulk Operations):
+
 - Method: AWS CLI S3 listing (`aws s3 ls --no-sign-request`)
 - Performance: 327 symbols × 4.5 sec = ~25 minutes
 - Use case: One-time historical data collection
 
 **Daily Updates** (Incremental Operations):
+
 - Method: HTTP HEAD requests (parallel batch probing)
 - Performance: 708 symbols in ~5 seconds
 - Use case: Automated daily updates at 2 AM UTC
