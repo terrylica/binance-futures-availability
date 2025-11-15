@@ -23,17 +23,18 @@ class BatchProber:
     See: docs/decisions/0003-error-handling-strict-policy.md
     """
 
-    def __init__(self, max_workers: int = 10, rate_limit: float = 2.0) -> None:
+    def __init__(self, max_workers: int = 150, rate_limit: float = 2.0) -> None:
         """
         Initialize batch prober.
 
         Args:
-            max_workers: Maximum concurrent threads (default: 10)
+            max_workers: Maximum concurrent threads (default: 150)
             rate_limit: Target requests per second (default: 2.0)
 
         Note:
-            Conservative rate_limit=2.0 to avoid S3 throttling.
-            708 symbols × 0.5s = ~6 minutes per date.
+            Empirically tested optimal: 150 workers (1.48s for 327 symbols).
+            No S3 rate limiting observed up to 10,000 concurrent workers.
+            See: docs/benchmarks/worker-count-benchmark-2025-11-15.md
         """
         self.max_workers = max_workers
         self.rate_limit = rate_limit

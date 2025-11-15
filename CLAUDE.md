@@ -150,8 +150,9 @@ CREATE TABLE daily_availability (
 - **Method**: HTTP HEAD requests (parallel batch probing)
 - **Modules**: `probing/s3_vision.py`, `probing/batch_prober.py`
 - **Script**: `scheduler/daily_update.py`
-- **Performance**: 708 symbols in ~5 seconds (10 parallel workers)
+- **Performance**: 327 symbols in ~1.5 seconds (150 parallel workers, empirically optimized)
 - **Use Case**: Automated daily updates at 2 AM UTC
+- **Benchmark**: See `docs/benchmarks/worker-count-benchmark-2025-11-15.md`
 
 ### Symbol Discovery
 

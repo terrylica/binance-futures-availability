@@ -164,7 +164,8 @@ Migrate database automation from local APScheduler daemon to **GitHub Actions wi
 
 1. **Data Collection Script** (`.github/scripts/run_daily_update.py`):
    - Implemented actual data collection using `BatchProber` class
-   - Parallel HTTP HEAD requests (10 workers) for ~327 perpetual symbols
+   - Parallel HTTP HEAD requests (150 workers, empirically optimized) for ~327 perpetual symbols
+   - Worker count optimization: 3.94x speedup vs initial 10 workers (1.48s vs 5.82s)
    - DB_PATH environment variable integration for workflow compatibility
    - Comprehensive logging with success/failure summaries
    - Exit code 0 on success, 1 on failure (workflow-friendly)
@@ -184,6 +185,14 @@ Migrate database automation from local APScheduler daemon to **GitHub Actions wi
    - Manual trigger: Supports both `daily` and `backfill` modes
    - Environment: DB_PATH passed to all Python scripts
    - Distribution: Automated GitHub Releases publishing with gzip compression
+
+5. **Worker Count Optimization** (2025-11-15):
+   - Empirical benchmark testing: 8 worker counts × 5 trials = 40 production runs
+   - Optimal configuration: 150 workers (1.48s ± 0.07s for 327 symbols)
+   - Speedup: 3.94x faster than initial 10 workers (5.82s → 1.48s)
+   - Rate limiting safety: Zero rate limiting detected (tested up to 10,000 workers, 118K requests)
+   - Benchmark results: `docs/benchmarks/worker-count-benchmark-2025-11-15.md`
+   - Updated modules: `BatchProber` default, daily update script, documentation
 
 **Operational Status**:
 - ✅ Workflow syntax validated

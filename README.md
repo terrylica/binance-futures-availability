@@ -117,8 +117,9 @@ Single table with volume metrics (ADR-0006):
 **Daily Updates** (Incremental Operations):
 
 - Method: HTTP HEAD requests (parallel batch probing)
-- Performance: ~327 symbols in ~5 seconds (10 parallel workers)
+- Performance: ~327 symbols in ~1.5 seconds (150 parallel workers, empirically optimized)
 - Use case: Automated daily updates via GitHub Actions (3 AM UTC)
+- Benchmark: [Worker Count Optimization](docs/benchmarks/worker-count-benchmark-2025-11-15.md)
 
 **See**: [ADR-0005: AWS CLI for Bulk Operations](docs/decisions/0005-aws-cli-bulk-operations.md)
 

@@ -29,8 +29,8 @@ def main():
 
     try:
         # Probe all perpetual symbols for yesterday
-        logger.info('Initializing BatchProber with 10 workers')
-        prober = BatchProber(max_workers=10)
+        logger.info('Initializing BatchProber with 150 workers')
+        prober = BatchProber(max_workers=150)
 
         logger.info(f'Probing all perpetual symbols for {yesterday}')
         results = prober.probe_all_symbols(date=yesterday, contract_type="perpetual")
