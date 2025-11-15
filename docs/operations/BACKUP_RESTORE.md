@@ -254,7 +254,7 @@ print("Restore from Parquet completed")
 
    ```bash
    # Backfill from backup date to yesterday (~25 minutes with AWS CLI)
-   uv run python scripts/run_backfill_aws.py --start-date 2025-11-11
+   uv run python scripts/scripts/operations/backfill.py --start-date 2025-11-11
    ```
 
 7. **Restart scheduler**:
@@ -271,7 +271,7 @@ print("Restore from Parquet completed")
 rm -rf ~/.cache/binance-futures/
 
 # Run full backfill (~25 minutes with AWS CLI)
-uv run python scripts/run_backfill_aws.py
+uv run python scripts/scripts/operations/backfill.py
 
 # Validate
 uv run python scripts/validate_database.py

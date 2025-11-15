@@ -38,7 +38,7 @@ uv pip install -e ".[dev]"
 
 ```bash
 # One-time backfill from 2019-09-25 to yesterday (~25 minutes with AWS CLI)
-uv run python scripts/run_backfill_aws.py
+uv run python scripts/scripts/operations/backfill.py
 ```
 
 ### Start Automated Updates

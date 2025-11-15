@@ -137,7 +137,7 @@ CREATE TABLE daily_availability (
 
 - **Method**: AWS CLI S3 listing (`aws s3 ls --no-sign-request`)
 - **Module**: `probing/aws_s3_lister.py`
-- **Script**: `scripts/run_backfill_aws.py`
+- **Script**: `scripts/operations/backfill.py`
 - **Performance**: 327 symbols × 4.5 sec = ~25 minutes for full history
 - **Use Case**: One-time bulk data collection (2019-09-25 to present)
 
@@ -241,9 +241,9 @@ uv pip install -e ".[dev]"
 
 ```bash
 # Backfill from 2019-09-25 (first UM-futures) to yesterday
-uv run python scripts/run_backfill.py
+uv run python scripts/operations/backfill.py
 
-# Estimated time: 4-6 hours (1.5M+ probes with parallelization)
+# Estimated time: ~25 minutes (AWS CLI bulk listing)
 # Database size after: 50-150 MB
 ```
 
@@ -423,7 +423,7 @@ else:
 ### Database File Not Found
 
 **Error**: `FileNotFoundError: availability.duckdb`
-**Solution**: Run backfill first: `uv run python scripts/run_backfill.py`
+**Solution**: Run backfill first: `uv run python scripts/operations/backfill.py`
 
 ### Scheduler Not Running
 

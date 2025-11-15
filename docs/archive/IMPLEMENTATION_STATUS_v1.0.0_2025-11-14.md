@@ -61,7 +61,7 @@
 
 ### Scripts
 
-- ✅ `scripts/run_backfill.py` - Historical backfill execution
+- ✅ `scripts/scripts/operations/backfill.py` - Historical backfill execution
 - ✅ `scripts/start_scheduler.py` - APScheduler daemon management
 - ✅ `scripts/validate_database.py` - Run all validation checks
 
@@ -126,7 +126,7 @@
 **Command**:
 
 ```bash
-uv run python scripts/run_backfill.py
+uv run python scripts/scripts/operations/backfill.py
 ```
 
 **Validation**:
@@ -248,7 +248,7 @@ Refs: ADR-0001, ADR-0002, ADR-0003, ADR-0004"
    ```bash
    cd ~/eon/binance-futures-availability
    source .venv/bin/activate
-   uv run python scripts/run_backfill.py
+   uv run python scripts/scripts/operations/backfill.py
    ```
 
    Expected duration: 4-6 hours

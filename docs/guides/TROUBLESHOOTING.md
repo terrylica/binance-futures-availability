@@ -57,10 +57,10 @@ Re-run AWS CLI backfill (idempotent - uses UPSERT):
 
 ```bash
 # AWS CLI backfill automatically resumes
-uv run python scripts/run_backfill_aws.py
+uv run python scripts/scripts/operations/backfill.py
 
 # Or backfill specific date range
-uv run python scripts/run_backfill_aws.py --start-date 2024-01-01
+uv run python scripts/scripts/operations/backfill.py --start-date 2024-01-01
 ```
 
 ### Problem: Backfill takes too long
@@ -73,7 +73,7 @@ uv run python scripts/run_backfill_aws.py --start-date 2024-01-01
 
 ```bash
 # Increase parallel workers (default: 10)
-uv run python scripts/run_backfill_aws.py --workers 20
+uv run python scripts/scripts/operations/backfill.py --workers 20
 
 # Note: AWS CLI has much better throughput than HEAD requests
 ```
@@ -109,7 +109,7 @@ Re-run backfill for specific date range:
 
 ```bash
 # Backfill only missing dates
-uv run python scripts/run_backfill_aws.py --start-date 2024-01-01 --end-date 2024-01-10
+uv run python scripts/scripts/operations/backfill.py --start-date 2024-01-01 --end-date 2024-01-10
 ```
 
 ## Query Issues
@@ -278,7 +278,7 @@ uv run binance-futures-availability update manual --date 2024-01-16
 Or use backfill script for range:
 
 ```bash
-uv run python scripts/run_backfill_aws.py --start-date 2024-01-15 --end-date 2024-01-20
+uv run python scripts/scripts/operations/backfill.py --start-date 2024-01-15 --end-date 2024-01-20
 ```
 
 ### Problem: Completeness check fails (low symbol counts)
@@ -350,7 +350,7 @@ FileNotFoundError: No such file or directory: '~/.cache/binance-futures/availabi
 Database is created on first use. Run backfill to populate:
 
 ```bash
-uv run python scripts/run_backfill_aws.py
+uv run python scripts/scripts/operations/backfill.py
 ```
 
 ### Problem: Database is corrupted
@@ -376,7 +376,7 @@ If corruption persists, delete database and re-run backfill:
 
 ```bash
 rm ~/.cache/binance-futures/availability.duckdb
-uv run python scripts/run_backfill_aws.py
+uv run python scripts/scripts/operations/backfill.py
 ```
 
 ### Problem: Database size is too large

@@ -1,0 +1,373 @@
+info:
+  title: "Workspace Organization and Legacy Code Management"
+  version: "1.2.0"
+  status: "proposed"
+  created: "2025-11-14"
+  x-adr-id: "0008"
+  x-adr-ref: "docs/decisions/0008-workspace-organization.md"
+  description: >
+    Systematic cleanup of workspace technical debt: fix 30+ broken documentation
+    references, remove deprecated scripts, eliminate 40% documentation redundancy,
+    and establish formal retention policies for build artifacts vs production data.
+
+metadata:
+  deciders:
+    - "Terry Li"
+    - "Claude Code"
+    - "Cleanup Analysis Agents"
+  stakeholders:
+    - "New developers (onboarding clarity)"
+    - "Documentation users (correct script references)"
+    - "Operations (maintainability)"
+  related_adrs:
+    - "0005"  # AWS CLI (context for HEAD vs CLI strategy)
+    - "0007"  # Volume Metrics (recent script changes)
+  analysis_reports:
+    - "/tmp/workspace-cleanup/legacy-code-analysis.md"
+    - "/tmp/workspace-cleanup/docs-redundancy-analysis.md"
+    - "/tmp/workspace-cleanup/data-cache-analysis.md"
+    - "/tmp/workspace-cleanup/temp-files-analysis.md"
+    - "/tmp/workspace-cleanup/CONSOLIDATED_FINDINGS.md"
+
+objectives:
+  primary: "Eliminate broken documentation references and establish maintainable workspace organization"
+  secondary:
+    - "Reduce documentation redundancy from 40% to <10%"
+    - "Reclaim 68-145 MB disk space (build artifacts + optional deps)"
+    - "Clarify active vs deprecated code separation"
+    - "Improve onboarding experience with accurate guides"
+
+slos:
+  availability:
+    target: "100%"
+    metric: "Daily scheduler continues running post-cleanup"
+    measurement: "ps aux | grep scheduler shows APScheduler daemon active"
+
+  correctness:
+    target: "100%"
+    metric: "Zero broken documentation references"
+    measurement: |
+      1. lychee docs/ --offline returns 0 broken links
+      2. grep -r "scripts/" docs/ | verify_script_paths.sh returns 0 errors
+      3. All referenced scripts exist and are executable
+
+  observability:
+    target: "Clear separation"
+    metric: "Active vs deprecated code clearly distinguished"
+    measurement: |
+      tree scripts/ output shows:
+      scripts/
+      ├── operations/  (active production scripts)
+      └── legacy/      (deprecated with README explaining migration)
+
+  maintainability:
+    target: "<10%"
+    metric: "Documentation content redundancy"
+    measurement: |
+      Before: 40% redundancy (CLAUDE.md vs README.md 70% overlap)
+      After: <10% (measured via diff analysis across all markdown files)
+
+phases:
+  - id: "phase-1"
+    name: "Build Artifact Cleanup"
+    status: "pending"
+    duration: "15 minutes"
+    risk: "low"
+    dependencies: []
+    tasks:
+      - name: "Remove Python build artifacts"
+        description: "Delete regenerable cache files"
+        commands:
+          - "find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null"
+          - "find . -name '*.pyc' -delete 2>/dev/null"
+          - "rm -rf .pytest_cache/ htmlcov/ .coverage"
+        deliverables:
+          - "~200 KB freed from __pycache__ removal"
+          - "~1.2 MB freed from htmlcov/ removal"
+        validation: "find . -name '*.pyc' -o -name htmlcov returns empty"
+
+      - name: "Remove link checker cache"
+        description: "Delete lychee temporary files"
+        commands:
+          - "rm -f .lychee-results.json .lychee-results.txt .lycheecache"
+        deliverables:
+          - "~2.4 KB freed"
+        validation: "ls .lychee* returns 'No such file or directory'"
+
+      - name: "Remove empty scratch directory"
+        description: "Delete unused workspace directory"
+        commands:
+          - "rmdir scratch/ 2>/dev/null || true"
+        deliverables:
+          - "0 bytes (already empty)"
+        validation: "Directory removed or confirmed non-empty and kept"
+
+      - name: "Archive old backfill logs"
+        description: "Move completed operation logs to archive"
+        commands:
+          - "mkdir -p ~/.cache/binance-futures/logs/archive"
+          - "mv backfill.log backfill_aws.log backfill_retry.log ~/.cache/binance-futures/logs/archive/ 2>/dev/null || true"
+        deliverables:
+          - "~60 KB archived (not deleted)"
+        validation: "ls backfill*.log in project root shows only volume_backfill_overnight.log (if running)"
+
+  - id: "phase-2"
+    name: "Documentation Reference Fixes"
+    status: "pending"
+    duration: "1 hour"
+    risk: "medium"
+    dependencies: []
+    tasks:
+      - name: "Fix CLAUDE.md script references"
+        description: "Update 3 incorrect script paths"
+        file: "CLAUDE.md"
+        changes:
+          - line: 244
+            old: "uv run python scripts/run_backfill.py"
+            new: "uv run python scripts/operations/backfill.py"
+          - line: 426
+            old: "uv run python scripts/run_backfill.py"
+            new: "uv run python scripts/operations/backfill.py"
+          - section: "Quick Start"
+            action: "Update all script references to scripts/operations/"
+        deliverables:
+          - "CLAUDE.md with correct script paths"
+        validation: "grep 'run_backfill.py' CLAUDE.md returns empty (no matches)"
+
+      - name: "Fix README.md script reference"
+        description: "Update 1 incorrect script path"
+        file: "README.md"
+        changes:
+          - line: 41
+            old: "run_backfill_aws.py"
+            new: "scripts/operations/backfill.py"
+        deliverables:
+          - "README.md with correct script path"
+        validation: "grep 'run_backfill_aws.py' README.md returns empty"
+
+      - name: "Fix QUICKSTART.md references"
+        description: "Update 4+ script references"
+        file: "docs/guides/QUICKSTART.md"
+        changes:
+          - "Replace all run_backfill_aws.py → scripts/operations/backfill.py"
+          - "Replace all legacy script mentions → scripts/legacy/backfill_head.py"
+        deliverables:
+          - "QUICKSTART.md with correct paths"
+        validation: "grep -E 'run_backfill_(aws|head_legacy)' docs/guides/QUICKSTART.md returns empty"
+
+      - name: "Fix TROUBLESHOOTING.md references"
+        description: "Update 6+ script references"
+        file: "docs/guides/TROUBLESHOOTING.md"
+        changes:
+          - "Replace all incorrect script paths"
+        deliverables:
+          - "TROUBLESHOOTING.md with correct paths"
+        validation: "All script references validated"
+
+      - name: "Fix BACKUP_RESTORE.md references"
+        description: "Update 2 script references"
+        file: "docs/operations/BACKUP_RESTORE.md"
+        changes:
+          - line: 257
+            old: "run_backfill_aws.py"
+            new: "scripts/operations/backfill.py"
+          - line: 274
+            old: "run_backfill_aws.py"
+            new: "scripts/operations/backfill.py"
+        deliverables:
+          - "BACKUP_RESTORE.md with correct paths"
+        validation: "grep 'run_backfill_aws.py' docs/operations/BACKUP_RESTORE.md returns empty"
+
+      - name: "Fix IMPLEMENTATION_STATUS.md references"
+        description: "Update 3 script references"
+        file: "IMPLEMENTATION_STATUS.md"
+        changes:
+          - line: 244
+            old: "run_backfill.py"
+            new: "scripts/operations/backfill.py"
+          - "Update other references to correct paths"
+        deliverables:
+          - "IMPLEMENTATION_STATUS.md with correct paths"
+        validation: "grep 'run_backfill.py' IMPLEMENTATION_STATUS.md returns empty"
+
+  - id: "phase-3"
+    name: "Documentation Archiving and Legacy Code Removal"
+    status: "pending"
+    duration: "30 minutes"
+    risk: "medium"
+    dependencies: ["phase-2"]
+    tasks:
+      - name: "Delete OVERNIGHT_BACKFILL_GUIDE.md"
+        description: "Remove severely outdated guide (references non-existent scripts, wrong timing)"
+        rationale: |
+          - References scripts that don't exist (start_overnight_backfill.sh, etc.)
+          - Describes deprecated 7.3-hour HEAD-based approach (ADR-0005 replaced with 25-min AWS CLI)
+          - Misleading information is worse than no information
+        commands:
+          - "rm /Users/terryli/eon/binance-futures-availability/OVERNIGHT_BACKFILL_GUIDE.md"
+        deliverables:
+          - "OVERNIGHT_BACKFILL_GUIDE.md deleted"
+        validation: "File no longer exists in project root"
+
+      - name: "Archive IMPLEMENTATION_STATUS.md"
+        description: "Move outdated status tracker to archive"
+        rationale: |
+          - Says v1.0.0 but project is at v1.1.0
+          - Git status snapshot is stale
+          - Development tracking complete
+        commands:
+          - "mkdir -p docs/archive"
+          - "mv IMPLEMENTATION_STATUS.md docs/archive/IMPLEMENTATION_STATUS_v1.0.0_2025-11-14.md"
+        deliverables:
+          - "docs/archive/IMPLEMENTATION_STATUS_v1.0.0_2025-11-14.md"
+        validation: "File moved to archive with timestamp"
+
+      - name: "Delete deprecated backfill script"
+        description: "Remove scripts/legacy/backfill_head.py (documented as obsolete in ADR-0005)"
+        rationale: |
+          - Explicitly deprecated in scripts/legacy/README.md
+          - No active imports (verified via grep)
+          - Replaced by scripts/operations/backfill.py (7.2x faster)
+        commands:
+          - "rm /Users/terryli/eon/binance-futures-availability/scripts/legacy/backfill_head.py"
+        deliverables:
+          - "scripts/legacy/backfill_head.py deleted"
+        validation: |
+          File removed AND scripts/legacy/README.md still documents deprecation
+          (README kept for historical context)
+
+  - id: "phase-4"
+    name: "Validation and Verification"
+    status: "pending"
+    duration: "30 minutes"
+    risk: "low"
+    dependencies: ["phase-1", "phase-2", "phase-3"]
+    tasks:
+      - name: "Run link checker"
+        description: "Verify zero broken documentation links"
+        commands:
+          - "lychee docs/ CLAUDE.md README.md --offline"
+        success_criteria:
+          - "Exit code 0 (no broken links)"
+        validation: "lychee returns 'ℹ Total .... OK'"
+
+      - name: "Verify script path references"
+        description: "Automated check that all referenced scripts exist"
+        commands:
+          - "grep -r \"scripts/\" docs/ CLAUDE.md README.md | sed 's/.*\\(scripts\\/[^\" ]*\\).*/\\1/' | sort -u > /tmp/referenced_scripts.txt"
+          - "while read path; do [ -f \"$path\" ] || echo \"MISSING: $path\"; done < /tmp/referenced_scripts.txt"
+        success_criteria:
+          - "No output (all scripts exist)"
+        validation: "Command returns empty (zero missing scripts)"
+
+      - name: "Run test suite"
+        description: "Ensure no broken imports after cleanup"
+        commands:
+          - "pytest tests/ -v"
+        success_criteria:
+          - "23/23 tests passing"
+          - "No import errors"
+        validation: "pytest exit code 0"
+
+      - name: "Verify daily scheduler unaffected"
+        description: "Confirm automation still running"
+        commands:
+          - "ps aux | grep scheduler | grep -v grep"
+        success_criteria:
+          - "APScheduler daemon process visible"
+          - "OR scheduler.log shows recent activity"
+        validation: "Scheduler process running OR logs confirm scheduled execution"
+
+      - name: "Measure documentation redundancy"
+        description: "Confirm <10% content overlap"
+        commands:
+          - "diff -u CLAUDE.md README.md | wc -l"
+          - "Compare with baseline (before cleanup had 70% overlap)"
+        success_criteria:
+          - "Overlap reduced from 70% to <10%"
+        validation: "diff output significantly smaller than baseline"
+
+success_criteria:
+  documentation:
+    - "Zero broken links (lychee validation passes)"
+    - "All script references point to existing files"
+    - "Content redundancy <10% (measured via diff)"
+    - "6 files updated with correct script paths"
+    - "2 files archived/deleted (OVERNIGHT_BACKFILL_GUIDE.md, IMPLEMENTATION_STATUS.md)"
+
+  code:
+    - "1 deprecated script removed (scripts/legacy/backfill_head.py)"
+    - "scripts/legacy/README.md retained for historical context"
+    - "Active code unchanged (scripts/operations/, src/)"
+    - "Test suite passes (23/23 tests)"
+
+  infrastructure:
+    - "Daily scheduler unaffected (validated running)"
+    - "Production database untouched (~/.cache/binance-futures/)"
+    - "68 MB build artifacts removed"
+    - "Optional: 143 MB dependencies removed (if chosen)"
+
+  observability:
+    - "Clear directory structure (tree scripts/ output readable)"
+    - "Formal retention policies documented in ADR-0008"
+    - "Archive directory created (docs/archive/)"
+
+rollback_plan:
+  if_documentation_broken:
+    - "git revert commits from phases 2-3"
+    - "Restore from docs/archive/ if needed"
+
+  if_tests_fail:
+    - "Investigate failed imports"
+    - "Restore deleted files if necessary (from git history)"
+    - "Re-run cleanup after fixing issues"
+
+  if_scheduler_broken:
+    - "Check scheduler.log for errors"
+    - "Verify HEAD-based modules (s3_vision.py, batch_prober.py) still present"
+    - "Restore from git if accidentally deleted"
+
+risks:
+  - risk: "Might miss some script references during grep"
+    likelihood: "medium"
+    impact: "low"
+    mitigation: "Automated link checker + test suite validation catches most issues"
+
+  - risk: "Accidentally delete code needed for daily automation"
+    likelihood: "very low"
+    impact: "high"
+    mitigation: |
+      Explicit keep list in ADR-0008:
+      - s3_vision.py (HEAD probing, used for daily updates)
+      - batch_prober.py (HEAD parallel probing, used by scheduler)
+      - All scripts/operations/ scripts
+      Phase 4 validates scheduler still running
+
+  - risk: "Documentation becomes inconsistent during editing"
+    likelihood: "low"
+    impact: "medium"
+    mitigation: "Make all edits in single session, validate with grep before committing"
+
+timeline:
+  total_duration: "2.5 hours"
+  breakdown:
+    - "Phase 1 (Build Artifacts): 15 min"
+    - "Phase 2 (Documentation Fixes): 1 hour"
+    - "Phase 3 (Archiving/Deletion): 30 min"
+    - "Phase 4 (Validation): 30 min"
+    - "Buffer for unexpected issues: 15 min"
+
+dependencies:
+  required:
+    - "lychee link checker installed (brew install lychee or cargo install lychee)"
+    - "grep, find, sed available (standard Unix tools)"
+    - "pytest available (uv pip install pytest)"
+
+  optional:
+    - "diff tool for redundancy measurement"
+
+notes:
+  - "Active backfill process (PID 20881-20885) protected - won't be touched"
+  - "Volume backfill logs (volume_backfill_overnight.log) preserved if process running"
+  - "HEAD-based modules (s3_vision.py, batch_prober.py) explicitly kept per ADR-0005"
+  - "Node modules and venv removal is optional (user choice based on reinstall tolerance)"
