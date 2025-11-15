@@ -14,8 +14,8 @@ jobs:
         run: |
           echo "Testing Python inline script..."
 
-          python3 -c "
+          python3 << 'PYTHON'
 import sys
 print('Python version:', sys.version)
 print('Test passed')
-"
+PYTHON
