@@ -8,21 +8,9 @@ on:
   workflow_dispatch:
     inputs:
       update_mode:
-        description: 'Update mode: daily (yesterday only) or backfill (custom range)'
-        required: true
+        description: 'Update mode'
+        required: false
         default: 'daily'
-        type: choice
-        options:
-          - daily
-          - backfill
-      start_date:
-        description: 'Backfill start date (YYYY-MM-DD) - only used if mode=backfill'
-        required: false
-        type: string
-      end_date:
-        description: 'Backfill end date (YYYY-MM-DD) - only used if mode=backfill'
-        required: false
-        type: string
 
 permissions:
   contents: write  # For creating releases and pushing database
