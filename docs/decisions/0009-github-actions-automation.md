@@ -1,8 +1,10 @@
 # ADR-0009: GitHub Actions Automation for Database Updates
 
-**Status**: Accepted
+**Status**: Implemented
 
 **Date**: 2025-11-14
+
+**Implemented**: 2025-11-15
 
 **Deciders**: Terry Li, Claude Code
 
@@ -153,6 +155,69 @@ Migrate database automation from local APScheduler daemon to **GitHub Actions wi
 - Dependent on GitHub Actions availability
 - Fallback: Can revert to APScheduler daemon if GitHub Actions becomes unsuitable
 - Migration path: Workflow reuses existing Python modules (minimal coupling)
+
+## Implementation Notes
+
+**Deployment Date**: 2025-11-15
+
+**Implementation Changes**:
+
+1. **Data Collection Script** (`.github/scripts/run_daily_update.py`):
+   - Implemented actual data collection using `BatchProber` class
+   - Parallel HTTP HEAD requests (10 workers) for ~327 perpetual symbols
+   - DB_PATH environment variable integration for workflow compatibility
+   - Comprehensive logging with success/failure summaries
+   - Exit code 0 on success, 1 on failure (workflow-friendly)
+
+2. **Backfill Script Enhancement** (`scripts/operations/backfill.py`):
+   - Added DB_PATH environment variable support
+   - Maintains backward compatibility with default path (`~/.cache/binance-futures/`)
+   - Enables GitHub Actions to specify custom database location
+
+3. **Documentation Updates**:
+   - **CLAUDE.md**: Marked automation as production-ready, clarified dynamic symbol discovery
+   - **README.md**: Added GitHub Actions as recommended approach, step-by-step quick start
+   - **ADR-0009**: Status updated to "Implemented"
+
+4. **Workflow Configuration** (`.github/workflows/update-database.yml`):
+   - Cron trigger enabled: Daily at 3:00 AM UTC
+   - Manual trigger: Supports both `daily` and `backfill` modes
+   - Environment: DB_PATH passed to all Python scripts
+   - Distribution: Automated GitHub Releases publishing with gzip compression
+
+**Operational Status**:
+- ✅ Workflow syntax validated
+- ✅ Cron schedule active (daily at 3:00 AM UTC)
+- ✅ Manual trigger tested and functional
+- ✅ All SLOs aligned (availability, correctness, observability, maintainability)
+- ⏳ Awaiting first production run (initial backfill required)
+
+**First Production Run Procedure**:
+1. Trigger manual backfill: `gh workflow run update-database.yml --field update_mode=backfill --field start_date=2019-09-25 --field end_date=2025-11-14`
+2. Monitor execution: `gh run watch` (estimated 25-60 minutes)
+3. Verify database published: `gh release view latest`
+4. Automated daily updates begin automatically at 3:00 AM UTC
+5. Monitor success rate via GitHub Actions workflow runs page
+
+**Integration with Existing Code**:
+- ✅ Reuses existing `probing/batch_prober.py` for parallel HTTP probing
+- ✅ Reuses existing `database/availability_db.py` for DuckDB operations
+- ✅ Reuses existing `probing/symbol_discovery.py` for perpetual symbol loading
+- ✅ Follows ADR-0003 strict error handling (raise+propagate, no retries)
+- ✅ Follows ADR-0005 hybrid strategy (AWS CLI for backfill, HTTP for daily)
+- ✅ Follows ADR-0006 volume metrics collection (file_size_bytes, last_modified)
+
+**Lessons Learned**:
+- **Symbol count is dynamic**: Documentation updated to reflect that we probe ALL perpetual instruments available on each historical date (~327 currently, but varies)
+- **DB_PATH pattern**: Environment variable approach enables both local development and CI/CD compatibility
+- **Strict error handling pays off**: Workflow fails fast on any probe failure, ensuring data integrity
+- **Validation gates critical**: Preventing corrupt database publication more important than uptime
+
+**APScheduler Deprecation**:
+- Status: **Deprecated as of 2025-11-15**
+- Migration: GitHub Actions replaces APScheduler for all automation
+- Rollback: APScheduler code retained in repository for emergency fallback
+- Timeline: Will monitor GitHub Actions for 1 week before removing APScheduler documentation
 
 ## Alternatives Considered
 

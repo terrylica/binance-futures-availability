@@ -18,8 +18,10 @@ Usage:
 import argparse
 import datetime
 import logging
+import os
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 from typing import List
 
 from binance_futures_availability.database import AvailabilityDatabase
@@ -175,8 +177,14 @@ def main() -> int:
     logger.info(f"Estimated time: ~{len(symbols) * 4.5 / 60:.0f} minutes")
     logger.info("=" * 60)
 
-    # Connect to database
-    db = AvailabilityDatabase()
+    # Connect to database (respect DB_PATH environment variable if set)
+    db_path = os.environ.get('DB_PATH')
+    if db_path:
+        logger.info(f"Using database from DB_PATH: {db_path}")
+        db = AvailabilityDatabase(db_path=Path(db_path))
+    else:
+        logger.info("Using default database path: ~/.cache/binance-futures/availability.duckdb")
+        db = AvailabilityDatabase()
 
     # Process symbols in parallel
     results = []

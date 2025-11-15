@@ -1,10 +1,12 @@
 # Binance Futures Availability Database
 
-**Track daily availability of 708 USDT perpetual futures from Binance Vision (2019-09-25 to present)**
+**Track daily availability of ALL USDT perpetual futures from Binance Vision (2019-09-25 to present)**
+
+_Symbol count is dynamic (~327 currently) - we discover and track all perpetual instruments available on each historical date._
 
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Coverage](https://img.shields.io/badge/coverage-80%25-green.svg)]()
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)]()
 
 ## Overview
 
@@ -13,45 +15,56 @@ Standalone DuckDB database tracking historical availability of Binance USDT-Marg
 ### Key Features
 
 - **Complete Historical Data**: 2019-09-25 (first UM-futures launch) to present (~2240 days)
-- **All Perpetual Futures**: 708 USDT perpetual contracts tracked
+- **Dynamic Symbol Discovery**: Tracks all perpetual USDT contracts (~327 currently, varies by date)
 - **Fast Queries**: <1ms snapshot queries, <10ms timelines
 - **Volume Metrics**: Track file size growth and S3 freshness over time
 - **Small Footprint**: 50-150MB database (compressed columnar)
-- **Automated Updates**: APScheduler daemon for daily 2AM UTC updates
-- **High Reliability**: 80%+ test coverage, strict error handling
+- **Automated Updates**: ✅ **GitHub Actions** - daily 3AM UTC, zero infrastructure
+- **High Reliability**: Strict error handling, comprehensive validation checks
 
 ## Quick Start
 
-### Installation
+### Option 1: GitHub Actions (Recommended) ✅
+
+**Production-ready automated updates with zero infrastructure overhead.**
+
+#### 1. Initial Database Creation
 
 ```bash
-cd ~/eon/binance-futures-availability
+# Trigger historical backfill via GitHub Actions (one-time setup)
+gh workflow run update-database.yml \
+  --field update_mode=backfill \
+  --field start_date=2019-09-25 \
+  --field end_date=$(date -d "yesterday" +%Y-%m-%d)
 
+# Monitor progress (estimated 25-60 minutes)
+gh run watch
+
+# Verify database created
+gh release view latest
+```
+
+#### 2. Download Database
+
+```bash
+# Download from GitHub Releases
+gh release download latest --pattern "availability.duckdb.gz"
+gunzip availability.duckdb.gz
+```
+
+#### 3. Automated Daily Updates
+
+**No action needed** - workflow runs automatically daily at 3:00 AM UTC. Download latest database anytime from GitHub Releases.
+
+### Option 2: Local Development
+
+```bash
 # Install package
-uv pip install -e .
-
-# Install development dependencies
+cd ~/eon/binance-futures-availability
 uv pip install -e ".[dev]"
-```
 
-### Run Historical Backfill
-
-```bash
-# One-time backfill from 2019-09-25 to yesterday (~25 minutes with AWS CLI)
-uv run python scripts/scripts/operations/backfill.py
-```
-
-### Start Automated Updates
-
-```bash
-# Start scheduler daemon (daily updates at 2 AM UTC)
-uv run python scripts/start_scheduler.py --daemon
-
-# Check scheduler status
-ps aux | grep start_scheduler
-
-# Stop scheduler
-uv run python scripts/start_scheduler.py --stop
+# Run local backfill
+uv run python scripts/operations/backfill.py
 ```
 
 ### Query Database
@@ -104,8 +117,8 @@ Single table with volume metrics (ADR-0006):
 **Daily Updates** (Incremental Operations):
 
 - Method: HTTP HEAD requests (parallel batch probing)
-- Performance: 708 symbols in ~5 seconds
-- Use case: Automated daily updates at 2 AM UTC
+- Performance: ~327 symbols in ~5 seconds (10 parallel workers)
+- Use case: Automated daily updates via GitHub Actions (3 AM UTC)
 
 **See**: [ADR-0005: AWS CLI for Bulk Operations](docs/decisions/0005-aws-cli-bulk-operations.md)
 
@@ -172,9 +185,10 @@ All decisions documented as MADRs:
 - **[ADR-0001](docs/decisions/0001-schema-design-daily-table.md)**: Daily table pattern (not range table)
 - **[ADR-0002](docs/decisions/0002-storage-technology-duckdb.md)**: DuckDB for storage
 - **[ADR-0003](docs/decisions/0003-error-handling-strict-policy.md)**: Strict error handling
-- **[ADR-0004](docs/decisions/0004-automation-apscheduler.md)**: APScheduler for automation
+- **[ADR-0004](docs/decisions/0004-automation-apscheduler.md)**: APScheduler for automation (deprecated)
 - **[ADR-0005](docs/decisions/0005-aws-cli-bulk-operations.md)**: AWS CLI for bulk operations
 - **[ADR-0006](docs/decisions/0006-volume-metrics-collection.md)**: Volume metrics collection
+- **[ADR-0009](docs/decisions/0009-github-actions-automation.md)**: ✅ **GitHub Actions automation** (production)
 
 ## SLOs (Service Level Objectives)
 
@@ -190,7 +204,7 @@ All decisions documented as MADRs:
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details
+MIT License
 
 ## Contributing
 

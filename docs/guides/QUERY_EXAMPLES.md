@@ -298,5 +298,4 @@ HAVING date >= '2024-01-01'
 ## Next Steps
 
 - **[Troubleshooting](TROUBLESHOOTING.md)**: Common issues
-- **[Python API](python-api.md)**: Complete API reference
 - **[Schema Documentation](../schema/query-patterns.schema.json)**: Query pattern specifications

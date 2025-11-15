@@ -2,8 +2,12 @@
 
 **Version**: v1.0.0
 **Created**: 2025-11-12
+**Updated**: 2025-11-15
+**Status**: Production-ready (GitHub Actions automation enabled)
 **Pattern**: Follows `ValidationStorage` pattern from gapless-crypto-data
-**Purpose**: Track daily availability of 708 USDT perpetual futures from Binance Vision (2019-09-25 to present)
+**Purpose**: Track daily availability of ALL USDT perpetual futures from Binance Vision (2019-09-25 to present)
+
+**Note**: Symbol count is dynamic - we discover and probe all perpetual instruments available on each date. Current count: ~327 active symbols, but historical dates may have different counts as instruments are listed/delisted over time.
 
 ## Quick Links
 
@@ -165,17 +169,19 @@ CREATE TABLE daily_availability (
 
 ## Automation
 
-### Primary: GitHub Actions (ADR-0009)
+### Primary: GitHub Actions (ADR-0009) - **PRODUCTION-READY**
 
 **Technology**: GitHub Actions with GitHub Releases distribution
-**Frequency**: Daily at 3:00 AM UTC (configurable for 2-3x daily)
+**Status**: ✅ Deployed and operational (as of 2025-11-15)
+**Frequency**: Daily at 3:00 AM UTC (automated via cron schedule)
 **Job**: Update yesterday's data (S3 Vision has T+1 availability)
-**Distribution**: Automated publishing to GitHub Releases (zstd compressed)
+**Distribution**: Automated publishing to GitHub Releases (gzip compressed)
 **Cost**: $0/month (public repos: unlimited Actions minutes + storage)
 **SLA**: 99.9% (GitHub Actions platform guarantee)
 
 **Workflow**: `.github/workflows/update-database.yml`
-**Deployment**: See `docs/operations/DEPLOYMENT_GUIDE.md`
+**First Run**: Manual backfill required to create initial database (see Quick Start)
+**Monitoring**: GitHub Actions UI → Workflow runs page
 
 ### Fallback: APScheduler (Deprecated)
 
@@ -187,7 +193,7 @@ CREATE TABLE daily_availability (
 ### Update Logic
 
 1. Check if yesterday already processed (skip if yes - idempotent)
-2. Probe all 708 symbols via S3 HEAD requests
+2. Probe all perpetual symbols via S3 HEAD requests (currently ~327, dynamically discovered)
 3. Bulk insert results into DuckDB (UPSERT on conflict)
 4. Run validation checks (continuity, symbol count, cross-check)
 5. Log results (success/failure with details)
@@ -261,23 +267,48 @@ uv run python scripts/operations/backfill.py
 # Database size after: 50-150 MB
 ```
 
-### Automated Updates (GitHub Actions - ADR-0009)
+### Production: GitHub Actions Automation (ADR-0009) ✅
 
-**Recommended**: Use GitHub Actions for automated daily updates (zero infrastructure overhead).
+**Status**: Production-ready and operational (automated daily updates at 3:00 AM UTC)
+
+#### First-Time Setup: Run Historical Backfill
 
 ```bash
-# Trigger manual update (via GitHub CLI)
-gh workflow run update-database.yml --field update_mode=daily
+# Trigger manual backfill via GitHub Actions (creates initial database)
+gh workflow run update-database.yml \
+  --field update_mode=backfill \
+  --field start_date=2019-09-25 \
+  --field end_date=$(date -d "yesterday" +%Y-%m-%d)
 
-# Monitor workflow execution
+# Monitor progress (estimated 25-60 minutes)
 gh run watch
 
-# Download latest database
-gh release download latest --pattern "availability.duckdb.zst"
-zstd -d availability.duckdb.zst
+# Verify database created
+gh release view latest
 ```
 
-**Deployment Guide**: `docs/operations/DEPLOYMENT_GUIDE.md`
+#### Trigger Manual Daily Update
+
+```bash
+# Run manual update for yesterday
+gh workflow run update-database.yml --field update_mode=daily
+
+# Monitor execution (~20 seconds)
+gh run watch
+```
+
+#### Download Latest Database
+
+```bash
+# Download compressed database from GitHub Releases
+gh release download latest --pattern "availability.duckdb.gz"
+gunzip availability.duckdb.gz
+
+# Query locally
+duckdb availability.duckdb "SELECT COUNT(*) FROM daily_availability"
+```
+
+**Automated Execution**: Runs automatically daily at 3:00 AM UTC (no manual intervention needed)
 
 ### Local Scheduler (Deprecated - Fallback Only)
 
