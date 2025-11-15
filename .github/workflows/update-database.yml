@@ -270,7 +270,7 @@ with open('stats.json', 'w') as f:
           AVAILABILITY_PCT: ${{ steps.stats.outputs.availability_pct }}
           TRIGGER: ${{ github.event_name }}
           UPDATE_MODE: ${{ github.event_name == 'schedule' && 'daily' || inputs.update_mode }}
-          VALIDATION_STATUS: ${{ steps.validate.outputs.validation_passed == 'true' && '✅ Passed' || '❌ Failed' }}
+          VALIDATION_STATUS: ${{ steps.validate.outputs.validation_passed == 'true' && 'Passed' || 'Failed' }}
           REPO: ${{ github.repository }}
         run: |
           cat > release_notes.md << EOF
@@ -328,7 +328,7 @@ with open('stats.json', 'w') as f:
       - name: Create GitHub Actions summary
         if: always()
         env:
-          VALIDATION_STATUS: ${{ steps.validate.outputs.validation_passed == 'true' && '✅ Passed' || '❌ Failed' }}
+          VALIDATION_STATUS: ${{ steps.validate.outputs.validation_passed == 'true' && 'Passed' || 'Failed' }}
           LATEST_DATE: ${{ steps.stats.outputs.latest_date }}
           TOTAL_RECORDS: ${{ steps.stats.outputs.total_records }}
           AVAILABILITY_PCT: ${{ steps.stats.outputs.availability_pct }}
