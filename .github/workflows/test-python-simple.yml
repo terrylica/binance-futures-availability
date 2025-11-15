@@ -14,3 +14,10 @@ jobs:
           echo "Workflow is working"
           python3 --version
           python3 -c "print('Hello')"
+
+      - name: Multi-line Python
+        run: |
+          python3 -c "
+import sys
+print(sys.version)
+"
