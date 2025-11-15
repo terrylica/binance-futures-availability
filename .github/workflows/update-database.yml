@@ -124,12 +124,28 @@ jobs:
           $CMD
 
       # ============================================================================
+      # CHECK: Verify database exists after update/backfill
+      # ============================================================================
+
+      - name: Check if database exists
+        id: check_db
+        run: |
+          if [ -f "$DB_PATH" ]; then
+            echo "✅ Database exists: $(ls -lh "$DB_PATH" | awk '{print $5}')"
+            echo "db_ready=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Database not found at $DB_PATH"
+            echo "db_ready=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      # ============================================================================
       # VALIDATE: Run all validation checks
       # ============================================================================
 
       - name: Run validation checks
         id: validate
-        if: steps.download_db.outputs.db_exists == 'true'
+        if: steps.check_db.outputs.db_ready == 'true'
         run: |
           echo "Running database validation..."
           uv run python scripts/operations/validate.py --verbose
@@ -146,7 +162,7 @@ jobs:
 
       - name: Generate database statistics
         id: stats
-        if: steps.download_db.outputs.db_exists == 'true'
+        if: steps.check_db.outputs.db_ready == 'true'
         run: |
           echo "Generating database statistics..."
 
@@ -176,7 +192,7 @@ jobs:
       # ============================================================================
 
       - name: Compress database for distribution
-        if: steps.download_db.outputs.db_exists == 'true'
+        if: steps.check_db.outputs.db_ready == 'true'
         run: |
           echo "Compressing database..."
           cd $(dirname "$DB_PATH")
@@ -185,7 +201,7 @@ jobs:
 
       - name: Generate release notes
         id: release_notes
-        if: steps.download_db.outputs.db_exists == 'true'
+        if: steps.check_db.outputs.db_ready == 'true'
         env:
           LATEST_DATE: ${{ steps.stats.outputs.latest_date }}
           TOTAL_RECORDS: ${{ steps.stats.outputs.total_records }}
@@ -229,7 +245,7 @@ jobs:
           echo "release_notes_file=release_notes.md" >> $GITHUB_OUTPUT
 
       - name: Create/Update release
-        if: steps.download_db.outputs.db_exists == 'true'
+        if: steps.check_db.outputs.db_ready == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
