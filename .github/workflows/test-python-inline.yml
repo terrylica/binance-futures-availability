@@ -1,0 +1,21 @@
+name: Test Python Inline Script
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Test inline Python
+        run: |
+          echo "Testing Python inline script..."
+
+          python3 -c "
+import sys
+print(f'Python version: {sys.version}')
+print('Test passed')
+"
