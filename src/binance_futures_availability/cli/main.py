@@ -9,7 +9,6 @@ import sys
 
 from binance_futures_availability.__version__ import __version__
 from binance_futures_availability.cli.query import add_query_commands
-from binance_futures_availability.cli.update import add_update_commands
 
 
 def main() -> int:
@@ -20,15 +19,14 @@ def main() -> int:
         Exit code (0=success, non-zero=failure)
 
     Commands:
-        - update: Manual updates and backfill
         - query: Query database
-        - validate: Run validation checks
-        - scheduler: Manage APScheduler daemon
 
     Example:
-        $ binance-futures-availability update --date 2024-01-15
         $ binance-futures-availability query snapshot 2024-01-15
-        $ binance-futures-availability validate continuity
+        $ binance-futures-availability query timeline BTCUSDT
+
+    Note:
+        For data collection, use GitHub Actions workflow or scripts/operations/ directly.
     """
     parser = argparse.ArgumentParser(
         prog="binance-futures-availability",
@@ -51,7 +49,6 @@ def main() -> int:
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # Add command groups
-    add_update_commands(subparsers)
     add_query_commands(subparsers)
 
     # Parse arguments
