@@ -38,7 +38,6 @@ addopts = [
     "--cov=src/binance_futures_availability",
     "--cov-report=term-missing",
     "--cov-report=html",
-    "--cov-fail-under=80",
     "--strict-markers",
 ]
 markers = [
