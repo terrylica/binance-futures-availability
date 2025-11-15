@@ -1,0 +1,15 @@
+name: Test Python Simple
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Echo test
+        run: |
+          echo "Workflow is working"
+          python3 --version
