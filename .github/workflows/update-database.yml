@@ -91,7 +91,7 @@ jobs:
             echo "db_exists=true" >> $GITHUB_OUTPUT
 
             # Query database stats
-            uv run python -c "
+            uv run python << 'PYTHON'
 import duckdb
 conn = duckdb.connect('$DB_PATH', read_only=True)
 result = conn.execute('''
@@ -104,7 +104,7 @@ result = conn.execute('''
 ''').fetchone()
 conn.close()
 print(f'Database stats: {result[0]} to {result[1]}, {result[2]} dates, {result[3]} symbols')
-"
+PYTHON
           else
             echo "No existing database, will create new one"
             echo "db_exists=false" >> $GITHUB_OUTPUT
@@ -122,7 +122,7 @@ print(f'Database stats: {result[0]} to {result[1]}, {result[2]} dates, {result[3
           echo "Running daily update for yesterday's data..."
 
           # Run update for yesterday
-          uv run python -c "
+          uv run python << 'PYTHON'
 import datetime
 from binance_futures_availability.scheduler.daily_update import DailyUpdateScheduler
 from binance_futures_availability.scheduler.notifications import setup_scheduler_logging
@@ -134,7 +134,7 @@ scheduler = DailyUpdateScheduler(db_path='$DB_PATH')
 scheduler.run_manual_update(date=yesterday)
 
 logger.info(f'Daily update completed for {yesterday}')
-"
+PYTHON
 
       - name: Run backfill (manual backfill mode)
         if: github.event_name == 'workflow_dispatch' && inputs.update_mode == 'backfill'
@@ -178,7 +178,7 @@ logger.info(f'Daily update completed for {yesterday}')
           echo "Generating database statistics..."
 
           # Query comprehensive stats
-          uv run python -c "
+          uv run python << 'PYTHON'
 import duckdb
 import json
 
@@ -231,7 +231,7 @@ with open('stats.json', 'w') as f:
         'available_count': overall[5],
         'availability_pct': overall[6]
     }, f)
-"
+PYTHON
 
           # Read stats for GitHub output
           LATEST_DATE=$(cat stats.json | jq -r '.latest_date')
