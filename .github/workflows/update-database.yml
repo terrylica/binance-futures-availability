@@ -57,12 +57,8 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install AWS CLI (for bulk operations)
-        run: |
-          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-          unzip -q awscliv2.zip
-          sudo ./aws/install
-          aws --version
+      - name: Verify AWS CLI (for bulk operations)
+        run: aws --version
 
       - name: Install project dependencies
         run: |
