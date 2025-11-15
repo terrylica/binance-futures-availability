@@ -176,6 +176,7 @@ jobs:
       # ============================================================================
 
       - name: Compress database for distribution
+        if: steps.download_db.outputs.db_exists == 'true'
         run: |
           echo "Compressing database..."
           cd $(dirname "$DB_PATH")
@@ -184,6 +185,7 @@ jobs:
 
       - name: Generate release notes
         id: release_notes
+        if: steps.download_db.outputs.db_exists == 'true'
         env:
           LATEST_DATE: ${{ steps.stats.outputs.latest_date }}
           TOTAL_RECORDS: ${{ steps.stats.outputs.total_records }}
@@ -227,6 +229,7 @@ jobs:
           echo "release_notes_file=release_notes.md" >> $GITHUB_OUTPUT
 
       - name: Create/Update release
+        if: steps.download_db.outputs.db_exists == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
