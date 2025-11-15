@@ -27,7 +27,6 @@ from typing import List
 from binance_futures_availability.database import AvailabilityDatabase
 from binance_futures_availability.probing.aws_s3_lister import AWSS3Lister
 from binance_futures_availability.probing.symbol_discovery import load_discovered_symbols
-from binance_futures_availability.scheduler.notifications import setup_scheduler_logging
 
 
 def backfill_symbol(
@@ -143,7 +142,12 @@ def main() -> int:
     args = parser.parse_args()
 
     # Setup logging
-    logger = setup_scheduler_logging(level=logging.INFO)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+    logger = logging.getLogger(__name__)
 
     # Parse dates
     start_date = (
