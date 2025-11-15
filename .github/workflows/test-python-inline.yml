@@ -16,6 +16,6 @@ jobs:
 
           python3 -c "
 import sys
-print(f'Python version: {sys.version}')
+print('Python version:', sys.version)
 print('Test passed')
 "
