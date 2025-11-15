@@ -252,35 +252,43 @@ with open('stats.json', 'w') as f:
 
       - name: Generate release notes
         id: release_notes
+        env:
+          LATEST_DATE: ${{ steps.stats.outputs.latest_date }}
+          TOTAL_RECORDS: ${{ steps.stats.outputs.total_records }}
+          AVAILABILITY_PCT: ${{ steps.stats.outputs.availability_pct }}
+          TRIGGER: ${{ github.event_name }}
+          UPDATE_MODE: ${{ github.event_name == 'schedule' && 'daily' || inputs.update_mode }}
+          VALIDATION_STATUS: ${{ steps.validate.outputs.validation_passed == 'true' && '✅ Passed' || '❌ Failed' }}
+          REPO: ${{ github.repository }}
         run: |
-          cat > release_notes.md << 'EOF'
+          cat > release_notes.md << EOF
           ## Database Update - $(date -u +"%Y-%m-%d %H:%M UTC")
 
           ### Statistics
-          - **Latest Date**: ${{ steps.stats.outputs.latest_date }}
-          - **Total Records**: ${{ steps.stats.outputs.total_records }}
-          - **Availability**: ${{ steps.stats.outputs.availability_pct }}%
+          - **Latest Date**: $LATEST_DATE
+          - **Total Records**: $TOTAL_RECORDS
+          - **Availability**: $AVAILABILITY_PCT%
 
           ### Update Details
-          - **Trigger**: ${{ github.event_name }}
-          - **Mode**: ${{ github.event_name == 'schedule' && 'daily' || inputs.update_mode }}
-          - **Validation**: ${{ steps.validate.outputs.validation_passed == 'true' && '✅ Passed' || '❌ Failed' }}
+          - **Trigger**: $TRIGGER
+          - **Mode**: $UPDATE_MODE
+          - **Validation**: $VALIDATION_STATUS
 
           ### Files
-          - `availability.duckdb` - Uncompressed database (50-150 MB)
-          - `availability.duckdb.gz` - Compressed database (recommended for download)
+          - \`availability.duckdb\` - Uncompressed database (50-150 MB)
+          - \`availability.duckdb.gz\` - Compressed database (recommended for download)
 
           ### Usage
-          ```bash
+          \`\`\`bash
           # Download and extract
-          wget https://github.com/${{ github.repository }}/releases/download/latest/availability.duckdb.gz
+          wget https://github.com/$REPO/releases/download/latest/availability.duckdb.gz
           gunzip availability.duckdb.gz
 
           # Query with Python
           import duckdb
           conn = duckdb.connect('availability.duckdb', read_only=True)
           result = conn.execute('SELECT * FROM daily_availability LIMIT 10').fetchall()
-          ```
+          \`\`\`
           EOF
 
           # Output for GitHub summary
@@ -307,24 +315,32 @@ with open('stats.json', 'w') as f:
 
       - name: Create GitHub Actions summary
         if: always()
+        env:
+          VALIDATION_STATUS: ${{ steps.validate.outputs.validation_passed == 'true' && '✅ Passed' || '❌ Failed' }}
+          LATEST_DATE: ${{ steps.stats.outputs.latest_date }}
+          TOTAL_RECORDS: ${{ steps.stats.outputs.total_records }}
+          AVAILABILITY_PCT: ${{ steps.stats.outputs.availability_pct }}
+          TRIGGER: ${{ github.event_name }}
+          RUN_ID: ${{ github.run_id }}
+          REPO: ${{ github.repository }}
         run: |
-          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          cat >> $GITHUB_STEP_SUMMARY << EOF
           # Database Update Summary
 
           ## Status
-          - **Validation**: ${{ steps.validate.outputs.validation_passed == 'true' && '✅ Passed' || '❌ Failed' }}
-          - **Latest Date**: ${{ steps.stats.outputs.latest_date }}
-          - **Total Records**: ${{ steps.stats.outputs.total_records }}
-          - **Availability**: ${{ steps.stats.outputs.availability_pct }}%
+          - **Validation**: $VALIDATION_STATUS
+          - **Latest Date**: $LATEST_DATE
+          - **Total Records**: $TOTAL_RECORDS
+          - **Availability**: $AVAILABILITY_PCT%
 
           ## Workflow Details
-          - **Trigger**: ${{ github.event_name }}
-          - **Run ID**: ${{ github.run_id }}
+          - **Trigger**: $TRIGGER
+          - **Run ID**: $RUN_ID
           - **Timestamp**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
 
           ## Next Steps
-          - Database published to [latest release](https://github.com/${{ github.repository }}/releases/tag/latest)
-          - Download: `wget https://github.com/${{ github.repository }}/releases/download/latest/availability.duckdb.gz`
+          - Database published to [latest release](https://github.com/$REPO/releases/tag/latest)
+          - Download: \`wget https://github.com/$REPO/releases/download/latest/availability.duckdb.gz\`
           EOF
 
       # ============================================================================
