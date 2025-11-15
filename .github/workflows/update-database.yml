@@ -1,0 +1,350 @@
+name: Update Binance Futures Availability Database
+
+# Run daily at 3:00 AM UTC (1 hour after S3 Vision data becomes available at 2:00 AM)
+# Also allow manual triggering for gap-filling or testing
+on:
+  schedule:
+    - cron: '0 3 * * *'  # Daily at 3:00 AM UTC
+  workflow_dispatch:
+    inputs:
+      update_mode:
+        description: 'Update mode: daily (yesterday only) or backfill (custom range)'
+        required: true
+        default: 'daily'
+        type: choice
+        options:
+          - daily
+          - backfill
+      start_date:
+        description: 'Backfill start date (YYYY-MM-DD) - only used if mode=backfill'
+        required: false
+        type: string
+      end_date:
+        description: 'Backfill end date (YYYY-MM-DD) - only used if mode=backfill'
+        required: false
+        type: string
+
+permissions:
+  contents: write  # For creating releases and pushing database
+  pull-requests: write  # For creating PR comments (optional notifications)
+
+jobs:
+  update-database:
+    runs-on: ubuntu-latest
+
+    env:
+      DB_PATH: ${{ github.workspace }}/.cache/binance-futures/availability.duckdb
+      PYTHON_VERSION: '3.12'
+
+    steps:
+      # ============================================================================
+      # SETUP: Environment and Dependencies
+      # ============================================================================
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for git operations
+
+      - name: Install uv (Python package manager)
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install AWS CLI (for bulk operations)
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip -q awscliv2.zip
+          sudo ./aws/install
+          aws --version
+
+      - name: Install project dependencies
+        run: |
+          uv pip install --system -e ".[dev]"
+
+      # ============================================================================
+      # RESTORE: Download existing database from latest release
+      # ============================================================================
+
+      - name: Download existing database
+        id: download_db
+        run: |
+          # Create cache directory
+          mkdir -p $(dirname "$DB_PATH")
+
+          # Try to download latest release asset
+          gh release download latest \
+            --pattern "availability.duckdb" \
+            --output "$DB_PATH" \
+            --clobber \
+            2>/dev/null || echo "No existing database found, starting fresh"
+
+          # Check if database exists and show info
+          if [ -f "$DB_PATH" ]; then
+            echo "Database found: $(ls -lh "$DB_PATH" | awk '{print $5}')"
+            echo "db_exists=true" >> $GITHUB_OUTPUT
+
+            # Query database stats
+            uv run python -c "
+import duckdb
+conn = duckdb.connect('$DB_PATH', read_only=True)
+result = conn.execute('''
+  SELECT
+    MIN(date) as earliest_date,
+    MAX(date) as latest_date,
+    COUNT(DISTINCT date) as total_dates,
+    COUNT(DISTINCT symbol) as total_symbols
+  FROM daily_availability
+''').fetchone()
+conn.close()
+print(f'Database stats: {result[0]} to {result[1]}, {result[2]} dates, {result[3]} symbols')
+"
+          else
+            echo "No existing database, will create new one"
+            echo "db_exists=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ============================================================================
+      # UPDATE: Run daily update or backfill based on trigger
+      # ============================================================================
+
+      - name: Run daily update (scheduled or manual daily mode)
+        if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.update_mode == 'daily')
+        run: |
+          echo "Running daily update for yesterday's data..."
+
+          # Run update for yesterday
+          uv run python -c "
+import datetime
+from binance_futures_availability.scheduler.daily_update import DailyUpdateScheduler
+from binance_futures_availability.scheduler.notifications import setup_scheduler_logging
+
+logger = setup_scheduler_logging()
+yesterday = datetime.date.today() - datetime.timedelta(days=1)
+
+scheduler = DailyUpdateScheduler(db_path='$DB_PATH')
+scheduler.run_manual_update(date=yesterday)
+
+logger.info(f'Daily update completed for {yesterday}')
+"
+
+      - name: Run backfill (manual backfill mode)
+        if: github.event_name == 'workflow_dispatch' && inputs.update_mode == 'backfill'
+        run: |
+          echo "Running backfill mode..."
+
+          START_DATE="${{ inputs.start_date }}"
+          END_DATE="${{ inputs.end_date }}"
+
+          # Build command with optional date arguments
+          CMD="uv run python scripts/operations/backfill.py"
+          [ -n "$START_DATE" ] && CMD="$CMD --start-date $START_DATE"
+          [ -n "$END_DATE" ] && CMD="$CMD --end-date $END_DATE"
+
+          echo "Executing: $CMD"
+          $CMD
+
+      # ============================================================================
+      # VALIDATE: Run all validation checks
+      # ============================================================================
+
+      - name: Run validation checks
+        id: validate
+        run: |
+          echo "Running database validation..."
+          uv run python scripts/operations/validate.py --verbose
+
+          # Capture validation results
+          if [ $? -eq 0 ]; then
+            echo "validation_passed=true" >> $GITHUB_OUTPUT
+            echo "✅ All validation checks passed"
+          else
+            echo "validation_passed=false" >> $GITHUB_OUTPUT
+            echo "❌ Validation checks failed"
+            exit 1
+          fi
+
+      - name: Generate database statistics
+        id: stats
+        run: |
+          echo "Generating database statistics..."
+
+          # Query comprehensive stats
+          uv run python -c "
+import duckdb
+import json
+
+conn = duckdb.connect('$DB_PATH', read_only=True)
+
+# Overall stats
+overall = conn.execute('''
+  SELECT
+    MIN(date) as earliest_date,
+    MAX(date) as latest_date,
+    COUNT(DISTINCT date) as total_dates,
+    COUNT(DISTINCT symbol) as total_symbols,
+    COUNT(*) as total_records,
+    SUM(CASE WHEN available THEN 1 ELSE 0 END) as available_count,
+    ROUND(AVG(CASE WHEN available THEN 1.0 ELSE 0.0 END) * 100, 2) as availability_pct
+  FROM daily_availability
+''').fetchone()
+
+# Recent 7 days
+recent = conn.execute('''
+  SELECT date, COUNT(DISTINCT symbol) as symbol_count
+  FROM daily_availability
+  WHERE date >= CURRENT_DATE - INTERVAL 7 DAYS
+  GROUP BY date
+  ORDER BY date DESC
+''').fetchall()
+
+conn.close()
+
+# Print stats
+print('Overall Statistics:')
+print(f'  Date Range: {overall[0]} to {overall[1]}')
+print(f'  Total Dates: {overall[2]}')
+print(f'  Total Symbols: {overall[3]}')
+print(f'  Total Records: {overall[4]:,}')
+print(f'  Available: {overall[5]:,} ({overall[6]}%)')
+print()
+print('Recent 7 Days:')
+for date, count in recent:
+    print(f'  {date}: {count} symbols')
+
+# Export for GitHub summary
+with open('stats.json', 'w') as f:
+    json.dump({
+        'earliest_date': str(overall[0]),
+        'latest_date': str(overall[1]),
+        'total_dates': overall[2],
+        'total_symbols': overall[3],
+        'total_records': overall[4],
+        'available_count': overall[5],
+        'availability_pct': overall[6]
+    }, f)
+"
+
+          # Read stats for GitHub output
+          LATEST_DATE=$(cat stats.json | jq -r '.latest_date')
+          TOTAL_RECORDS=$(cat stats.json | jq -r '.total_records')
+          AVAILABILITY_PCT=$(cat stats.json | jq -r '.availability_pct')
+
+          echo "latest_date=$LATEST_DATE" >> $GITHUB_OUTPUT
+          echo "total_records=$TOTAL_RECORDS" >> $GITHUB_OUTPUT
+          echo "availability_pct=$AVAILABILITY_PCT" >> $GITHUB_OUTPUT
+
+      # ============================================================================
+      # TEST: Run pytest to ensure code quality
+      # ============================================================================
+
+      - name: Run tests (excluding integration tests)
+        run: |
+          echo "Running unit tests..."
+          uv run pytest -m "not integration" --cov-report=term --cov-fail-under=80
+
+      # ============================================================================
+      # PUBLISH: Create release and upload database
+      # ============================================================================
+
+      - name: Compress database for distribution
+        run: |
+          echo "Compressing database..."
+          cd $(dirname "$DB_PATH")
+          gzip -c availability.duckdb > availability.duckdb.gz
+          ls -lh availability.duckdb*
+
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          cat > release_notes.md << 'EOF'
+          ## Database Update - $(date -u +"%Y-%m-%d %H:%M UTC")
+
+          ### Statistics
+          - **Latest Date**: ${{ steps.stats.outputs.latest_date }}
+          - **Total Records**: ${{ steps.stats.outputs.total_records }}
+          - **Availability**: ${{ steps.stats.outputs.availability_pct }}%
+
+          ### Update Details
+          - **Trigger**: ${{ github.event_name }}
+          - **Mode**: ${{ github.event_name == 'schedule' && 'daily' || inputs.update_mode }}
+          - **Validation**: ${{ steps.validate.outputs.validation_passed == 'true' && '✅ Passed' || '❌ Failed' }}
+
+          ### Files
+          - `availability.duckdb` - Uncompressed database (50-150 MB)
+          - `availability.duckdb.gz` - Compressed database (recommended for download)
+
+          ### Usage
+          ```bash
+          # Download and extract
+          wget https://github.com/${{ github.repository }}/releases/download/latest/availability.duckdb.gz
+          gunzip availability.duckdb.gz
+
+          # Query with Python
+          import duckdb
+          conn = duckdb.connect('availability.duckdb', read_only=True)
+          result = conn.execute('SELECT * FROM daily_availability LIMIT 10').fetchall()
+          ```
+          EOF
+
+          # Output for GitHub summary
+          echo "release_notes_file=release_notes.md" >> $GITHUB_OUTPUT
+
+      - name: Create/Update release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest Database Snapshot
+          body_path: release_notes.md
+          files: |
+            ${{ github.workspace }}/.cache/binance-futures/availability.duckdb
+            ${{ github.workspace }}/.cache/binance-futures/availability.duckdb.gz
+          draft: false
+          prerelease: false
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ============================================================================
+      # NOTIFY: Post summary to GitHub Actions summary
+      # ============================================================================
+
+      - name: Create GitHub Actions summary
+        if: always()
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          # Database Update Summary
+
+          ## Status
+          - **Validation**: ${{ steps.validate.outputs.validation_passed == 'true' && '✅ Passed' || '❌ Failed' }}
+          - **Latest Date**: ${{ steps.stats.outputs.latest_date }}
+          - **Total Records**: ${{ steps.stats.outputs.total_records }}
+          - **Availability**: ${{ steps.stats.outputs.availability_pct }}%
+
+          ## Workflow Details
+          - **Trigger**: ${{ github.event_name }}
+          - **Run ID**: ${{ github.run_id }}
+          - **Timestamp**: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+
+          ## Next Steps
+          - Database published to [latest release](https://github.com/${{ github.repository }}/releases/tag/latest)
+          - Download: `wget https://github.com/${{ github.repository }}/releases/download/latest/availability.duckdb.gz`
+          EOF
+
+      # ============================================================================
+      # CLEANUP: Remove temporary files
+      # ============================================================================
+
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -f stats.json release_notes.md awscliv2.zip
+          rm -rf aws/

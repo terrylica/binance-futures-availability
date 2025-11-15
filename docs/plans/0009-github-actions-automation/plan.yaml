@@ -1,0 +1,453 @@
+info:
+  title: "GitHub Actions Automation for Database Updates"
+  version: "1.0.0"
+  status: "proposed"
+  created: "2025-11-14"
+  x-adr-id: "0009"
+  x-adr-ref: "docs/decisions/0009-github-actions-automation.md"
+  description: |
+    Migration from local APScheduler daemon to GitHub Actions for automated
+    database updates with GitHub Releases distribution. Eliminates infrastructure
+    overhead while providing 99.9% SLA and built-in distribution.
+
+slos:
+  availability:
+    target: "95%"
+    metric: "Workflow success rate for scheduled runs"
+    measurement: |
+      GitHub Actions workflow runs page → Filter by scheduled trigger
+      Success rate = (successful runs / total runs) × 100%
+    current: "N/A (not yet deployed)"
+
+  correctness:
+    target: ">95%"
+    metric: "Validation check pass rate and API cross-check match"
+    measurement: |
+      1. Continuity check: No missing dates in database
+      2. Completeness check: 100-700 symbols per date
+      3. API cross-check: >95% match with Binance exchangeInfo API
+      All checks logged in workflow output
+    current: "100% (existing validation logic reused)"
+
+  observability:
+    target: "100%"
+    metric: "All workflow failures logged with full context"
+    measurement: |
+      GitHub Actions logs include:
+      - Error type and stack trace
+      - Failed validation check details
+      - Database state at failure time
+      - Job duration and resource usage
+    current: "N/A (not yet deployed)"
+
+  maintainability:
+    target: "Zero manual intervention"
+    metric: "Infrastructure management overhead"
+    measurement: |
+      1. No server provisioning required
+      2. No process monitoring required
+      3. No manual restarts required
+      4. All configuration in version-controlled YAML
+    current: "N/A (not yet deployed)"
+
+architecture:
+  workflow_triggers:
+    - type: "schedule"
+      description: "Daily at 3:00 AM UTC (configurable for 2-3x daily)"
+      cron: "0 3 * * *"
+
+    - type: "workflow_dispatch"
+      description: "Manual trigger with backfill support"
+      inputs:
+        - name: "update_mode"
+          options: ["daily", "backfill"]
+        - name: "date"
+          description: "Specific date to update (YYYY-MM-DD)"
+
+    - type: "push"
+      description: "Test workflow on non-main branches"
+      branches: ["test-ci", "ci-*"]
+
+  pipeline_stages:
+    - name: "setup"
+      duration: "1-2 min"
+      description: "Install Python 3.12, uv, AWS CLI, project dependencies"
+      modules: []
+
+    - name: "restore"
+      duration: "30 sec"
+      description: "Download existing database from GitHub Releases"
+      modules: []
+      fallback: "Create new database if first run"
+
+    - name: "update"
+      duration: "5-30 sec"
+      description: "Execute daily update or backfill"
+      modules:
+        - "scheduler/daily_update.py"
+        - "probing/s3_vision.py"
+        - "probing/batch_prober.py"
+        - "database/availability_db.py"
+
+    - name: "validate"
+      duration: "5-10 sec"
+      description: "Run continuity, completeness, API cross-checks"
+      modules:
+        - "validation/availability_validator.py"
+      gates:
+        - "Continuity check must pass"
+        - "Completeness check must pass (100-700 symbols)"
+        - "API cross-check must pass (>95% match)"
+
+    - name: "test"
+      duration: "1-2 min"
+      description: "Execute pytest suite with coverage requirements"
+      modules: ["tests/"]
+      gates:
+        - "All tests must pass (23 tests)"
+        - "Coverage must be >80%"
+
+    - name: "publish"
+      duration: "5-10 sec"
+      description: "Compress database (zstd) and upload to GitHub Releases"
+      modules: []
+      outputs:
+        - "availability.duckdb.zst (41 MB compressed)"
+        - "availability.duckdb.sha256 (checksum)"
+
+    - name: "notify"
+      duration: "1 sec"
+      description: "Post summary to workflow output"
+      modules: []
+      outputs:
+        - "Database statistics (rows, dates, symbols)"
+        - "Workflow duration"
+
+  distribution:
+    strategy: "GitHub Releases"
+    format: "zstd compressed"
+    versioning: "Date-based tags (daily-YYYY-MM-DD)"
+    latest_tag: "latest (points to most recent)"
+    retention: "30 days (automated cleanup)"
+    checksum: "SHA256 for integrity verification"
+
+  error_handling:
+    policy: "Strict raise+propagate (ADR-0003)"
+    retries: "None in workflow (GitHub Actions scheduler retries next cycle)"
+    validation_gates: "Prevent corrupt database publication"
+    notifications: "GitHub Actions UI + optional email/Slack"
+
+phases:
+  - id: "phase-1"
+    name: "Preparation"
+    status: "pending"
+    duration: "30 minutes"
+    risk: "low"
+    deliverables:
+      - name: "GitHub Actions workflow file"
+        path: ".github/workflows/update-database.yml"
+        description: "Production-ready workflow copied from prototype"
+
+      - name: "Supporting documentation"
+        path: "docs/operations/GITHUB_ACTIONS.md"
+        description: "Setup, usage, and troubleshooting guide"
+
+      - name: "Local testing script"
+        path: "scripts/test-workflow-locally.sh"
+        description: "Simulates all workflow steps for pre-deployment testing"
+
+    tasks:
+      - description: "Copy prototype workflow from /tmp/github-actions-database-automation/"
+        command: "cp /tmp/github-actions-database-automation/prototype-workflow.yml .github/workflows/update-database.yml"
+
+      - description: "Adapt workflow to project structure"
+        changes:
+          - "Update Python version to 3.12+"
+          - "Configure uv package manager"
+          - "Set database path to ~/.cache/binance-futures/"
+
+      - description: "Copy supporting documentation"
+        command: "cp /tmp/github-actions-database-automation/SETUP.md docs/operations/GITHUB_ACTIONS.md"
+
+      - description: "Copy local testing script"
+        command: "cp /tmp/github-actions-database-automation/test-workflow-locally.sh scripts/"
+
+    validation:
+      - "Workflow file exists at .github/workflows/update-database.yml"
+      - "Documentation exists at docs/operations/GITHUB_ACTIONS.md"
+      - "Testing script exists at scripts/test-workflow-locally.sh"
+      - "Workflow syntax is valid (gh workflow view)"
+
+  - id: "phase-2"
+    name: "Testing"
+    status: "pending"
+    duration: "30 minutes"
+    risk: "low"
+    dependencies: ["phase-1"]
+    deliverables:
+      - name: "Local test results"
+        description: "Verification that workflow steps execute correctly locally"
+
+      - name: "Syntax validation"
+        description: "GitHub CLI confirms workflow YAML is valid"
+
+    tasks:
+      - description: "Run local workflow simulation"
+        command: "bash scripts/test-workflow-locally.sh"
+        expected_output: "All workflow steps complete successfully"
+
+      - description: "Validate workflow syntax"
+        command: "gh workflow view update-database.yml"
+        expected_output: "No syntax errors"
+
+      - description: "Test manual trigger (dry-run)"
+        command: "gh workflow run update-database.yml --field update_mode=daily --dry-run"
+        note: "Requires --dry-run flag if available, or skip if not supported"
+
+    validation:
+      - "Local test script completes without errors"
+      - "Workflow syntax validation passes"
+      - "All referenced modules exist in project"
+
+  - id: "phase-3"
+    name: "Deployment"
+    status: "pending"
+    duration: "15 minutes"
+    risk: "medium"
+    dependencies: ["phase-2"]
+    deliverables:
+      - name: "Enabled workflow"
+        description: "GitHub Actions workflow active and configured"
+
+      - name: "Repository permissions"
+        description: "Actions granted write permissions for GitHub Releases"
+
+      - name: "First successful run"
+        description: "Manual trigger completes successfully"
+
+    tasks:
+      - description: "Configure repository permissions"
+        location: "GitHub UI → Settings → Actions → General → Workflow permissions"
+        action: "Enable 'Read and write permissions'"
+
+      - description: "Commit workflow to repository"
+        command: |
+          git add .github/workflows/update-database.yml docs/operations/GITHUB_ACTIONS.md scripts/test-workflow-locally.sh
+          git commit -m "feat(ci): add GitHub Actions database automation (ADR-0009)"
+          git push
+
+      - description: "Trigger first manual run"
+        command: "gh workflow run update-database.yml --field update_mode=daily"
+
+      - description: "Monitor first run"
+        command: "gh run watch"
+        expected_duration: "5-10 minutes"
+
+    validation:
+      - "Workflow appears in GitHub Actions UI"
+      - "First manual run completes successfully"
+      - "Database uploaded to GitHub Releases"
+      - "Validation checks pass in workflow output"
+
+  - id: "phase-4"
+    name: "Migration and Monitoring"
+    status: "pending"
+    duration: "1 week"
+    risk: "low"
+    dependencies: ["phase-3"]
+    deliverables:
+      - name: "Validated consistency"
+        description: "GitHub Actions and APScheduler produce identical databases"
+
+      - name: "Deprecated APScheduler"
+        description: "Local daemon stopped after 3 successful GitHub Actions runs"
+
+      - name: "Updated documentation"
+        description: "CLAUDE.md and README.md reference GitHub Actions instead of APScheduler"
+
+    tasks:
+      - description: "Parallel operation (Days 1-7)"
+        approach: "Run both APScheduler daemon and GitHub Actions daily"
+        validation: "Compare databases for consistency"
+
+      - description: "Monitor GitHub Actions runs"
+        metrics:
+          - "Workflow success rate (target: >95%)"
+          - "Workflow duration (expected: 5-10 min)"
+          - "Validation check pass rate (target: 100%)"
+        command: "gh run list --workflow=update-database.yml --limit=10"
+
+      - description: "Stop APScheduler daemon (after 3 successful runs)"
+        command: "uv run python scripts/start_scheduler.py --stop"
+        condition: "3 consecutive GitHub Actions runs successful"
+
+      - description: "Update documentation"
+        files:
+          - "CLAUDE.md (lines 246-262: Replace APScheduler with GitHub Actions)"
+          - "README.md (Quick Start section)"
+          - "docs/guides/QUICKSTART.md"
+
+    validation:
+      - "3+ consecutive successful GitHub Actions runs"
+      - "Database consistency verified (byte-identical or logically equivalent)"
+      - "APScheduler daemon stopped"
+      - "Documentation updated with GitHub Actions references"
+
+dependencies:
+  runtime:
+    - name: "GitHub Actions"
+      version: "N/A (platform)"
+      purpose: "Workflow orchestration"
+
+    - name: "Python"
+      version: "3.12+"
+      purpose: "Runtime for database update scripts"
+
+    - name: "uv"
+      version: "latest"
+      purpose: "Package management and execution"
+
+    - name: "AWS CLI"
+      version: "v2"
+      purpose: "S3 Vision bulk listings (backfill mode)"
+
+    - name: "gh CLI"
+      version: "latest"
+      purpose: "GitHub Releases management"
+
+    - name: "zstd"
+      version: "latest"
+      purpose: "Database compression"
+
+  project_modules:
+    - "scheduler/daily_update.py (daily incremental updates)"
+    - "scripts/operations/backfill.py (historical backfill)"
+    - "scripts/operations/validate.py (database validation)"
+    - "probing/s3_vision.py (S3 Vision HEAD probing)"
+    - "probing/batch_prober.py (parallel batch probing)"
+    - "database/availability_db.py (DuckDB operations)"
+    - "validation/availability_validator.py (validation logic)"
+    - "tests/ (pytest test suite)"
+
+risks:
+  - id: "risk-1"
+    category: "availability"
+    description: "GitHub Actions outage prevents scheduled updates"
+    probability: "low (99.9% SLA)"
+    severity: "medium (T+1 data latency)"
+    mitigation: "Retry on next scheduled cycle (no data loss, only delay)"
+
+  - id: "risk-2"
+    category: "correctness"
+    description: "Workflow publishes corrupt database due to validation bypass"
+    probability: "very low"
+    severity: "high (incorrect data distributed)"
+    mitigation: |
+      - Multiple validation gates (continuity, completeness, API cross-check)
+      - Test suite must pass before publish
+      - Workflow fails if any gate fails (strict raise policy)
+
+  - id: "risk-3"
+    category: "observability"
+    description: "Workflow failure not noticed until manual check"
+    probability: "medium (if no notifications configured)"
+    severity: "low (next cycle retries)"
+    mitigation: |
+      - GitHub Actions UI shows workflow status
+      - Email notifications on failure (configurable)
+      - README badge shows last run status
+
+  - id: "risk-4"
+    category: "maintainability"
+    description: "Workflow syntax error prevents execution"
+    probability: "low (validation in phase-2)"
+    severity: "medium (workflow disabled)"
+    mitigation: |
+      - Local testing script validates workflow steps
+      - Manual test run before enabling schedule
+      - Can revert to APScheduler if needed
+
+success_criteria:
+  deployment:
+    - "Workflow executes successfully on schedule (daily at 3 AM UTC)"
+    - "Database published to GitHub Releases within 10 minutes"
+    - "All validation checks pass (continuity, completeness, API cross-check)"
+    - "Test suite passes (23 tests, >80% coverage)"
+    - "Zero manual intervention for normal operations"
+
+  operations:
+    - "Workflow success rate >95% over 30 days"
+    - "Cost remains $0/month (within free tier)"
+    - "Database size growth matches projections (70 KB/day)"
+    - "GitHub Actions minutes usage <2,000/month"
+
+  migration:
+    - "APScheduler daemon successfully deprecated"
+    - "Documentation updated to reference GitHub Actions"
+    - "No database consistency issues during parallel operation"
+
+monitoring:
+  metrics:
+    - name: "workflow_success_rate"
+      target: ">95%"
+      measurement: "GitHub Actions workflow runs page"
+
+    - name: "workflow_duration"
+      target: "5-10 minutes"
+      measurement: "GitHub Actions job duration logs"
+
+    - name: "database_size_growth"
+      target: "70 KB/day"
+      measurement: "Query database file size daily"
+
+    - name: "github_actions_minutes"
+      target: "<2,000/month"
+      measurement: "GitHub Settings → Billing → Actions usage"
+
+    - name: "validation_pass_rate"
+      target: "100%"
+      measurement: "Workflow logs → Validation step output"
+
+  dashboards:
+    - "GitHub Actions workflow runs page"
+    - "GitHub Releases page (distribution stats)"
+    - "README badge (last run status)"
+
+  alerts:
+    - "GitHub Actions failure notification (built-in)"
+    - "Email notification (optional, configurable)"
+    - "Slack webhook (optional, future enhancement)"
+
+rollback_plan:
+  scenario: "GitHub Actions becomes unsuitable (outages, pricing changes, platform issues)"
+
+  steps:
+    - description: "Restart APScheduler daemon"
+      command: "uv run python scripts/start_scheduler.py --daemon"
+      duration: "5 minutes"
+
+    - description: "Verify APScheduler daemon running"
+      command: "ps aux | grep start_scheduler"
+      expected: "Daemon process active"
+
+    - description: "Disable GitHub Actions workflow"
+      location: "GitHub UI → Actions → update-database.yml → Disable workflow"
+      duration: "1 minute"
+
+    - description: "Update documentation"
+      files: ["CLAUDE.md", "README.md"]
+      changes: "Revert to APScheduler references"
+      duration: "10 minutes"
+
+  recovery_time: "15-20 minutes"
+  data_loss: "None (database snapshots retained in GitHub Releases)"
+
+notes:
+  - "Zero code changes required (workflow reuses existing modules)"
+  - "Workflow acts as orchestration layer only"
+  - "Can run 2-3x daily by changing cron schedule"
+  - "Multi-daily support: Just add multiple cron entries"
+  - "Validation gates prevent corrupt database publication"
+  - "Local testing script available for pre-deployment validation"
+  - "30-day retention balances storage (1.24 GB) vs availability"
+  - "zstd compression reduces 155 MB → 41 MB (73% savings)"
