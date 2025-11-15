@@ -127,7 +127,7 @@ Single table with volume metrics (ADR-0006):
 
 **Policy**: Strict raise-on-failure (ADR-0003)
 
-- No retries (scheduler retries next cycle)
+- No retries (workflow retries next scheduled cycle)
 - No fallbacks (no default values)
 - No silent failures (all errors logged)
 
@@ -186,7 +186,7 @@ All decisions documented as MADRs:
 - **[ADR-0001](docs/decisions/0001-schema-design-daily-table.md)**: Daily table pattern (not range table)
 - **[ADR-0002](docs/decisions/0002-storage-technology-duckdb.md)**: DuckDB for storage
 - **[ADR-0003](docs/decisions/0003-error-handling-strict-policy.md)**: Strict error handling
-- **[ADR-0004](docs/decisions/0004-automation-apscheduler.md)**: APScheduler for automation (deprecated)
+- **[ADR-0004](docs/decisions/0004-automation-apscheduler.md)**: APScheduler for automation (superseded by ADR-0009)
 - **[ADR-0005](docs/decisions/0005-aws-cli-bulk-operations.md)**: AWS CLI for bulk operations
 - **[ADR-0006](docs/decisions/0006-volume-metrics-collection.md)**: Volume metrics collection
 - **[ADR-0009](docs/decisions/0009-github-actions-automation.md)**: ✅ **GitHub Actions automation** (production)

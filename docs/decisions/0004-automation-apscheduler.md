@@ -1,8 +1,11 @@
 # ADR-0004: Automation - APScheduler
 
-**Status**: Accepted
+**Status**: Superseded by [ADR-0009: GitHub Actions Automation](0009-github-actions-automation.md)
 
 **Date**: 2025-11-12
+**Superseded Date**: 2025-11-15
+
+> **Note**: This ADR documents the APScheduler-based automation that was implemented in v1.0.0 but has been superseded by GitHub Actions (ADR-0009). All APScheduler code has been removed from the codebase. This decision is preserved for historical context only.
 
 **Context**:
 

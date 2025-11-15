@@ -33,12 +33,13 @@ All architectural decisions documented as MADRs in `docs/decisions/`:
 ### [0003: Error Handling - Strict Raise Policy](docs/decisions/0003-error-handling-strict-policy.md)
 
 **Decision**: Raise+propagate all errors immediately, no retries/fallbacks
-**Rationale**: Fail fast, scheduler retries next cycle, explicit error visibility
+**Rationale**: Fail fast, workflow retries next scheduled cycle, explicit error visibility
 
-### [0004: Automation - APScheduler](docs/decisions/0004-automation-apscheduler.md)
+### [0004: Automation - APScheduler](docs/decisions/0004-automation-apscheduler.md) ⚠️ SUPERSEDED
 
-**Decision**: Python-based scheduling with APScheduler daemon
-**Rationale**: Platform-independent, programmatic control, SQLite job persistence
+**Status**: Superseded by ADR-0009 (GitHub Actions automation)
+**Decision**: Python-based scheduling with APScheduler daemon (DEPRECATED)
+**Replacement**: GitHub Actions with cron triggers and GitHub Releases distribution
 
 ### [0005: AWS CLI for Bulk Operations](docs/decisions/0005-aws-cli-bulk-operations.md)
 
@@ -55,15 +56,16 @@ All architectural decisions documented as MADRs in `docs/decisions/`:
 ### Error Handling
 
 **Policy**: Raise and propagate all errors immediately
-**No retries**: Network failures raise immediately, scheduler retries next cycle
+**No retries**: Network failures raise immediately, workflow retries next scheduled cycle
 **No fallbacks**: No default values or silent handling
 **No silent failures**: All errors logged with full context
 
 ### Dependencies
 
-**OSS libraries only**: DuckDB, APScheduler, urllib3, AWS CLI
+**OSS libraries only**: DuckDB, urllib3, AWS CLI
 **Avoid custom implementations**: Use proven libraries, not custom code
 **Hybrid tooling**: Right tool for each job (AWS CLI for bulk, HEAD requests for incremental)
+**Automation**: GitHub Actions (zero infrastructure overhead, 99.9% SLA)
 
 ### SLOs (Service Level Objectives)
 
@@ -72,7 +74,7 @@ Focus on 4 dimensions (explicitly **not** speed/performance/security):
 **Availability**:
 
 - Target: 95% of daily updates complete successfully
-- Measurement: Monitor scheduler logs for completion rate
+- Measurement: Monitor GitHub Actions workflow logs for completion rate
 
 **Correctness**:
 
@@ -149,9 +151,9 @@ CREATE TABLE daily_availability (
 
 - **Method**: HTTP HEAD requests (parallel batch probing)
 - **Modules**: `probing/s3_vision.py`, `probing/batch_prober.py`
-- **Script**: `scheduler/daily_update.py`
+- **Workflow**: `.github/workflows/update-database.yml` (GitHub Actions automation)
 - **Performance**: 327 symbols in ~1.5 seconds (150 parallel workers, empirically optimized)
-- **Use Case**: Automated daily updates at 2 AM UTC
+- **Use Case**: Automated daily updates at 3:00 AM UTC
 - **Benchmark**: See `docs/benchmarks/worker-count-benchmark-2025-11-15.md`
 
 ### Symbol Discovery
@@ -184,13 +186,6 @@ CREATE TABLE daily_availability (
 **First Run**: Manual backfill required to create initial database (see Quick Start)
 **Monitoring**: GitHub Actions UI → Workflow runs page
 
-### Fallback: APScheduler (Deprecated)
-
-**Technology**: APScheduler (Python-based daemon)
-**Status**: Deprecated in favor of GitHub Actions (ADR-0009)
-**Use Cases**: Local development, GitHub Actions outage fallback
-**Persistence**: SQLite job store for scheduler state
-
 ### Update Logic
 
 1. Check if yesterday already processed (skip if yes - idempotent)
@@ -203,9 +198,9 @@ CREATE TABLE daily_availability (
 ### Error Handling
 
 **On probe failure**: Raise immediately, log error with full context
-**GitHub Actions**: Fail workflow, retry on next scheduled cycle
-**APScheduler (deprecated)**: Skip failed update, retry on next cycle (daily)
+**GitHub Actions**: Fail workflow, retry on next scheduled cycle (daily at 3 AM UTC)
 **Notification**: GitHub Actions UI (built-in), optional email/Slack webhooks
+**Geo-blocking (HTTP 451)**: Validation skips cross-check gracefully, logs warning
 
 ## Testing
 
@@ -233,7 +228,6 @@ pytest --cov=src/binance_futures_availability --cov-report=html
 ### Required
 
 - **duckdb>=1.0.0**: Columnar database engine
-- **apscheduler>=3.10.0**: Task scheduling and automation
 - **urllib3>=2.0.0**: HTTP client for S3 HEAD requests
 
 ### Development
@@ -310,21 +304,6 @@ duckdb availability.duckdb "SELECT COUNT(*) FROM daily_availability"
 ```
 
 **Automated Execution**: Runs automatically daily at 3:00 AM UTC (no manual intervention needed)
-
-### Local Scheduler (Deprecated - Fallback Only)
-
-**Note**: APScheduler daemon deprecated in favor of GitHub Actions (ADR-0009). Use only for local development or as fallback.
-
-```bash
-# Start APScheduler in foreground (testing)
-uv run python scripts/start_scheduler.py
-
-# Start as background daemon (production)
-uv run python scripts/start_scheduler.py --daemon
-
-# Stop daemon
-uv run python scripts/start_scheduler.py --stop
-```
 
 ### Query Database
 
@@ -439,7 +418,6 @@ binance-futures-availability/
 │       ├── probing/               # S3 Vision probing
 │       ├── queries/               # Query helpers
 │       ├── validation/            # Data validation
-│       ├── scheduler/             # APScheduler automation
 │       └── cli/                   # CLI interface
 │
 ├── tests/                         # pytest test suite
@@ -457,17 +435,6 @@ from binance_futures_availability.database import AvailabilityDatabase
 db = AvailabilityDatabase()
 last_update = db.get_last_update_date()
 print(f"Last updated: {last_update}")
-```
-
-### Manual Update for Specific Date
-
-```python
-from binance_futures_availability.scheduler import update_date
-from datetime import date
-
-# Update specific date (useful for gap filling)
-stats = update_date(date(2024, 1, 15))
-print(f"Available: {stats['available_count']}, Unavailable: {stats['unavailable_count']}")
 ```
 
 ### Validation After Update
@@ -490,12 +457,6 @@ else:
 
 **Error**: `FileNotFoundError: availability.duckdb`
 **Solution**: Run backfill first: `uv run python scripts/operations/backfill.py`
-
-### Scheduler Not Running
-
-**Error**: No daily updates occurring
-**Solution**: Check scheduler daemon: `ps aux | grep start_scheduler`
-**Restart**: `uv run python scripts/start_scheduler.py --daemon`
 
 ### S3 Probe Failures
 
@@ -560,11 +521,6 @@ When making changes:
 - **Official Docs**: https://duckdb.org/docs/
 - **Python API**: https://duckdb.org/docs/api/python/overview
 - **Performance**: https://duckdb.org/why_duckdb
-
-### APScheduler Documentation
-
-- **Official Docs**: https://apscheduler.readthedocs.io/
-- **Job Stores**: https://apscheduler.readthedocs.io/en/stable/userguide.html#configuring-the-scheduler
 
 ## Version History
 

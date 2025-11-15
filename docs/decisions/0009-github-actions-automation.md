@@ -8,7 +8,7 @@
 
 **Deciders**: Terry Li, Claude Code
 
-**Related**: ADR-0004 (APScheduler), ADR-0005 (AWS CLI), ADR-0006 (Volume Metrics)
+**Related**: ADR-0004 (APScheduler - superseded), ADR-0005 (AWS CLI), ADR-0006 (Volume Metrics)
 
 ## Context
 
@@ -153,8 +153,7 @@ Migrate database automation from local APScheduler daemon to **GitHub Actions wi
 
 **Platform Lock-in**:
 - Dependent on GitHub Actions availability
-- Fallback: Can revert to APScheduler daemon if GitHub Actions becomes unsuitable
-- Migration path: Workflow reuses existing Python modules (minimal coupling)
+- Migration path: Workflow reuses existing Python modules (minimal coupling), enabling migration to other CI/CD platforms if needed
 
 ## Implementation Notes
 
@@ -222,11 +221,11 @@ Migrate database automation from local APScheduler daemon to **GitHub Actions wi
 - **Strict error handling pays off**: Workflow fails fast on any probe failure, ensuring data integrity
 - **Validation gates critical**: Preventing corrupt database publication more important than uptime
 
-**APScheduler Deprecation**:
-- Status: **Deprecated as of 2025-11-15**
-- Migration: GitHub Actions replaces APScheduler for all automation
-- Rollback: APScheduler code retained in repository for emergency fallback
-- Timeline: Will monitor GitHub Actions for 1 week before removing APScheduler documentation
+**APScheduler Removal**:
+- Status: **Removed as of 2025-11-15** (all code and dependencies deleted)
+- Migration: GitHub Actions has completely replaced APScheduler for all automation
+- Commit: 873 lines of APScheduler code deleted across 9 files (scheduler module, CLI commands, dependency)
+- Validation: HTTP 451 geo-blocking handling added to cross-check validator (graceful skip instead of failure)
 
 ## Alternatives Considered
 
@@ -283,10 +282,10 @@ Detailed implementation plan: `docs/plans/0009-github-actions-automation/plan.ya
 - Enable workflow
 - Monitor first scheduled run
 
-**Phase 4: Migration** (1 week)
-- Parallel operation: APScheduler + GitHub Actions
-- Validate consistency between both systems
-- Deprecate APScheduler daemon after 3 successful GitHub Actions runs
+**Phase 4: Migration** (Completed 2025-11-15)
+- ✅ GitHub Actions validated through successful workflow runs
+- ✅ APScheduler code completely removed (873 lines deleted)
+- ✅ Documentation updated across all files (CLAUDE.md, README.md, ADR-0004, ADR-0009)
 
 **Total Estimated Time**: 2 hours setup + 1 week validation
 
