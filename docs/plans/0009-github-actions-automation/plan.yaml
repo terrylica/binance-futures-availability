@@ -213,20 +213,28 @@ phases:
 
   - id: "phase-3"
     name: "Deployment"
-    status: "awaiting-user-action"
+    status: "blocked"
     duration: "15 minutes"
-    risk: "medium"
+    risk: "high"
     dependencies: ["phase-2"]
     automated_tasks_completed:
       - "Workflow pushed to GitHub (visible in Actions UI)"
       - "Validation scripts created"
       - "Documentation complete"
+      - "Repository permissions configured (by user)"
+    manual_tasks_completed:
+      - "Repository permissions configured (Settings → Actions → Read+write)"
+    blocker:
+      issue: "Workflow file fails GitHub Actions validation"
+      symptoms: "Zero jobs created, no logs available, runs fail immediately"
+      investigation: "docs/operations/WORKFLOW_DEBUGGING.md"
+      workaround: "Use local APScheduler daemon or manual script execution"
     manual_tasks_required:
-      - "Configure repository permissions (Settings → Actions → Read+write)"
-      - "Trigger first manual run (gh workflow run update-database.yml)"
-      - "Verify release created (gh release list)"
+      - "Debug workflow file (binary search approach recommended)"
+      - "Or use fallback: local APScheduler daemon"
+      - "Or manual execution: uv run python scripts/operations/backfill.py"
     validation_available: "scripts/validate-workflow-deployment.sh"
-    note: "Automation code complete. Requires user action: configure permissions, trigger first run, verify release."
+    note: "BLOCKED: Workflow file has validation error. Permissions configured, but workflow cannot execute. See WORKFLOW_DEBUGGING.md for details."
     deliverables:
       - name: "Enabled workflow"
         description: "GitHub Actions workflow active and configured"
