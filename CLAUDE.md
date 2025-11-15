@@ -165,11 +165,23 @@ CREATE TABLE daily_availability (
 
 ## Automation
 
-### Scheduler
+### Primary: GitHub Actions (ADR-0009)
+
+**Technology**: GitHub Actions with GitHub Releases distribution
+**Frequency**: Daily at 3:00 AM UTC (configurable for 2-3x daily)
+**Job**: Update yesterday's data (S3 Vision has T+1 availability)
+**Distribution**: Automated publishing to GitHub Releases (zstd compressed)
+**Cost**: $0/month (public repos: unlimited Actions minutes + storage)
+**SLA**: 99.9% (GitHub Actions platform guarantee)
+
+**Workflow**: `.github/workflows/update-database.yml`
+**Deployment**: See `docs/operations/DEPLOYMENT_GUIDE.md`
+
+### Fallback: APScheduler (Deprecated)
 
 **Technology**: APScheduler (Python-based daemon)
-**Frequency**: Daily at 2:00 AM UTC
-**Job**: Update yesterday's data (S3 Vision has T+1 availability)
+**Status**: Deprecated in favor of GitHub Actions (ADR-0009)
+**Use Cases**: Local development, GitHub Actions outage fallback
 **Persistence**: SQLite job store for scheduler state
 
 ### Update Logic
@@ -179,12 +191,14 @@ CREATE TABLE daily_availability (
 3. Bulk insert results into DuckDB (UPSERT on conflict)
 4. Run validation checks (continuity, symbol count, cross-check)
 5. Log results (success/failure with details)
+6. (GitHub Actions only) Compress and upload to GitHub Releases
 
 ### Error Handling
 
 **On probe failure**: Raise immediately, log error with full context
-**Scheduler behavior**: Skip failed update, retry on next cycle (daily)
-**Notification**: Log to file, optional email/Slack on repeated failures
+**GitHub Actions**: Fail workflow, retry on next scheduled cycle
+**APScheduler (deprecated)**: Skip failed update, retry on next cycle (daily)
+**Notification**: GitHub Actions UI (built-in), optional email/Slack webhooks
 
 ## Testing
 
@@ -247,7 +261,27 @@ uv run python scripts/operations/backfill.py
 # Database size after: 50-150 MB
 ```
 
-### Start Scheduler Daemon
+### Automated Updates (GitHub Actions - ADR-0009)
+
+**Recommended**: Use GitHub Actions for automated daily updates (zero infrastructure overhead).
+
+```bash
+# Trigger manual update (via GitHub CLI)
+gh workflow run update-database.yml --field update_mode=daily
+
+# Monitor workflow execution
+gh run watch
+
+# Download latest database
+gh release download latest --pattern "availability.duckdb.zst"
+zstd -d availability.duckdb.zst
+```
+
+**Deployment Guide**: `docs/operations/DEPLOYMENT_GUIDE.md`
+
+### Local Scheduler (Deprecated - Fallback Only)
+
+**Note**: APScheduler daemon deprecated in favor of GitHub Actions (ADR-0009). Use only for local development or as fallback.
 
 ```bash
 # Start APScheduler in foreground (testing)

@@ -1,8 +1,9 @@
 info:
   title: "GitHub Actions Automation for Database Updates"
   version: "1.0.0"
-  status: "proposed"
+  status: "ready-for-deployment"
   created: "2025-11-14"
+  updated: "2025-11-14"
   x-adr-id: "0009"
   x-adr-ref: "docs/decisions/0009-github-actions-automation.md"
   description: |
@@ -140,7 +141,7 @@ architecture:
 phases:
   - id: "phase-1"
     name: "Preparation"
-    status: "pending"
+    status: "completed"
     duration: "30 minutes"
     risk: "low"
     deliverables:
@@ -180,7 +181,7 @@ phases:
 
   - id: "phase-2"
     name: "Testing"
-    status: "pending"
+    status: "completed"
     duration: "30 minutes"
     risk: "low"
     dependencies: ["phase-1"]
@@ -211,10 +212,11 @@ phases:
 
   - id: "phase-3"
     name: "Deployment"
-    status: "pending"
+    status: "ready"
     duration: "15 minutes"
     risk: "medium"
     dependencies: ["phase-2"]
+    note: "Automation code complete. Requires user action: push to GitHub, configure permissions, trigger first run."
     deliverables:
       - name: "Enabled workflow"
         description: "GitHub Actions workflow active and configured"
@@ -251,10 +253,11 @@ phases:
 
   - id: "phase-4"
     name: "Migration and Monitoring"
-    status: "pending"
+    status: "ready"
     duration: "1 week"
     risk: "low"
     dependencies: ["phase-3"]
+    note: "Requires user action: parallel operation with APScheduler, monitor metrics, deprecate APScheduler after 3 successful runs."
     deliverables:
       - name: "Validated consistency"
         description: "GitHub Actions and APScheduler produce identical databases"
