@@ -129,6 +129,7 @@ jobs:
 
       - name: Run validation checks
         id: validate
+        if: steps.download_db.outputs.db_exists == 'true'
         run: |
           echo "Running database validation..."
           uv run python scripts/operations/validate.py --verbose
@@ -145,6 +146,7 @@ jobs:
 
       - name: Generate database statistics
         id: stats
+        if: steps.download_db.outputs.db_exists == 'true'
         run: |
           echo "Generating database statistics..."
 
