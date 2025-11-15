@@ -1,10 +1,10 @@
 info:
   title: "GitHub Actions Automation for Database Updates"
   version: "1.0.0"
-  status: "automation-complete"
+  status: "workflow-validated"
   created: "2025-11-14"
-  updated: "2025-11-14"
-  deployment_status: "awaiting-user-action"
+  updated: "2025-11-15"
+  deployment_status: "workflow-validated-ready-for-data-collection"
   x-adr-id: "0009"
   x-adr-ref: "docs/decisions/0009-github-actions-automation.md"
   description: |
