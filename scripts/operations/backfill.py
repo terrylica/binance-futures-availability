@@ -33,7 +33,7 @@ def backfill_symbol(
     symbol: str,
     start_date: datetime.date,
     end_date: datetime.date,
-    db: AvailabilityDatabase,
+    db_path: Path | None,
 ) -> dict:
     """
     Backfill all availability data for a single symbol using AWS CLI.
@@ -42,12 +42,15 @@ def backfill_symbol(
         symbol: Trading pair symbol
         start_date: Start of date range
         end_date: End of date range (inclusive)
-        db: Database connection
+        db_path: Database path (each worker creates its own connection for thread-safety)
 
     Returns:
         Dict with symbol, dates_found, error (if any)
     """
     lister = AWSS3Lister()
+
+    # Create thread-local database connection for thread-safety
+    db = AvailabilityDatabase(db_path=db_path)
 
     try:
         # Get all available dates for this symbol
@@ -96,7 +99,7 @@ def backfill_symbol(
         # Bulk insert into database (uses INSERT OR REPLACE for UPSERT)
         db.insert_batch(records)
 
-        return {
+        result = {
             "symbol": symbol,
             "dates_found": len(availability),
             "total_dates": len(records),
@@ -104,7 +107,13 @@ def backfill_symbol(
         }
 
     except Exception as e:
-        return {"symbol": symbol, "dates_found": 0, "total_dates": 0, "error": str(e)}
+        result = {"symbol": symbol, "dates_found": 0, "total_dates": 0, "error": str(e)}
+
+    finally:
+        # Always close the thread-local connection
+        db.close()
+
+    return result
 
 
 def main() -> int:
@@ -181,23 +190,23 @@ def main() -> int:
     logger.info(f"Estimated time: ~{len(symbols) * 4.5 / 60:.0f} minutes")
     logger.info("=" * 60)
 
-    # Connect to database (respect DB_PATH environment variable if set)
-    db_path = os.environ.get('DB_PATH')
-    if db_path:
-        logger.info(f"Using database from DB_PATH: {db_path}")
-        db = AvailabilityDatabase(db_path=Path(db_path))
+    # Determine database path (respect DB_PATH environment variable if set)
+    db_path_str = os.environ.get('DB_PATH')
+    if db_path_str:
+        logger.info(f"Using database from DB_PATH: {db_path_str}")
+        db_path = Path(db_path_str)
     else:
         logger.info("Using default database path: ~/.cache/binance-futures/availability.duckdb")
-        db = AvailabilityDatabase()
+        db_path = None  # Use default path
 
-    # Process symbols in parallel
+    # Process symbols in parallel (each worker creates its own DB connection for thread-safety)
     results = []
     failed_symbols = []
 
     with ThreadPoolExecutor(max_workers=args.workers) as executor:
         # Submit all symbol backfill tasks
         future_to_symbol = {
-            executor.submit(backfill_symbol, symbol, start_date, end_date, db): symbol
+            executor.submit(backfill_symbol, symbol, start_date, end_date, db_path): symbol
             for symbol in symbols
         }
 
@@ -239,11 +248,9 @@ def main() -> int:
         logger.warning(f"Failed symbols ({len(failed_symbols)}): {', '.join(failed_symbols[:10])}")
         if len(failed_symbols) > 10:
             logger.warning(f"... and {len(failed_symbols) - 10} more")
-        db.close()  # Ensure data is flushed to disk
         return 1
 
     logger.info("=" * 60)
-    db.close()  # Ensure data is flushed to disk
     return 0
 
 
