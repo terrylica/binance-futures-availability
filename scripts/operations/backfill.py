@@ -239,9 +239,11 @@ def main() -> int:
         logger.warning(f"Failed symbols ({len(failed_symbols)}): {', '.join(failed_symbols[:10])}")
         if len(failed_symbols) > 10:
             logger.warning(f"... and {len(failed_symbols) - 10} more")
+        db.close()  # Ensure data is flushed to disk
         return 1
 
     logger.info("=" * 60)
+    db.close()  # Ensure data is flushed to disk
     return 0
 
 
