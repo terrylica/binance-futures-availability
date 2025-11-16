@@ -14,13 +14,14 @@ x-adr-links:
     title: "Error handling: strict raise policy"
     path: "docs/decisions/0003-error-handling-strict-policy.md"
   - id: "0004"
-    title: "Automation: APScheduler"
+    title: "Automation: APScheduler (superseded by ADR-0009)"
     path: "docs/decisions/0004-automation-apscheduler.md"
+    status: "superseded"
 
 objective: |
-  Build standalone DuckDB database tracking daily availability of all 708 USDT 
-  perpetual futures from Binance Vision S3 repository. Date range: 2019-09-25 
-  (first UM-futures launch) to present, with automated daily updates via APScheduler.
+  Build standalone DuckDB database tracking daily availability of all USDT
+  perpetual futures from Binance Vision (~327 active, dynamically discovered).
+  Date range: 2019-09-25 to present, with automated daily updates via GitHub Actions.
 
 slos:
   availability:
@@ -49,27 +50,27 @@ architecture:
     location: "~/.cache/binance-futures/availability.duckdb"
     schema_ref: "../schema/availability-database.schema.json"
     estimated_size: "50-150 MB (compressed columnar)"
-    growth_rate: "~50 MB/year (708 rows/day × ~200 bytes/row compressed)"
-    
+    growth_rate: "~25 MB/year (~327 rows/day × ~200 bytes/row compressed)"
+
   data_source:
     name: "Binance Vision S3"
-    method: "HTTP HEAD requests to check file existence"
+    method: "HTTP HEAD requests (daily) / AWS CLI (backfill)"
     url_pattern: "https://data.binance.vision/data/futures/um/daily/klines/{symbol}/1m/{symbol}-1m-{YYYY-MM-DD}.zip"
     authentication: "None (public bucket)"
-    rate_limit: "Conservative 2 req/sec (avoid throttling)"
-    
+    note: "Hybrid strategy per ADR-0005"
+
   error_handling:
     policy: "Raise and propagate all errors immediately"
     rationale: "ADR-0003: Strict error policy enables fail-fast, explicit visibility"
     no_retries: true
     no_fallbacks: true
     no_silent_failures: true
-    
+
   automation:
-    scheduler: "APScheduler 3.10+"
-    frequency: "Daily at 2:00 AM UTC"
-    persistence: "SQLite job store (scheduler state)"
-    daemon_mode: true
+    scheduler: "GitHub Actions (superseded APScheduler per ADR-0009)"
+    frequency: "Daily at 3:00 AM UTC"
+    persistence: "GitHub workflow state"
+    distribution: "GitHub Releases (automated)"
     update_target: "Yesterday's data (S3 Vision T+1 availability)"
 
 implementation_phases:
@@ -212,51 +213,55 @@ implementation_phases:
 
   phase_9_historical_backfill:
     duration: "4-6 hours"
-    status: "pending"
+    status: "completed"
+    completed_date: "2025-11-14"
+    actual_time: "~25 min (AWS CLI method per ADR-0005)"
     deliverables:
-      - "Backfill 2019-09-25 to yesterday (2240 days × 708 symbols)"
+      - "Backfill 2019-09-25 to yesterday (2240 days × ~327 symbols)"
       - "Database size 50-150 MB"
       - "No missing dates"
     validation:
-      - "Database exists at ~/.cache/binance-futures/availability.duckdb"
+      - "Database exists and published to GitHub Releases"
       - "Continuity check passes (no gaps)"
-      - "Symbol count ≥700 for recent dates"
+      - "Symbol count 100-400 for recent dates (dynamic discovery)"
+    note: "Significantly faster than estimated due to AWS CLI optimization"
 
   phase_10_validation:
     duration: "30 minutes"
-    status: "pending"
+    status: "completed"
+    completed_date: "2025-11-15"
     deliverables:
       - "Run all validation checks"
-      - "Cross-check with exchangeInfo API"
+      - "HTTP 451 geo-blocking handled gracefully"
       - "Verify SLOs met"
     validation:
       - "Continuity: No missing dates"
-      - "Completeness: Symbol counts valid"
-      - "Correctness: >95% match with exchangeInfo"
+      - "Completeness: Symbol counts valid (dynamic)"
+      - "Correctness: Validation integrated into GitHub Actions workflow"
+    note: "Validation integrated into GitHub Actions workflow (ADR-0009)"
 
   phase_11_automation:
     duration: "1 hour"
-    status: "pending"
+    status: "superseded"
+    superseded_by: "ADR-0009 (GitHub Actions automation)"
+    superseded_date: "2025-11-15"
     deliverables:
-      - "Start APScheduler daemon"
-      - "Verify daily update runs"
-      - "Monitor logs for 24 hours"
-    validation:
-      - "Scheduler daemon running"
-      - "Yesterday's data updated successfully"
-      - "No errors in logs"
+      - "GitHub Actions workflow deployed"
+      - "Daily updates automated (3AM UTC)"
+      - "GitHub Releases distribution configured"
+    note: "APScheduler approach replaced with GitHub Actions"
 
 dependencies:
   required:
     - name: "duckdb"
       version: ">=1.0.0"
       purpose: "Columnar database engine"
-    - name: "apscheduler"
-      version: ">=3.10.0"
-      purpose: "Task scheduling and automation"
     - name: "urllib3"
       version: ">=2.0.0"
       purpose: "HTTP client for S3 HEAD requests"
+    - name: "awscli"
+      version: ">=2.0.0"
+      purpose: "S3 bulk operations (AWS CLI per ADR-0005)"
       
   development:
     - name: "pytest"
@@ -277,13 +282,13 @@ success_criteria:
     - "Database contains complete data (2019-09-25 to yesterday)"
     - "No missing dates (continuity validation passes)"
     - ">95% match with Binance exchangeInfo API"
-    - "All 4 MADRs documented with approved status"
-    
+    - "All 10 MADRs documented with approved status"
+
   performance:
-    - "Snapshot query <1ms (708 symbols for single date)"
+    - "Snapshot query <1ms (~327 symbols for single date)"
     - "Timeline query <10ms (2240 days for single symbol)"
-    - "Date range query <100ms (90 days × 708 symbols)"
-    - "Daily update <2 minutes (708 probes)"
+    - "Date range query <100ms (90 days × ~327 symbols)"
+    - "Daily update <2 minutes (~327 probes)"
     
   reliability:
     - "Automated updates for 7 consecutive days without manual intervention"
@@ -293,5 +298,5 @@ success_criteria:
   maintainability:
     - "80%+ test coverage (unit + integration)"
     - "All public functions documented (docstrings)"
-    - "All 4 MADRs committed and linked in commits"
+    - "All 10 MADRs committed and linked in commits"
     - "README explains setup in <10 steps"

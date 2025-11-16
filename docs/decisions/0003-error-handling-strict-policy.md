@@ -97,7 +97,7 @@ except RuntimeError as e:
 - **Explicit visibility**: All failures logged with full context (symbol, date, error)
 - **No silent corruption**: Impossible to record incorrect availability status
 - **Simple code**: No retry logic, no timeout tuning, no fallback branches
-- **Scheduler resilience**: APScheduler retries failed jobs in next cycle
+- **Scheduler resilience**: GitHub Actions retries failed workflows in next scheduled cycle
 - **Debugging**: Complete error chain preserved via `raise ... from e`
 
 **Negative**:
@@ -118,4 +118,4 @@ except RuntimeError as e:
 
 **Related Decisions**:
 
-- ADR-0004: APScheduler automation (handles retry scheduling)
+- ADR-0009: GitHub Actions automation (handles retry scheduling via workflow cron triggers)

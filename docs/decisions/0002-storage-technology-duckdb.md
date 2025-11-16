@@ -81,4 +81,4 @@ class AvailabilityDatabase:
 **Related Decisions**:
 
 - ADR-0001: Daily table schema design
-- ADR-0004: APScheduler automation (single-writer requirement)
+- ADR-0009: GitHub Actions automation (single-writer requirement)
