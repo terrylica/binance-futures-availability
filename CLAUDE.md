@@ -110,34 +110,15 @@ Focus on 4 dimensions (explicitly **not** speed/performance/security):
 
 ### Hybrid Collection Strategy (ADR-0005)
 
-**Historical Backfill** (Bulk Operations):
-
-- **Method**: AWS CLI S3 listing (`aws s3 ls --no-sign-request`)
-- **Module**: `probing/aws_s3_lister.py`
-- **Script**: `scripts/operations/backfill.py`
-- **Performance**: 327 symbols × 4.5 sec = ~25 minutes for full history
-- **Use Case**: One-time bulk data collection (2019-09-25 to present)
-
-**Daily Updates** (Incremental Operations):
-
-- **Method**: HTTP HEAD requests (parallel batch probing)
-- **Modules**: `probing/s3_vision.py`, `probing/batch_prober.py`
-- **Workflow**: `.github/workflows/update-database.yml` (GitHub Actions automation)
-- **Performance**: 327 symbols in ~1.5 seconds (150 parallel workers, empirically optimized)
-- **Use Case**: Automated daily updates at 3:00 AM UTC
-- **Benchmark**: See `docs/benchmarks/worker-count-benchmark-2025-11-15.md`
+**Backfill**: AWS CLI S3 listing (~1.1 min for full history, 327 symbols)
+**Daily Updates**: HTTP HEAD requests (~1.5 sec, 150 workers, GitHub Actions 3AM UTC)
+**Details**: See [ADR-0005](docs/decisions/0005-aws-cli-bulk-operations.md) and [worker benchmark](docs/benchmarks/worker-count-benchmark-2025-11-15.md)
 
 ### Symbol Discovery
 
-**Dynamic Discovery** (ADR-0010 - Implemented 2025-11-15):
-
-- **Method**: S3 XML API bucket enumeration
-- **Schedule**: Daily at 3:00 AM UTC (GitHub Actions workflow)
-- **Performance**: ~0.51 seconds (proven benchmark from vision-futures-explorer)
-- **Count**: ~327 perpetual USDT futures (varies as new symbols listed)
-- **Auto-Update**: symbols.json automatically updated and committed when changes detected
-- **Module**: `probing/s3_symbol_discovery.py` (ported from vision-futures-explorer)
-- **Script**: `scripts/operations/discover_symbols.py`
+**Dynamic Discovery** (ADR-0010): S3 XML API enumeration (~327 symbols, daily 3AM UTC)
+**Auto-Update**: symbols.json committed when changes detected
+**Details**: See [ADR-0010](docs/decisions/0010-dynamic-symbol-discovery.md)
 
 **Backfill Behavior**:
 
@@ -160,23 +141,9 @@ Focus on 4 dimensions (explicitly **not** speed/performance/security):
 
 **Workflow**: `.github/workflows/update-database.yml`
 **First Run**: Manual backfill required to create initial database (see Quick Start)
-**Monitoring**: GitHub Actions UI → Workflow runs page
+**Monitoring**: See [MONITORING.md](docs/operations/MONITORING.md)
 
-### Update Logic
-
-1. Check if yesterday already processed (skip if yes - idempotent)
-2. Probe all perpetual symbols via S3 HEAD requests (currently ~327, dynamically discovered)
-3. Bulk insert results into DuckDB (UPSERT on conflict)
-4. Run validation checks (continuity, symbol count, cross-check)
-5. Log results (success/failure with details)
-6. (GitHub Actions only) Compress and upload to GitHub Releases
-
-### Error Handling
-
-**On probe failure**: Raise immediately, log error with full context
-**GitHub Actions**: Fail workflow, retry on next scheduled cycle (daily at 3 AM UTC)
-**Notification**: GitHub Actions UI (built-in), optional email/Slack webhooks
-**Geo-blocking (HTTP 451)**: Validation skips cross-check gracefully, logs warning
+**Error Handling**: Strict raise policy (ADR-0003), workflow retries next cycle on failure
 
 ## Testing
 
@@ -347,48 +314,11 @@ binance-futures-availability/
 
 ## Common Operations
 
-### Check Database Status
-
-```python
-from binance_futures_availability.database import AvailabilityDatabase
-
-db = AvailabilityDatabase()
-last_update = db.get_last_update_date()
-print(f"Last updated: {last_update}")
-```
-
-### Validation After Update
-
-```python
-from binance_futures_availability.validation import AvailabilityValidator
-
-validator = AvailabilityValidator()
-report = validator.run_all_validations()
-
-if report['validation_passed']:
-    print("✅ All validation checks passed")
-else:
-    print(f"❌ Validation failed: {report}")
-```
+**See**: [README.md](README.md) for database status checks, validation, and query examples
 
 ## Troubleshooting
 
-### Database File Not Found
-
-**Error**: `FileNotFoundError: availability.duckdb`
-**Solution**: Run backfill first: `uv run python scripts/operations/backfill.py`
-
-### S3 Probe Failures
-
-**Error**: `HTTPError: 403 Forbidden`
-**Cause**: Rate limiting from S3
-**Solution**: Reduce probe rate in code (currently 2 req/sec)
-
-### Low Symbol Count
-
-**Error**: Validation reports <100 symbols for a date
-**Cause**: Incomplete probe (network failure mid-run)
-**Solution**: Re-run update for that date (idempotent)
+**See**: [TROUBLESHOOTING.md](docs/guides/TROUBLESHOOTING.md) for common issues (database not found, S3 probe failures, validation errors, workflow debugging)
 
 ## Development Workflow
 
