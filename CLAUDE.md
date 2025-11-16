@@ -35,11 +35,9 @@ All architectural decisions documented as MADRs in `docs/decisions/`:
 **Decision**: Raise+propagate all errors immediately, no retries/fallbacks
 **Rationale**: Fail fast, workflow retries next scheduled cycle, explicit error visibility
 
-### [0004: Automation - APScheduler](docs/decisions/0004-automation-apscheduler.md) ⚠️ SUPERSEDED
+### [0004: Automation - APScheduler](docs/decisions/0004-automation-apscheduler.md)
 
-**Status**: Superseded by ADR-0009 (GitHub Actions automation)
-**Decision**: Python-based scheduling with APScheduler daemon (DEPRECATED)
-**Replacement**: GitHub Actions with cron triggers and GitHub Releases distribution
+**Status**: ⚠️ SUPERSEDED by ADR-0009 (GitHub Actions automation)
 
 ### [0005: AWS CLI for Bulk Operations](docs/decisions/0005-aws-cli-bulk-operations.md)
 
@@ -533,7 +531,7 @@ When making changes:
 
 - Initial implementation
 - Historical backfill (2019-09-25 to present)
-- Automated daily updates with APScheduler
+- Automated daily updates (APScheduler, later migrated to GitHub Actions per ADR-0009)
 - All 6 MADRs documented and approved
 - 80%+ test coverage achieved
 - Volume metrics collection (file_size_bytes, last_modified)

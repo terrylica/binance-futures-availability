@@ -1,0 +1,13 @@
+# Summary
+
+| Status         | Count |
+|----------------|-------|
+| 🔍 Total       | 75    |
+| ✅ Successful  | 53    |
+| ⏳ Timeouts    | 0     |
+| 🔀 Redirected  | 0     |
+| 👻 Excluded    | 22    |
+| ❓ Unknown     | 0     |
+| 🚫 Errors      | 0     |
+| ⛔ Unsupported | 0     |
+
