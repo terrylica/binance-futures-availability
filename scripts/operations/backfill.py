@@ -199,6 +199,13 @@ def main() -> int:
         logger.info("Using default database path: ~/.cache/binance-futures/availability.duckdb")
         db_path = None  # Use default path
 
+    # Initialize database schema ONCE before starting workers
+    # (avoids catalog write-write conflicts when 10 workers try to CREATE TABLE simultaneously)
+    logger.info("Initializing database schema...")
+    init_db = AvailabilityDatabase(db_path=db_path)
+    init_db.close()
+    logger.info("Schema initialized successfully")
+
     # Process symbols in parallel (each worker creates its own DB connection for thread-safety)
     results = []
     failed_symbols = []
