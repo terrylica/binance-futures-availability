@@ -232,10 +232,10 @@ jobs:
       - name: Compress database for distribution
         if: steps.check_db.outputs.db_ready == 'true'
         run: |
-          echo "Compressing database..."
-          cd $(dirname "$DB_PATH")
-          gzip -c availability.duckdb > availability.duckdb.gz
-          ls -lh availability.duckdb*
+          echo "Compressing database at: $DB_PATH"
+          gzip -c "$DB_PATH" > "${DB_PATH}.gz"
+          ls -lh "$DB_PATH" "${DB_PATH}.gz"
+          echo "Compressed database ready: ${DB_PATH}.gz"
 
       - name: Generate release notes
         id: release_notes
