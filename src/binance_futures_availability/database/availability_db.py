@@ -159,8 +159,14 @@ class AvailabilityDatabase:
             raise RuntimeError(f"Query execution failed: {e}") from e
 
     def close(self) -> None:
-        """Close database connection."""
+        """
+        Close database connection.
+
+        Explicitly commits any pending transactions before closing to ensure
+        all writes are flushed to disk. Critical for parallel worker threads.
+        """
         if self.conn:
+            self.conn.commit()  # Flush pending writes to disk (REQUIRED for parallel workers)
             self.conn.close()
 
     def __enter__(self):
