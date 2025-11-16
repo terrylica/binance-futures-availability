@@ -91,42 +91,15 @@ Focus on 4 dimensions (explicitly **not** speed/performance/security):
 
 ## Database Schema
 
-### Table: `daily_availability`
+**SSoT**: See [`docs/schema/availability-database.schema.json`](docs/schema/availability-database.schema.json)
 
-Primary table storing daily symbol availability checks with volume metrics:
+**Summary**:
+- **Table**: `daily_availability` with PRIMARY KEY (date, symbol)
+- **Volume Metrics** (ADR-0006): `file_size_bytes`, `last_modified` enable trend analysis
+- **Indexes**: Optimized for snapshot (~1ms) and timeline (~10ms) queries
+- **Storage**: `~/.cache/binance-futures/availability.duckdb` (50-150 MB compressed)
 
-```sql
-CREATE TABLE daily_availability (
-    date DATE NOT NULL,
-    symbol VARCHAR NOT NULL,
-    available BOOLEAN NOT NULL,
-    file_size_bytes BIGINT,              -- Volume metrics (ADR-0006)
-    last_modified TIMESTAMP,             -- S3 freshness tracking (ADR-0006)
-    url VARCHAR NOT NULL,
-    status_code INTEGER NOT NULL,
-    probe_timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (date, symbol)
-);
-```
-
-**Volume Metrics** (ADR-0006):
-
-- `file_size_bytes`: ZIP file size from S3 (NULL for unavailable files)
-- `last_modified`: S3 upload timestamp (NULL for unavailable files or missing headers)
-- **Use Cases**: Volume trend analysis, data freshness monitoring, audit trails
-- **Collection**: Extracted from AWS CLI listings (backfill) and HTTP headers (daily updates)
-
-### Indexes
-
-**PRIMARY KEY (date, symbol)**: Fast snapshot queries (~1ms for 708 symbols)
-**idx_symbol_date (symbol, date)**: Fast timeline queries (~10ms for 2240 days)
-**idx_available_date (available, date)**: Fast symbol listing queries
-
-### Storage
-
-**Location**: `~/.cache/binance-futures/availability.duckdb`
-**Size**: 50-150 MB (compressed columnar storage, includes volume metrics)
-**Growth**: ~50 MB/year
+**See README.md for schema details and query examples**
 
 ## Data Collection
 
@@ -267,87 +240,31 @@ uv run python scripts/operations/backfill.py
 
 ### Production: GitHub Actions Automation (ADR-0009) ✅
 
-**Status**: Production-ready and operational (automated daily updates at 3:00 AM UTC)
+**Status**: Production-ready (automated daily updates at 3:00 AM UTC)
 
-#### First-Time Setup: Run Historical Backfill
+**Complete setup instructions**: See [README.md Quick Start](README.md#quick-start)
 
-```bash
-# Trigger manual backfill via GitHub Actions (creates initial database)
-gh workflow run update-database.yml \
-  --field update_mode=backfill \
-  --field start_date=2019-09-25 \
-  --field end_date=$(date -d "yesterday" +%Y-%m-%d)
-
-# Monitor progress (estimated 25-60 minutes)
-gh run watch
-
-# Verify database created
-gh release view latest
-```
-
-#### Trigger Manual Daily Update
-
-```bash
-# Run manual update for yesterday
-gh workflow run update-database.yml --field update_mode=daily
-
-# Monitor execution (~20 seconds)
-gh run watch
-```
-
-#### Download Latest Database
-
-```bash
-# Download compressed database from GitHub Releases
-gh release download latest --pattern "availability.duckdb.gz"
-gunzip availability.duckdb.gz
-
-# Query locally
-duckdb availability.duckdb "SELECT COUNT(*) FROM daily_availability"
-```
-
-**Automated Execution**: Runs automatically daily at 3:00 AM UTC (no manual intervention needed)
+**Key Points**:
+- First-time setup: Manual backfill via `gh workflow run` (creates initial database)
+- Automated execution: Daily at 3:00 AM UTC (zero manual intervention)
+- Distribution: GitHub Releases with gzip compression
+- Monitoring: `docs/operations/MONITORING.md`
 
 ### Query Database
 
+**Complete examples**: See [docs/guides/QUERY_EXAMPLES.md](docs/guides/QUERY_EXAMPLES.md)
+
+**Quick reference**:
 ```bash
-# CLI query interface
+# CLI queries
 uv run binance-futures-availability query snapshot 2024-01-15
 uv run binance-futures-availability query timeline BTCUSDT
-uv run binance-futures-availability query range 2024-01-01 2024-03-31
 
-# Python API - Basic availability queries
-python -c "
+# Python API
 from binance_futures_availability.queries import AvailabilityQueries
-q = AvailabilityQueries()
-print(q.get_available_symbols_on_date('2024-01-15'))
-"
-
-# Volume metrics queries (ADR-0006)
-python -c "
-from binance_futures_availability.database import AvailabilityDatabase
-
-db = AvailabilityDatabase()
-
-# Average file size growth over time
-growth = db.query('''
-    SELECT date, AVG(file_size_bytes) as avg_size
-    FROM daily_availability
-    WHERE available
-    GROUP BY date
-    ORDER BY date
-''')
-
-# Find symbols with abnormal volume spikes
-spikes = db.query('''
-    SELECT symbol, date, file_size_bytes
-    FROM daily_availability
-    WHERE file_size_bytes > 20000000  -- > 20MB
-    ORDER BY file_size_bytes DESC
-    LIMIT 10
-''')
-"
 ```
+
+**Volume metrics queries**: See ADR-0006 and QUERY_EXAMPLES.md
 
 ### Validate Database
 

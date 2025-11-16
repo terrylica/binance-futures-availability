@@ -33,16 +33,7 @@ Use AWS CLI `s3 ls` for bulk operations (historical backfill), keep HTTP HEAD re
 
 ## Rationale
 
-### Performance Comparison
-
-| Operation           | Method        | Time        | API Calls |
-| ------------------- | ------------- | ----------- | --------- |
-| Historical backfill | HEAD requests | ~3 hours    | 1,587,336 |
-| Historical backfill | AWS CLI       | ~25 minutes | 327       |
-| Daily update        | HEAD requests | ~5 seconds  | 708       |
-| Daily update        | AWS CLI       | ~53 minutes | 708       |
-
-**Conclusion**: AWS CLI is 7.2x faster for bulk operations, HEAD requests are faster for single-date operations.
+**See "Updated Performance Comparison" section below for empirically validated performance data.**
 
 ### Implementation
 
@@ -132,7 +123,9 @@ Post-implementation empirical testing validated and refined the hybrid strategy:
 - Rate limiting: ZERO detected (tested up to 10,000 workers, 118K requests)
 - See: `docs/benchmarks/worker-count-benchmark-2025-11-15.md`
 
-### Updated Performance Comparison
+### Performance Comparison (Empirically Validated 2025-11-15)
+
+**Note**: Original estimates (2025-11-14) were conservative. Actual performance after optimization:
 
 | Operation           | Method        | Workers | Time        | API Calls |
 | ------------------- | ------------- | ------- | ----------- | --------- |
@@ -142,7 +135,7 @@ Post-implementation empirical testing validated and refined the hybrid strategy:
 | Daily update        | HEAD requests | 150     | ~1.5 sec    | 327       |
 | Daily update        | AWS CLI       | 10      | ~1.1 min    | 327       |
 
-**Validated Conclusion**:
+**Conclusion**:
 - AWS CLI is optimal for bulk operations (>13 dates)
 - HTTP HEAD with 150 workers is optimal for daily updates (<13 dates)
 - Hybrid strategy confirmed as correct approach

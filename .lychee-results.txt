@@ -1,13 +1,35 @@
+[ERROR] file:///Users/terryli/eon/binance-futures-availability/docs/operations/AUTOMATION.md | Cannot find file: File not found. Check if file exists and path is correct
+[ERROR] file:///Users/terryli/eon/binance-futures-availability/docs/operations/AUTOMATION.md | Cannot find file: File not found. Check if file exists and path is correct
+[ERROR] file:///Users/terryli/eon/binance-futures-availability/docs/operations/AUTOMATION.md | Cannot find file: File not found. Check if file exists and path is correct
+[ERROR] file:///Users/terryli/eon/binance-futures-availability/docs/operations/AUTOMATION.md | Cannot find file: File not found. Check if file exists and path is correct
 # Summary
 
 | Status         | Count |
 |----------------|-------|
-| 🔍 Total       | 75    |
-| ✅ Successful  | 53    |
+| 🔍 Total       | 68    |
+| ✅ Successful  | 48    |
 | ⏳ Timeouts    | 0     |
 | 🔀 Redirected  | 0     |
-| 👻 Excluded    | 22    |
+| 👻 Excluded    | 16    |
 | ❓ Unknown     | 0     |
-| 🚫 Errors      | 0     |
+| 🚫 Errors      | 4     |
 | ⛔ Unsupported | 0     |
+
+## Errors per input
+
+### Errors in /Users/terryli/eon/binance-futures-availability/docs/guides/QUICKSTART.md
+
+* [ERROR] <file:///Users/terryli/eon/binance-futures-availability/docs/operations/AUTOMATION.md> | Cannot find file: File not found. Check if file exists and path is correct
+
+### Errors in /Users/terryli/eon/binance-futures-availability/docs/guides/TROUBLESHOOTING.md
+
+* [ERROR] <file:///Users/terryli/eon/binance-futures-availability/docs/operations/AUTOMATION.md> | Cannot find file: File not found. Check if file exists and path is correct
+
+### Errors in /Users/terryli/eon/binance-futures-availability/docs/operations/BACKUP_RESTORE.md
+
+* [ERROR] <file:///Users/terryli/eon/binance-futures-availability/docs/operations/AUTOMATION.md> | Cannot find file: File not found. Check if file exists and path is correct
+
+### Errors in /Users/terryli/eon/binance-futures-availability/README.md
+
+* [ERROR] <file:///Users/terryli/eon/binance-futures-availability/docs/operations/AUTOMATION.md> | Cannot find file: File not found. Check if file exists and path is correct
 

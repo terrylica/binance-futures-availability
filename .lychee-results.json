@@ -1,15 +1,56 @@
+[ERROR] file:///Users/terryli/eon/binance-futures-availability/docs/operations/AUTOMATION.md | Cannot find file: File not found. Check if file exists and path is correct
+[ERROR] file:///Users/terryli/eon/binance-futures-availability/docs/operations/AUTOMATION.md | Cannot find file: File not found. Check if file exists and path is correct
+[ERROR] file:///Users/terryli/eon/binance-futures-availability/docs/operations/AUTOMATION.md | Cannot find file: File not found. Check if file exists and path is correct
+[ERROR] file:///Users/terryli/eon/binance-futures-availability/docs/operations/AUTOMATION.md | Cannot find file: File not found. Check if file exists and path is correct
 {
-  "total": 75,
-  "successful": 53,
+  "total": 68,
+  "successful": 48,
   "unknown": 0,
   "unsupported": 0,
   "timeouts": 0,
   "redirects": 0,
-  "excludes": 22,
-  "errors": 0,
+  "excludes": 16,
+  "errors": 4,
   "cached": 0,
   "success_map": {},
-  "error_map": {},
+  "error_map": {
+    "/Users/terryli/eon/binance-futures-availability/README.md": [
+      {
+        "url": "file:///Users/terryli/eon/binance-futures-availability/docs/operations/AUTOMATION.md",
+        "status": {
+          "text": "Cannot find file",
+          "details": "File not found. Check if file exists and path is correct"
+        }
+      }
+    ],
+    "/Users/terryli/eon/binance-futures-availability/docs/operations/BACKUP_RESTORE.md": [
+      {
+        "url": "file:///Users/terryli/eon/binance-futures-availability/docs/operations/AUTOMATION.md",
+        "status": {
+          "text": "Cannot find file",
+          "details": "File not found. Check if file exists and path is correct"
+        }
+      }
+    ],
+    "/Users/terryli/eon/binance-futures-availability/docs/guides/QUICKSTART.md": [
+      {
+        "url": "file:///Users/terryli/eon/binance-futures-availability/docs/operations/AUTOMATION.md",
+        "status": {
+          "text": "Cannot find file",
+          "details": "File not found. Check if file exists and path is correct"
+        }
+      }
+    ],
+    "/Users/terryli/eon/binance-futures-availability/docs/guides/TROUBLESHOOTING.md": [
+      {
+        "url": "file:///Users/terryli/eon/binance-futures-availability/docs/operations/AUTOMATION.md",
+        "status": {
+          "text": "Cannot find file",
+          "details": "File not found. Check if file exists and path is correct"
+        }
+      }
+    ]
+  },
   "suggestion_map": {},
   "redirect_map": {},
   "excluded_map": {},
