@@ -24,12 +24,18 @@ class AvailabilityDatabase:
         Initialize database connection and create schema if needed.
 
         Args:
-            db_path: Custom database path (default: ~/.cache/binance-futures/availability.duckdb)
+            db_path: Custom database path (default: DB_PATH env var or ~/.cache/binance-futures/availability.duckdb)
         """
         if db_path is None:
-            cache_dir = Path.home() / ".cache" / "binance-futures"
-            cache_dir.mkdir(parents=True, exist_ok=True)
-            db_path = cache_dir / "availability.duckdb"
+            # Check environment variable first (critical for GitHub Actions)
+            import os
+            db_path_env = os.environ.get('DB_PATH')
+            if db_path_env:
+                db_path = Path(db_path_env)
+            else:
+                cache_dir = Path.home() / ".cache" / "binance-futures"
+                cache_dir.mkdir(parents=True, exist_ok=True)
+                db_path = cache_dir / "availability.duckdb"
 
         self.db_path = Path(db_path)
         self.conn = duckdb.connect(str(self.db_path))
