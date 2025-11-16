@@ -158,17 +158,22 @@ CREATE TABLE daily_availability (
 
 ### Symbol Discovery
 
-**Static List** (Current):
+**Dynamic Discovery** (ADR-0010 - Implemented 2025-11-15):
 
-- **Module**: `probing/symbol_discovery.py`
-- **Source**: Hardcoded list from `discovered_futures_symbols.json`
-- **Count**: 327 perpetual USDT futures
+- **Method**: S3 XML API bucket enumeration
+- **Schedule**: Daily at 3:00 AM UTC (GitHub Actions workflow)
+- **Performance**: ~0.51 seconds (proven benchmark from vision-futures-explorer)
+- **Count**: ~327 perpetual USDT futures (varies as new symbols listed)
+- **Auto-Update**: symbols.json automatically updated and committed when changes detected
+- **Module**: `probing/s3_symbol_discovery.py` (ported from vision-futures-explorer)
+- **Script**: `scripts/operations/discover_symbols.py`
 
-**Dynamic Discovery** (Future Enhancement):
+**Backfill Behavior**:
 
-- **Source**: `vision-futures-explorer/futures_discovery.py`
-- **Method**: S3 bucket listing (0.51 seconds for all symbols)
-- **Benefit**: Auto-detect new listings
+- **New symbols**: Probed going forward from discovery date
+- **Historical backfill**: User triggers manually via workflow_dispatch
+- **Delisted symbols**: Never removed, continue probing forever (ADR-0010 decision)
+- **Failure handling**: Discovery failure fails workflow (strict consistency per ADR-0003)
 
 ## Automation
 

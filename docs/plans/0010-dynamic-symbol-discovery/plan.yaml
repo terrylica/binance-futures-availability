@@ -1,0 +1,60 @@
+info:
+  x-adr-id: "0010"
+  title: Dynamic Symbol Discovery
+  version: 1.0.0
+  status: implemented
+  implementation_date: 2025-11-15
+
+phases:
+  - name: Module Creation
+    status: completed
+    deliverables:
+      - Copy futures_discovery.py → s3_symbol_discovery.py
+      - Adapt for project (remove Polars, add type hints)
+      - Error handling per ADR-0003
+    actual_time: 20min
+
+  - name: Discovery Script
+    status: completed
+    deliverables:
+      - scripts/operations/discover_symbols.py
+      - Update symbols.json with metadata
+      - Atomic file writes
+    actual_time: 15min
+
+  - name: Workflow Integration
+    status: completed
+    deliverables:
+      - Add discovery step to update-database.yml
+      - Git auto-commit configuration
+      - Failure handling (strict mode)
+    actual_time: 15min
+
+  - name: Documentation
+    status: completed
+    deliverables:
+      - ADR-0010
+      - This plan.yaml
+      - CLAUDE.md Symbol Discovery section (pending)
+      - README.md updates (pending)
+    actual_time: 30min
+
+slos:
+  availability: "Discovery failure fails workflow (strict consistency over availability)"
+  correctness: "S3 XML API canonical source, git audit trail for all changes"
+  observability: "New symbols logged to workflow output, git history provides timeline"
+  maintainability: "Reuses vision-futures-explorer code (battle-tested, minimal custom logic)"
+
+implementation_notes:
+  - Performance: 0.51s discovery time (proven benchmark from vision-futures-explorer)
+  - Frequency: Daily at 3AM UTC (365 calls/year)
+  - Storage: symbols.json auto-updated + git auto-committed
+  - Backfill: Manual trigger for new symbols (user controls timing)
+  - Delisting: Never remove symbols (probe forever per user decision)
+
+testing:
+  - Local: uv run python scripts/operations/discover_symbols.py
+  - Workflow: Manual trigger via workflow_dispatch
+  - Validation: Monitor first scheduled 3AM UTC run
+
+total_time: ~80min

@@ -15,7 +15,7 @@ Standalone DuckDB database tracking historical availability of Binance USDT-Marg
 ### Key Features
 
 - **Complete Historical Data**: 2019-09-25 (first UM-futures launch) to present (~2240 days)
-- **Dynamic Symbol Discovery**: Tracks all perpetual USDT contracts (~327 currently, varies by date)
+- **Dynamic Symbol Discovery**: ✅ **Auto-updated daily** - Tracks all perpetual USDT contracts (~327 currently, varies by date)
 - **Fast Queries**: <1ms snapshot queries, <10ms timelines
 - **Volume Metrics**: Track file size growth and S3 freshness over time
 - **Small Footprint**: 50-150MB database (compressed columnar)
@@ -190,6 +190,7 @@ All decisions documented as MADRs:
 - **[ADR-0005](docs/decisions/0005-aws-cli-bulk-operations.md)**: AWS CLI for bulk operations
 - **[ADR-0006](docs/decisions/0006-volume-metrics-collection.md)**: Volume metrics collection
 - **[ADR-0009](docs/decisions/0009-github-actions-automation.md)**: ✅ **GitHub Actions automation** (production)
+- **[ADR-0010](docs/decisions/0010-dynamic-symbol-discovery.md)**: ✅ **Dynamic symbol discovery** (daily S3 auto-update)
 
 ## SLOs (Service Level Objectives)
 

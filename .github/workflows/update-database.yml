@@ -65,6 +65,46 @@ jobs:
           uv pip install --system -e ".[dev]"
 
       # ============================================================================
+      # DISCOVER: Update symbols.json from S3 Vision (daily discovery)
+      # ============================================================================
+
+      - name: Discover symbols from S3
+        id: discovery
+        run: |
+          echo "Discovering futures symbols from Binance Vision S3..."
+          uv run python scripts/operations/discover_symbols.py
+
+          if [ $? -ne 0 ]; then
+            echo "❌ Symbol discovery failed (strict mode per ADR-0010)"
+            exit 1
+          fi
+
+          # Check if symbols.json changed
+          if git diff --quiet src/binance_futures_availability/data/symbols.json; then
+            echo "No symbol changes detected"
+            echo "symbols_changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "Symbol changes detected:"
+            git diff --stat src/binance_futures_availability/data/symbols.json
+            echo "symbols_changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit updated symbols
+        if: steps.discovery.outputs.symbols_changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/binance_futures_availability/data/symbols.json
+
+          git commit -m "chore(symbols): auto-update from S3 discovery
+
+Discovered new symbols via daily S3 XML API enumeration.
+
+[skip ci]"
+
+          git push
+
+      # ============================================================================
       # RESTORE: Download existing database from latest release
       # ============================================================================
 
