@@ -6,6 +6,7 @@ See: docs/decisions/0003-error-handling-strict-policy.md
 
 import datetime
 import urllib.error
+import urllib.parse
 import urllib.request
 from typing import TypedDict
 
@@ -52,11 +53,14 @@ def check_symbol_availability(
     URL Pattern:
         https://data.binance.vision/data/futures/um/daily/klines/{symbol}/1m/{symbol}-1m-{YYYY-MM-DD}.zip
     """
-    # Construct S3 Vision URL
+    # Construct S3 Vision URL (with proper URL encoding for Unicode symbols)
     date_str = date.strftime("%Y-%m-%d")
+    # URL-encode symbol to handle non-ASCII characters (e.g., 币安人生USDT)
+    # safe='' ensures all non-ASCII chars are percent-encoded
+    encoded_symbol = urllib.parse.quote(symbol, safe='')
     url = (
         f"https://data.binance.vision/data/futures/um/daily/klines/"
-        f"{symbol}/1m/{symbol}-1m-{date_str}.zip"
+        f"{encoded_symbol}/1m/{encoded_symbol}-1m-{date_str}.zip"
     )
 
     probe_timestamp = datetime.datetime.now(datetime.timezone.utc)
