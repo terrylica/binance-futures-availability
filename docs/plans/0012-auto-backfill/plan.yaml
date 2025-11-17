@@ -96,10 +96,12 @@ phases:
       - ✅ Gap detection ran (found no gaps - expected since test symbol removed by discovery)
       - ✅ Conditional logic validated (auto-backfill step skipped when gaps_detected=false)
       - ✅ Workflow step ordering correct (discovery → download DB → detect gaps → auto-backfill)
-      - ❌ Found issue: Exit code 1 treated as workflow failure (bash set -e flag)
-      - ✅ Fixed: detect_symbol_gaps.py now exits 0 always, workflow checks JSON array length
+      - ✅ Bug identified and fixed: Exit code 1 treated as workflow failure (bash set -e flag)
+      - ✅ Fix implemented: detect_symbol_gaps.py now exits 0 always, workflow checks JSON array length
       - ✅ Test symbol reverted (commit c94cb65)
       - ✅ Fixes committed (commit 186f201)
+      - ✅ Unit tests: 28/28 passed (13 gap detection + 15 targeted backfill)
+      - ✅ Full test suite: 64/64 passed (all ADR-0012 tests integrated)
     validation_notes:
       - Cannot use fake symbols for testing (symbol discovery overwrites with real S3 data)
       - Validated conditional execution logic instead (skip auto-backfill when no gaps)
