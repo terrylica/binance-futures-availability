@@ -35,6 +35,11 @@ jobs:
     env:
       DB_PATH: ${{ github.workspace }}/.cache/binance-futures/availability.duckdb
       PYTHON_VERSION: '3.12'
+      # ADR-0011: 20-Day Lookback for Data Reliability
+      # Phase 1 (local testing): Value = 1 (current behavior)
+      # Phase 3 (production): Change to 20 for rolling 20-day window
+      # Rollback: Change back to 1 to revert to single-day mode
+      LOOKBACK_DAYS: '1'
 
     steps:
       # ============================================================================
