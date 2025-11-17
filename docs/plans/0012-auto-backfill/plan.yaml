@@ -1,0 +1,127 @@
+info:
+  x-adr-id: "0012"
+  title: Auto-Backfill New Symbols
+  version: 1.0.0
+  status: in_progress
+  implementation_date: 2025-11-17
+
+phases:
+  - name: Phase 1 - Gap Detection Implementation
+    status: pending
+    est_time: 2-3 hours
+    deliverables:
+      - Create scripts/operations/detect_symbol_gaps.py
+      - Implement logic to compare symbols.json vs database
+      - Output JSON array of new symbols
+      - Exit code 0 if gaps found, 1 if no gaps
+      - Write unit tests (tests/test_auto_backfill/test_gap_detection.py)
+    exit_criteria:
+      - Unit tests pass (gap detection logic validated)
+      - Script correctly identifies new vs existing symbols
+      - JSON output format matches workflow expectations
+      - Exit codes correct for conditional workflow execution
+
+  - name: Phase 2 - Targeted Backfill Support
+    status: pending
+    est_time: 1-2 hours
+    deliverables:
+      - Add --symbols parameter to scripts/operations/backfill.py
+      - Support comma-separated symbol list
+      - Maintain backward compatibility (no --symbols = backfill all)
+      - Write unit tests (tests/test_auto_backfill/test_targeted_backfill.py)
+    exit_criteria:
+      - --symbols parameter works correctly
+      - Backfills only specified symbols (not all symbols)
+      - Backward compatible (existing usage unchanged)
+      - Unit tests pass
+
+  - name: Phase 3 - Workflow Integration
+    status: pending
+    est_time: 2-3 hours
+    deliverables:
+      - Add "Detect symbol gaps" step to workflow
+      - Add "Auto-backfill new symbols" conditional step
+      - Configure step dependencies and conditional execution
+      - Update workflow documentation
+    exit_criteria:
+      - Gap detection step runs only if symbols.json changed
+      - Backfill step runs only if gaps detected
+      - Both steps skipped when no new symbols (99% of runs)
+      - Workflow YAML validates (no syntax errors)
+
+  - name: Phase 4 - GitHub Actions Validation
+    status: pending
+    est_time: 1-2 hours
+    deliverables:
+      - Simulate new symbol scenario (add fake symbol to symbols.json)
+      - Trigger manual workflow run
+      - Verify gap detection activates
+      - Verify backfill executes for new symbol only
+      - Verify daily update continues normally
+      - Remove fake symbol after validation
+    exit_criteria:
+      - Workflow detects simulated new symbol
+      - Backfill completes successfully for simulated symbol
+      - Database contains historical data for simulated symbol
+      - Daily update runs without errors
+      - No performance degradation observed
+
+slos:
+  availability: "New symbols get full historical coverage within 24 hours of discovery, zero manual intervention required"
+  correctness: "100% historical coverage for all symbols, targeted backfill avoids redundant re-probing"
+  observability: "Workflow logs show gap detection results, backfill execution visible, database probe_timestamp distinguishes backfilled data"
+  maintainability: "Reuses existing BatchProber + backfill.py (minimal new code), conditional execution keeps workflow fast, <50 lines for gap detection"
+
+implementation_notes:
+  - Gap detection: Compare symbols.json vs `SELECT DISTINCT symbol FROM daily_availability`
+  - Targeted backfill: `backfill.py --symbols SYMBOL1,SYMBOL2` (vs backfilling all 713 symbols)
+  - Performance: 1 new symbol adds ~4.5 seconds to workflow (rare occurrence)
+  - Conditional execution: Zero overhead when no new symbols (99% of daily runs)
+  - UPSERT safety: Re-running backfill for same symbol is idempotent
+  - Interaction with ADR-0011: 20-day lookback ensures overlap between backfill and daily updates
+
+testing:
+  unit_tests:
+    - test_gap_detection_no_gaps: symbols.json == database symbols → exit 1
+    - test_gap_detection_with_gaps: symbols.json has NEW1,NEW2 → output ["NEW1","NEW2"], exit 0
+    - test_targeted_backfill_single: --symbols NEWUSDT → backfills only NEWUSDT
+    - test_targeted_backfill_multiple: --symbols NEW1,NEW2 → backfills only NEW1 and NEW2
+    - test_backfill_backward_compatible: No --symbols → backfills all symbols (existing behavior)
+
+  integration_tests:
+    - test_end_to_end_new_symbol_flow: Add fake symbol → workflow → verify historical data in database
+    - test_conditional_execution: No new symbols → gap detection skipped, backfill skipped
+    - test_backfill_idempotency: Re-backfill same symbol → no duplicates, UPSERT works
+
+  manual_tests:
+    - Simulate new symbol discovery (add fake symbol to symbols.json)
+    - Trigger manual workflow run
+    - Monitor workflow logs (gap detection + backfill steps)
+    - Query database to verify historical coverage
+    - Remove fake symbol and verify cleanup
+
+deployment:
+  phase_1_completion: TBD
+  phase_2_completion: TBD
+  phase_3_completion: TBD
+  phase_4_completion: TBD
+  production_ready: TBD
+
+risks:
+  - risk: Backfill failure blocks daily update
+    mitigation: Follows ADR-0003 strict error policy (fail fast, retry next cycle)
+    likelihood: LOW
+
+  - risk: Multiple new symbols extend workflow duration
+    mitigation: "Rare occurrence (1-2 new listings per month), acceptable overhead (N × 4.5s)"
+    likelihood: LOW
+
+  - risk: Gap detection false positives
+    mitigation: Unit tests validate logic, dry-run with simulated symbols before production
+    likelihood: VERY_LOW
+
+  - risk: Workflow complexity increases
+    mitigation: Well-documented conditional logic, follows GitHub Actions best practices
+    likelihood: LOW
+
+total_time: 6-10 hours (all phases)
