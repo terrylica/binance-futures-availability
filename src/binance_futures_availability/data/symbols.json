@@ -5,9 +5,9 @@
     "source": "S3 Vision bucket: s3://data.binance.vision/data/futures/um/daily/klines/",
     "discovery_method": "S3 XML API",
     "note": "Symbols with historical data availability on S3 Vision (auto-updated daily)",
-    "total_perpetual": 713,
+    "total_perpetual": 714,
     "total_delivery": 44,
-    "total_all": 757
+    "total_all": 758
   },
   "perpetual_symbols": [
     "0GUSDT",
@@ -621,6 +621,7 @@
     "TANSSIUSDT",
     "TAOUSDT",
     "TAUSDT",
+    "TESTBACKFILL2025USDT",
     "THETAUSDT",
     "THEUSDT",
     "TIAUSDC",
