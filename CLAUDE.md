@@ -2,7 +2,7 @@
 
 **Version**: v1.0.0
 **Created**: 2025-11-12
-**Updated**: 2025-11-15
+**Updated**: 2025-11-17
 **Status**: Production-ready (GitHub Actions automation enabled)
 **Pattern**: Follows `ValidationStorage` pattern from gapless-crypto-data
 **Purpose**: Track daily availability of ALL USDT perpetual futures from Binance Vision (2019-09-25 to present)
@@ -48,6 +48,38 @@ All architectural decisions documented as MADRs in `docs/decisions/`:
 
 **Decision**: Collect file_size_bytes and last_modified from both collection methods
 **Rationale**: Zero marginal cost, enables volume analytics and audit trails, minimal storage overhead (25 MB)
+
+### [0007: Trading Volume Metrics](docs/decisions/0007-trading-volume-metrics.md)
+
+**Status**: ⚠️ PROPOSED (not yet implemented)
+**Decision**: Extend daily_availability table with 9 OHLCV columns from Binance Vision 1d klines
+**Rationale**: Portfolio universe selection, survivorship bias elimination, volume-based symbol ranking
+
+### [0008: Workspace Organization](docs/decisions/0008-workspace-organization.md)
+
+**Decision**: Cleanup legacy code, fix documentation drift, consolidate redundant guides
+**Rationale**: 30+ broken script references, 70% doc overlap between CLAUDE.md and README.md
+
+### [0009: GitHub Actions Automation](docs/decisions/0009-github-actions-automation.md)
+
+**Decision**: Replace APScheduler daemon with GitHub Actions for daily updates and distribution
+**Rationale**: Zero infrastructure overhead, 99.9% SLA, built-in observability, automated GitHub Releases publishing
+**Supersedes**: ADR-0004 (APScheduler)
+
+### [0010: Dynamic Symbol Discovery](docs/decisions/0010-dynamic-symbol-discovery.md)
+
+**Decision**: Daily S3 XML API enumeration to auto-update symbols.json with git auto-commit
+**Rationale**: Detect new symbol listings within 24 hours, eliminate manual symbol.json maintenance, never remove delisted symbols
+
+### [0011: 20-Day Lookback Reliability](docs/decisions/0011-20day-lookback-reliability.md)
+
+**Decision**: Probe last 20 days on each daily update (not just yesterday)
+**Rationale**: Auto-repair gaps from previous failures, handle S3 publishing delays, update changed volume metrics, validate data continuity
+
+### [0012: Auto-Backfill New Symbols](docs/decisions/0012-auto-backfill-new-symbols.md)
+
+**Decision**: Conditional auto-backfill workflow step that detects symbol gaps and backfills historical data for new symbols only
+**Rationale**: Zero manual intervention when Binance lists new symbols, complete historical coverage within 24 hours of discovery, zero overhead when no new symbols (99% of runs)
 
 ## Core Principles
 
