@@ -182,14 +182,14 @@ def main() -> int:
 
     if new_symbols:
         logger.info(f"GAPS DETECTED: {len(new_symbols)} new symbols")
-        logger.info("Exit code: 0 (triggers auto-backfill)")
+        logger.info("Output: gaps_detected=true (triggers auto-backfill)")
         logger.info("=" * 70)
         return 0
     else:
         logger.info("NO GAPS: All symbols already in database")
-        logger.info("Exit code: 1 (skips auto-backfill)")
+        logger.info("Output: gaps_detected=false (skips auto-backfill)")
         logger.info("=" * 70)
-        return 1
+        return 0  # Always exit 0 (success) - use JSON output for conditional logic
 
 
 if __name__ == "__main__":

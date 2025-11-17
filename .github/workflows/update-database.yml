@@ -155,13 +155,12 @@ jobs:
 
           # Run gap detection script (outputs JSON array of new symbols)
           NEW_SYMBOLS=$(uv run python scripts/operations/detect_symbol_gaps.py)
-          EXIT_CODE=$?
 
           echo "Gap detection output: $NEW_SYMBOLS"
           echo "new_symbols=$NEW_SYMBOLS" >> $GITHUB_OUTPUT
 
-          # Exit code 0 = gaps found, 1 = no gaps
-          if [ $EXIT_CODE -eq 0 ]; then
+          # Check if JSON array is non-empty (has gaps)
+          if [ "$NEW_SYMBOLS" != "[]" ] && [ -n "$NEW_SYMBOLS" ]; then
             echo "gaps_detected=true" >> $GITHUB_OUTPUT
             echo "✅ Gaps detected: $NEW_SYMBOLS"
           else
