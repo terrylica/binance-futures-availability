@@ -23,6 +23,11 @@ on:
         description: 'Backfill end date (YYYY-MM-DD) - only used if mode=backfill'
         required: false
         type: string
+      lookback_days:
+        description: 'Lookback window (days) for daily mode - ADR-0011 testing (1=baseline, 7=incremental, 20=production)'
+        required: false
+        default: '1'
+        type: string
 
 permissions:
   contents: write  # For creating releases and pushing database
@@ -36,10 +41,10 @@ jobs:
       DB_PATH: ${{ github.workspace }}/.cache/binance-futures/availability.duckdb
       PYTHON_VERSION: '3.12'
       # ADR-0011: 20-Day Lookback for Data Reliability
-      # Phase 1 (local testing): Value = 1 (current behavior)
-      # Phase 3 (production): Change to 20 for rolling 20-day window
-      # Rollback: Change back to 1 to revert to single-day mode
-      LOOKBACK_DAYS: '1'
+      # workflow_dispatch: Use input parameter (testing: 1/7/20)
+      # schedule (cron): Use default '1' (Phase 1: safe deployment)
+      # Phase 3 (production): Change default to '20' for scheduled runs
+      LOOKBACK_DAYS: ${{ github.event.inputs.lookback_days || '1' }}
 
     steps:
       # ============================================================================
