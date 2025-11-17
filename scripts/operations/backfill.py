@@ -137,8 +137,8 @@ def main() -> int:
 
     parser.add_argument(
         "--symbols",
-        nargs="+",
-        help="Specific symbols to backfill (default: all 708 perpetuals)",
+        type=str,
+        help="Specific symbols to backfill - comma-separated (e.g., BTCUSDT,ETHUSDT) or space-separated (default: all perpetuals)",
     )
 
     parser.add_argument(
@@ -171,10 +171,12 @@ def main() -> int:
         else datetime.date.today() - datetime.timedelta(days=1)
     )
 
-    # Load symbols
+    # Load symbols (ADR-0012: Support comma-separated for workflow integration)
     if args.symbols:
-        symbols = args.symbols
-        logger.info(f"Using {len(symbols)} specified symbols")
+        # Parse comma-separated symbols: "BTCUSDT,ETHUSDT" → ["BTCUSDT", "ETHUSDT"]
+        # Also supports space for backward compatibility (though comma is preferred)
+        symbols = [s.strip() for s in args.symbols.replace(",", " ").split() if s.strip()]
+        logger.info(f"Using {len(symbols)} specified symbols: {', '.join(symbols[:5])}{' ...' if len(symbols) > 5 else ''}")
     else:
         symbols = load_discovered_symbols()
         logger.info(f"Using all {len(symbols)} perpetual USDT futures")

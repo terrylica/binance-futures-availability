@@ -144,6 +144,61 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # ============================================================================
+      # GAP DETECTION: Identify new symbols needing historical backfill (ADR-0012)
+      # ============================================================================
+
+      - name: Detect symbol gaps
+        id: detect_gaps
+        if: steps.discovery.outputs.symbols_changed == 'true' && steps.download_db.outputs.db_exists == 'true'
+        run: |
+          echo "Checking for new symbols needing historical backfill..."
+
+          # Run gap detection script (outputs JSON array of new symbols)
+          NEW_SYMBOLS=$(uv run python scripts/operations/detect_symbol_gaps.py)
+          EXIT_CODE=$?
+
+          echo "Gap detection output: $NEW_SYMBOLS"
+          echo "new_symbols=$NEW_SYMBOLS" >> $GITHUB_OUTPUT
+
+          # Exit code 0 = gaps found, 1 = no gaps
+          if [ $EXIT_CODE -eq 0 ]; then
+            echo "gaps_detected=true" >> $GITHUB_OUTPUT
+            echo "✅ Gaps detected: $NEW_SYMBOLS"
+          else
+            echo "gaps_detected=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ No gaps detected (all symbols already in database)"
+          fi
+
+      # ============================================================================
+      # AUTO-BACKFILL: Backfill new symbols with historical data (ADR-0012)
+      # ============================================================================
+
+      - name: Auto-backfill new symbols
+        id: auto_backfill
+        if: steps.detect_gaps.outputs.gaps_detected == 'true'
+        run: |
+          NEW_SYMBOLS="${{ steps.detect_gaps.outputs.new_symbols }}"
+
+          # Parse JSON array to comma-separated string
+          # ["SYM1","SYM2"] → SYM1,SYM2
+          SYMBOL_LIST=$(echo "$NEW_SYMBOLS" | jq -r '.[] | @text' | tr '\n' ',' | sed 's/,$//')
+
+          echo "🔄 Auto-backfilling new symbols: $SYMBOL_LIST"
+          echo "Starting historical backfill from 2019-09-25 to yesterday..."
+
+          # Run targeted backfill for new symbols only
+          uv run python scripts/operations/backfill.py --symbols "$SYMBOL_LIST"
+
+          if [ $? -eq 0 ]; then
+            echo "backfill_success=true" >> $GITHUB_OUTPUT
+            echo "✅ Auto-backfill completed successfully"
+          else
+            echo "backfill_success=false" >> $GITHUB_OUTPUT
+            echo "❌ Auto-backfill failed"
+            exit 1
+          fi
+
+      # ============================================================================
       # UPDATE: Run daily update or backfill based on trigger
       # ============================================================================
 
