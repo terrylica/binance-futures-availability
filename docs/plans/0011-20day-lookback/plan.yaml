@@ -1,0 +1,123 @@
+info:
+  x-adr-id: "0011"
+  title: 20-Day Lookback for Data Reliability
+  version: 1.0.0
+  status: in_progress
+  implementation_date: 2025-11-17
+
+phases:
+  - name: Phase 1 - Local Testing
+    status: in_progress
+    est_time: 2-3 days
+    deliverables:
+      - Implement feature flag support in run_daily_update.py
+      - Add LOOKBACK_DAYS environment variable logic
+      - Implement circuit breaker (5% error threshold)
+      - Write unit tests (tests/test_20day_lookback.py)
+      - Write circuit breaker tests (tests/test_circuit_breaker.py)
+      - Manual dry-run with test database
+      - Validate UPSERT behavior (re-running same dates)
+    exit_criteria:
+      - All unit tests pass
+      - Manual inspection confirms 20 consecutive dates
+      - Validation checks pass on test database
+      - No database corruption detected
+
+  - name: Phase 2 - Manual GitHub Actions Testing
+    status: pending
+    est_time: 3-5 days
+    deliverables:
+      - Deploy code with LOOKBACK_DAYS=1 (default)
+      - Manual workflow triggers with LOOKBACK_DAYS=20
+      - Validate 3 successful manual runs
+      - Verify workflow duration <10 minutes
+      - Check database size increase (~280KB for 20 days)
+    exit_criteria:
+      - 3/3 manual workflow runs succeed
+      - Validation checks pass after each run
+      - No timeout or memory issues
+      - Database corruption checks pass
+
+  - name: Phase 3 - Scheduled Production
+    status: pending
+    est_time: 7-14 days
+    deliverables:
+      - Change workflow env var LOOKBACK_DAYS to 20
+      - Monitor 7 consecutive scheduled runs (3AM UTC daily)
+      - Track success rate metrics
+      - Database backup created before deployment
+    exit_criteria:
+      - Success rate ≥95% (6/7 runs minimum)
+      - Zero data corruption incidents
+      - Workflow duration consistently 3-5 minutes
+      - Validation pass rate 100%
+
+  - name: Documentation Updates
+    status: pending
+    est_time: 2-3 hours
+    deliverables:
+      - ADR-0011 (completed)
+      - This plan.yaml (completed)
+      - Update CLAUDE.md architecture section
+      - Update README.md with 20-day lookback details
+      - Update monitoring documentation
+
+slos:
+  availability: "95% daily update success rate, gap repair within 20 days, circuit breaker prevents cascade failures"
+  correctness: ">95% match with exchangeInfo API, late arrivals captured in 20-day window, volume metrics updated"
+  observability: "Workflow logs show exact date range, per-date success/failure visible, circuit breaker activation logged"
+  maintainability: "Reuses proven BatchProber infrastructure, feature flag enables safe testing, minimal code changes"
+
+implementation_notes:
+  - Feature flag: LOOKBACK_DAYS env var (default: 1, production: 20)
+  - Performance: 20 dates × 1.48s = ~30 seconds total runtime
+  - S3 requests: 6,540/day (20x increase, within tested 118K capacity)
+  - Idempotency: INSERT OR REPLACE handles re-probing safely
+  - Rollback: Change env var value, next run reverts to 1-day mode
+  - Workers: 150 parallel (empirically optimized, proven safe)
+  - Circuit breaker: Abort if error rate >5%
+
+testing:
+  unit_tests:
+    - test_date_range_calculation: Verify yesterday-20 to yesterday logic
+    - test_20day_batch_insert: Insert 20 days × 713 symbols = 14,260 records
+    - test_lookback_upsert_behavior: Re-run same window, verify no duplicates
+    - test_feature_flag_override: LOOKBACK_DAYS env var respected
+    - test_circuit_breaker_activates: Abort when error rate >5%
+
+  integration_tests:
+    - test_full_20day_update_workflow: Simulate complete GitHub Actions workflow
+    - test_rollback_to_1day: Change LOOKBACK_DAYS from 20 to 1, verify behavior
+    - test_database_path_override: Verify DB_PATH env var works
+    - test_validation_after_20day: All validators pass after update
+
+  manual_tests:
+    - Local dry-run with test database (check 20 consecutive dates)
+    - Manual GitHub Actions trigger with LOOKBACK_DAYS=20
+    - Monitor first 7 scheduled production runs
+    - Rollback procedure test (env var change)
+
+deployment:
+  phase_1_completion: TBD
+  phase_2_completion: TBD
+  phase_3_completion: TBD
+  production_ready: TBD
+
+risks:
+  - risk: Workflow timeout (14K requests)
+    mitigation: Proven 150 workers, 30s runtime tested
+    likelihood: LOW
+
+  - risk: Database corruption
+    mitigation: Feature flag instant rollback, backup before Phase 3
+    likelihood: LOW
+
+  - risk: S3 rate limiting
+    mitigation: Tested at 118K requests (18x safety margin)
+    likelihood: VERY_LOW
+
+  - risk: Missed gaps
+    mitigation: "Redundant checks: 20-day + auto-backfill (ADR-0012) + weekly validation (ADR-0013)"
+    likelihood: LOW
+
+total_time: 2-3 weeks (all phases)
