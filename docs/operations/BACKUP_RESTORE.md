@@ -362,6 +362,6 @@ find "$BACKUP_DIR/monthly" -name "*.duckdb" -mtime +365 -delete
 
 ## See Also
 
-- [Automation](AUTOMATION.md): Scheduler setup
+- [GitHub Actions Automation](GITHUB_ACTIONS.md): Automated daily updates
 - [Monitoring](MONITORING.md): Health checks
 - [ADR-0002](../decisions/0002-storage-technology-duckdb.md): DuckDB choice

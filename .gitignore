@@ -66,3 +66,8 @@ package-lock.json
 # Project-specific
 backfill_checkpoint.txt
 scheduler.pid
+
+# Link checker results
+.lychee-results.json
+.lychee-results.txt
+.lycheecache

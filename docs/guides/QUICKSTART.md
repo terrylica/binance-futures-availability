@@ -145,7 +145,7 @@ Default database path: `~/.cache/binance-futures/availability.duckdb`
 
 - **[Query Examples](QUERY_EXAMPLES.md)**: Common query patterns
 - **[Troubleshooting](TROUBLESHOOTING.md)**: Common issues and solutions
-- **[Automation](../operations/AUTOMATION.md)**: Scheduler setup and monitoring
+- **[GitHub Actions Automation](../operations/GITHUB_ACTIONS.md)**: Automated daily updates and monitoring
 - **[Backup & Restore](../operations/BACKUP_RESTORE.md)**: Database backup procedures
 
 ## Quick Reference

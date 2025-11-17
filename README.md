@@ -146,7 +146,7 @@ Single table with volume metrics (ADR-0006):
 
 **Operations**:
 
-- [Automation Setup](docs/operations/AUTOMATION.md)
+- [GitHub Actions Automation](docs/operations/GITHUB_ACTIONS.md)
 - [Backup & Restore](docs/operations/BACKUP_RESTORE.md)
 - [Monitoring](docs/operations/MONITORING.md)
 

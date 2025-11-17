@@ -468,4 +468,4 @@ Or reduce parallel workers to avoid network congestion.
 
 - [Quick Start Guide](QUICKSTART.md)
 - [Query Examples](QUERY_EXAMPLES.md)
-- [Operations Guide](../operations/AUTOMATION.md)
+- [GitHub Actions Automation](../operations/GITHUB_ACTIONS.md)
