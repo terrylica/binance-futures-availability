@@ -5,6 +5,60 @@
 **Update Frequency**: Daily at 3:00 AM UTC
 **Retention**: Complete historical archive (2019-09-25 to present)
 
+## Quick Start
+
+Get top 10 symbols by volume in 30 seconds:
+
+```python
+# Install DuckDB (one-time)
+# pip install duckdb
+
+import duckdb
+
+# Query directly from GitHub Releases (zero download, zero local storage)
+url = "https://github.com/terryli/binance-futures-availability/releases/download/latest/volume-rankings-timeseries.parquet"
+
+result = duckdb.execute(f"""
+    SELECT symbol, rank, quote_volume_usdt, rank_change_7d
+    FROM '{url}'
+    WHERE date = '2025-11-16'  -- Replace with desired date
+    ORDER BY rank
+    LIMIT 10
+""").fetchdf()
+
+print(result)
+```
+
+**Output Example**:
+```
+    symbol  rank  quote_volume_usdt  rank_change_7d
+0   BTCUSDT     1     45123456789.12            None
+1   ETHUSDT     2     23456789012.34              -1
+2   SOLUSDT     3      5678901234.56               2
+...
+```
+
+**Latest Data**: Updated daily at 3:00 AM UTC (includes up to yesterday's rankings)
+
+**Performance**: Remote queries complete in 1-3 seconds (DuckDB uses HTTP range requests, downloads only needed data)
+
+## Prerequisites
+
+**Python**: 3.12 or higher
+
+**Required Library**:
+```bash
+pip install duckdb>=1.0.0
+# or with uv
+uv pip install duckdb>=1.0.0
+```
+
+**Optional Libraries** (for alternative tools):
+```bash
+pip install polars>=1.0.0  # Fast dataframe operations
+pip install pandas>=2.0.0 pyarrow>=18.0.0  # Traditional data analysis
+```
+
 ## Overview
 
 The volume rankings archive is a single cumulative Parquet file containing daily rankings of all Binance USDT perpetual futures symbols, ordered by 24-hour trading volume (quote_volume_usdt). Each row represents one symbol's ranking for one date, with rank change tracking across 1-day, 7-day, 14-day, and 30-day windows.
@@ -18,9 +72,17 @@ The volume rankings archive is a single cumulative Parquet file containing daily
 
 ## Download
 
-**Latest Release**:
+**Option 1: Remote Query (Recommended)** - No download required, query directly from GitHub:
+```python
+import duckdb
+
+url = "https://github.com/terryli/binance-futures-availability/releases/download/latest/volume-rankings-timeseries.parquet"
+result = duckdb.execute(f"SELECT * FROM '{url}' LIMIT 10").fetchdf()
+```
+
+**Option 2: Local Download** - For offline use or repeated queries:
 ```bash
-wget https://github.com/YOUR_USERNAME/binance-futures-availability/releases/download/latest/volume-rankings-timeseries.parquet
+wget https://github.com/terryli/binance-futures-availability/releases/download/latest/volume-rankings-timeseries.parquet
 ```
 
 **File Size**: ~20 MB (733,000 rows for 2,242 dates × 327 symbols)
@@ -128,6 +190,75 @@ result = conn.execute("""
     ORDER BY first_date DESC
 """).fetchall()
 ```
+
+### Remote Queries (No Download Required)
+
+DuckDB can query Parquet files directly from GitHub Releases via HTTPS, using HTTP range requests to download only needed data.
+
+**Advantages**:
+- ✅ Zero local storage (no file download)
+- ✅ Always latest data (no stale local copies)
+- ✅ Efficient (DuckDB downloads only needed row groups/columns)
+- ✅ Fast (column/row pruning, 1-3 second queries)
+
+**Trade-offs**:
+- ⚠️ Requires internet connection
+- ⚠️ Slightly slower than local file for full table scans
+- ⚠️ GitHub rate limits apply (5,000 requests/hour authenticated)
+
+**Basic Remote Query**:
+```python
+import duckdb
+
+url = "https://github.com/terryli/binance-futures-availability/releases/download/latest/volume-rankings-timeseries.parquet"
+
+# Top 10 symbols (latest date)
+result = duckdb.execute(f"""
+    SELECT symbol, rank, quote_volume_usdt, rank_change_7d
+    FROM '{url}'
+    WHERE date = (SELECT MAX(date) FROM '{url}')
+    ORDER BY rank
+    LIMIT 10
+""").fetchdf()
+
+print(result)
+```
+
+**Filtered Query (Efficient - Only Downloads Needed Data)**:
+```python
+# Specific date query (fast, minimal data transfer)
+result = duckdb.execute(f"""
+    SELECT symbol, rank, quote_volume_usdt
+    FROM '{url}'
+    WHERE date = '2025-11-16'
+      AND rank <= 20
+    ORDER BY rank
+""").fetchdf()
+```
+
+**Symbol Timeline (Remote)**:
+```python
+# 30-day rank history for BTCUSDT
+symbol = 'BTCUSDT'
+result = duckdb.execute(f"""
+    SELECT date, rank, quote_volume_usdt, rank_change_1d
+    FROM '{url}'
+    WHERE symbol = '{symbol}'
+      AND date >= CURRENT_DATE - INTERVAL '30 days'
+    ORDER BY date DESC
+""").fetchdf()
+```
+
+**Performance Tips**:
+- Use `WHERE` filters to minimize data transfer (DuckDB pushes predicates down)
+- Select specific columns instead of `SELECT *` (column pruning)
+- Cache frequently accessed date ranges locally if needed
+
+**When to Download Locally Instead**:
+- Offline analysis required
+- Repeated full table scans
+- Network unreliable or slow
+- Query latency critical (<100ms)
 
 ### Polars
 

@@ -98,6 +98,27 @@ Single cumulative file containing historical daily rankings of all symbols by 24
 
 ### Quick Start
 
+**Option 1: Remote Query (Recommended)** - Zero download, zero local storage:
+
+```python
+# Install: pip install duckdb
+import duckdb
+
+url = "https://github.com/terryli/binance-futures-availability/releases/download/latest/volume-rankings-timeseries.parquet"
+
+# Top 10 symbols (1-3 second query)
+result = duckdb.execute(f"""
+    SELECT symbol, rank, quote_volume_usdt, rank_change_7d
+    FROM '{url}'
+    WHERE date = '2025-11-16'  -- Replace with desired date
+    ORDER BY rank LIMIT 10
+""").fetchdf()
+
+print(result)
+```
+
+**Option 2: Local Download** - For offline use:
+
 ```bash
 # Download from GitHub Releases
 gh release download latest --pattern "volume-rankings-timeseries.parquet"
@@ -105,18 +126,13 @@ gh release download latest --pattern "volume-rankings-timeseries.parquet"
 # Query with DuckDB
 python -c "
 import duckdb
-conn = duckdb.connect()
-
-# Top 10 symbols by volume (latest date)
-result = conn.execute('''
-    SELECT date, symbol, rank, quote_volume_usdt, rank_change_7d
-    FROM read_parquet(\"volume-rankings-timeseries.parquet\")
-    WHERE date = (SELECT MAX(date) FROM read_parquet(\"volume-rankings-timeseries.parquet\"))
+result = duckdb.execute('''
+    SELECT symbol, rank, quote_volume_usdt, rank_change_7d
+    FROM \"volume-rankings-timeseries.parquet\"
+    WHERE date = (SELECT MAX(date) FROM \"volume-rankings-timeseries.parquet\")
     ORDER BY rank LIMIT 10
-''').fetchall()
-
-for row in result:
-    print(f\"{row[1]:10s} | Rank {row[2]:3d} | Volume \${row[3]:,.0f} | 7d change: {row[4] or 'N/A'}\")
+''').fetchdf()
+print(result)
 "
 ```
 

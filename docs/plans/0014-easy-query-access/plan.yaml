@@ -1,0 +1,113 @@
+info:
+  x-adr-id: "0014"
+  title: Easy Query Access to Volume Rankings
+  version: 1.0.0
+  status: in_progress
+  implementation_date: 2025-11-17
+
+phases:
+  - name: Phase 1 - Documentation Improvements
+    status: in_progress
+    est_time: 1-2 hours
+    deliverables:
+      - Add Quick Start section to docs/guides/using-volume-rankings.md
+      - Add Prerequisites section with installation commands
+      - Add Remote Query Examples section (DuckDB HTTP reads)
+      - Fix GitHub Release URL placeholders (YOUR_USERNAME → actual path)
+      - Update README.md Volume Rankings section with remote query example
+    exit_criteria:
+      - Developer can query top 10 symbols in <60 seconds from docs discovery
+      - All examples are copy-paste ready (no placeholders)
+      - Remote queries tested and verified (<3 seconds execution)
+      - Documentation rating improves from 7.5/10 to 9/10
+    implementation_notes:
+      - Quick Start uses hardcoded date (avoid nested subqueries for beginners)
+      - Remote query examples use actual GitHub Release URLs
+      - Prerequisites specify Python 3.12+ and pip install duckdb
+      - Trade-offs documented (local vs remote queries)
+
+  - name: Phase 2 - CLI Tool (Optional, Future)
+    status: deferred
+    est_time: 3-4 hours
+    deliverables:
+      - Create scripts/cli/rankings-query.py (PEP 723 standalone script)
+      - Implement 4 query types (top, timeline, movers, export)
+      - Add CLI documentation to guide
+      - Test with uvx installation
+    exit_criteria:
+      - CLI tool works via uvx (zero local install)
+      - All 4 query types functional
+      - Remote queries complete in <3 seconds
+      - Graceful error if Parquet file missing
+    decision_criteria:
+      - User feedback indicates demand for CLI tool
+      - Documentation improvements insufficient for ease-of-use
+
+  - name: Phase 3 - Browser UI (Optional, Future)
+    status: deferred
+    est_time: 4-6 hours
+    deliverables:
+      - Deploy Cloudflare Worker for CORS proxy
+      - Create DuckDB-WASM query interface (HTML)
+      - Deploy to GitHub Pages
+      - Add browser UI documentation
+    exit_criteria:
+      - Browser queries work without download
+      - CORS headers properly configured
+      - Sub-second query performance
+      - Free tier costs maintained ($0/month)
+    decision_criteria:
+      - Non-technical users need access
+      - Developer feedback requests web interface
+
+slos:
+  availability: "N/A (documentation change, no runtime component)"
+  correctness: "100% (copy-paste examples tested, GitHub URLs validated)"
+  observability: "N/A (users query directly via DuckDB, no telemetry)"
+  maintainability: "Documentation updates <30 minutes, no new code to maintain, DuckDB HTTP reads reuse OSS capabilities"
+
+implementation_notes:
+  - Documentation-first approach: Solve 80% of problem with 20% of effort
+  - DuckDB HTTP range requests: Efficient remote queries without full download
+  - Actual GitHub URLs: No placeholders, fork-friendly with env vars
+  - Defer CLI/UI: Wait for user feedback to guide prioritization
+  - Zero infrastructure: No API hosting, no CDN proxy (for Phase 1)
+
+testing:
+  documentation_tests:
+    - test_quick_start_example: Copy-paste Quick Start code executes successfully
+    - test_remote_query: DuckDB HTTP read completes in <3 seconds
+    - test_url_validity: All GitHub Release URLs resolve (200 OK)
+    - test_prerequisites: pip install duckdb works on Python 3.12+
+    - test_copy_paste: All code blocks are executable without modification
+
+  integration_tests:
+    - test_github_release_file: Parquet file published and accessible
+    - test_http_range_requests: DuckDB uses range requests (not full download)
+    - test_query_performance: Remote queries <3 seconds (cold start)
+
+deployment:
+  phase_1_completion: TBD
+  phase_2_completion: TBD (deferred, conditional)
+  phase_3_completion: TBD (deferred, conditional)
+  production_ready: false  # Pending Phase 1 completion
+  commits: []
+
+risks:
+  - risk: Remote queries slower than expected (network latency)
+    mitigation: Document local download option as alternative, measure actual latency
+    likelihood: LOW (DuckDB HTTP range requests proven efficient)
+
+  - risk: GitHub Release URLs change format (breaking docs)
+    mitigation: Use environment variable alternatives, test URLs in CI
+    likelihood: VERY_LOW (GitHub maintains stable URL formats)
+
+  - risk: Users still find it too complex (request CLI tool)
+    mitigation: Implement Phase 2 if feedback indicates demand
+    likelihood: MEDIUM (developers may prefer zero-code option)
+
+  - risk: Parquet file not yet published (ADR-0013 workflow not run)
+    mitigation: Trigger workflow manually, test with local file first
+    likelihood: HIGH (implementation complete but deployment pending)
+
+total_time: 1-2 hours (Phase 1 only), 8-12 hours (all phases if implemented)
