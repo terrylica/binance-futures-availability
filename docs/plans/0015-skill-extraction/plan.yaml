@@ -1,0 +1,138 @@
+info:
+  x-adr-id: "0015"
+  title: Extract Validated Workflows into Atomic Skills
+  version: 1.0.0
+  status: in_progress
+  implementation_date: 2025-11-17
+
+phases:
+  - name: Phase 1 - Create Skill: multi-agent-parallel-investigation
+    status: pending
+    est_time: 1.5-2 hours
+    deliverables:
+      - Create skills/multi-agent-parallel-investigation/ directory
+      - Invoke skill-architecture skill with specification
+      - Create SKILL.md with YAML frontmatter and core workflow
+      - Create references/agent-templates.md with example prompts
+      - Create references/synthesis-patterns.md with decision frameworks
+      - Validate with quick_validate.py
+    exit_criteria:
+      - SKILL.md passes validation
+      - Progressive disclosure (SKILL.md < 5k words, references/ for details)
+      - Generic/abstract (no ADR-0013/0014 references)
+      - Domain-specific (crypto/trading context clear)
+
+  - name: Phase 2 - Create Skill: duckdb-remote-parquet-query
+    status: pending
+    est_time: 1-1.5 hours
+    deliverables:
+      - Create skills/duckdb-remote-parquet-query/ directory
+      - Invoke skill-architecture skill with specification
+      - Create SKILL.md with capabilities (CAN/CANNOT sections)
+      - Create references/query-patterns.md with SQL examples
+      - Create references/troubleshooting.md (CORS, auth, rate limits)
+      - Create scripts/benchmark-remote-vs-local.py
+      - Validate with quick_validate.py
+    exit_criteria:
+      - SKILL.md documents DuckDB httpfs setup
+      - Performance characteristics documented (1-3 sec queries)
+      - Trade-offs clear (remote vs local, when to download)
+      - Executable benchmark script works
+
+  - name: Phase 3 - Create Skill: documentation-improvement-workflow
+    status: pending
+    est_time: 1-1.5 hours
+    deliverables:
+      - Create skills/documentation-improvement-workflow/ directory
+      - Invoke skill-architecture skill with specification
+      - Create SKILL.md with assessment checklist
+      - Create references/quick-start-template.md
+      - Create references/assessment-rubric.md
+      - Validate with quick_validate.py
+    exit_criteria:
+      - SKILL.md provides systematic workflow
+      - Before/after patterns documented
+      - Rating criteria clear (7.5/10 → 9/10 improvement path)
+      - Templates reusable for other documentation
+
+  - name: Phase 4 - Update CLAUDE.md Link Farm
+    status: pending
+    est_time: 30 minutes
+    deliverables:
+      - Add Reusable Skills section to CLAUDE.md
+      - Insert after "Related Projects", before "SSoT Documentation"
+      - Add 3 skill links with one-liner descriptions
+      - Verify relative paths from CLAUDE.md to skills/*/SKILL.md
+    exit_criteria:
+      - Link Farm follows Hub-and-Spoke pattern
+      - One-liner descriptions clear and concise (10-15 words)
+      - All links resolve correctly
+      - Formatting consistent with existing CLAUDE.md sections
+
+  - name: Phase 5 - Validation & Commit
+    status: pending
+    est_time: 30 minutes
+    deliverables:
+      - Run quick_validate.py on all 3 skills
+      - Test skill invocation with sample problems
+      - Verify CLAUDE.md links
+      - Create 2 conventional commits (feat + docs)
+    exit_criteria:
+      - All 3 skills pass validation
+      - CLAUDE.md links working
+      - Conventional commits follow semantic-release format
+      - feat(skills) for skill creation, docs(claude) for CLAUDE.md
+
+slos:
+  availability: "N/A (skills are documentation, not runtime components)"
+  correctness: "100% (extracted from validated workflows in ADR-0013/0014, empirically tested)"
+  observability: "N/A (skills don't generate telemetry, user observes invocation results)"
+  maintainability: "Skill updates <1 hour per skill, follows canonical structure (22 existing skills), generic/abstract content stable (no ADR coupling)"
+
+implementation_notes:
+  - Use skill-architecture skill for all 3 skill creations (consistent structure)
+  - Copy templates from /tmp/skill-design/ if available (save tokens)
+  - Progressive disclosure: SKILL.md handles 80% of use cases, references/ for other 20%
+  - Domain-specific but generic: crypto/trading context clear, no ADR references
+  - Link Farm pattern: H3 heading + one-liner + link to SKILL.md
+  - Validation via quick_validate.py: /Users/terryli/.claude/plugins/marketplaces/anthropic-agent-skills/skill-creator/scripts/quick_validate.py
+
+testing:
+  validation_tests:
+    - test_skill_structure: quick_validate.py passes for all 3 skills
+    - test_yaml_frontmatter: name, description fields valid and within limits
+    - test_progressive_disclosure: SKILL.md < 5k words, references/ exists
+    - test_no_adr_references: grep for "ADR-0013" and "ADR-0014" returns empty
+
+  integration_tests:
+    - test_skill_invocation: Invoke each skill with sample problem
+    - test_claude_md_links: All 3 links resolve to SKILL.md files
+    - test_domain_context: Skills clearly applicable to crypto/trading data
+
+deployment:
+  phase_1_completion: TBD
+  phase_2_completion: TBD
+  phase_3_completion: TBD
+  phase_4_completion: TBD
+  phase_5_completion: TBD
+  production_ready: false
+  commits: []
+
+risks:
+  - risk: skill-architecture skill invocation fails (dependency on ~/.claude/skills/)
+    mitigation: Manual SKILL.md creation following canonical structure from existing skills
+    likelihood: LOW (skill-architecture skill well-tested)
+
+  - risk: Skills too generic, lose crypto/trading context
+    mitigation: Include domain context section, use crypto-specific examples in references/
+    likelihood: MEDIUM (abstraction vs specificity trade-off)
+
+  - risk: CLAUDE.md Link Farm becomes cluttered with many skills
+    mitigation: Categorize skills when count >5, or create separate skills/README.md hub
+    likelihood: LOW (currently only 3 skills)
+
+  - risk: Skills don't match user's actual workflow needs
+    mitigation: Test skill invocation with real problems, iterate based on feedback
+    likelihood: LOW (extracted from validated ADR-0013/0014 workflows)
+
+total_time: 4.5-6 hours (all phases)
