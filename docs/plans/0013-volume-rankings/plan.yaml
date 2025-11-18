@@ -1,0 +1,147 @@
+info:
+  x-adr-id: "0013"
+  title: Volume Rankings Time-Series Archive
+  version: 1.0.0
+  status: in_progress
+  implementation_date: 2025-11-17
+
+phases:
+  - name: Phase 1 - Ranking Generation Script
+    status: completed
+    completion_date: 2025-11-17
+    est_time: 2-3 hours
+    deliverables:
+      - Create .github/scripts/generate_volume_rankings.py
+      - Implement SQL query with DENSE_RANK() and window functions
+      - Add Parquet serialization with pyarrow
+      - Support incremental append (detect latest_date from existing file)
+      - Calculate 4 rank change windows (1d, 7d, 14d, 30d)
+    exit_criteria:
+      - Script generates valid Parquet file with 13 columns
+      - Schema matches ADR-0013 specification
+      - Incremental append works (no duplicate dates)
+      - Rankings match manual SQL calculation
+      - File size reasonable (<50 MB for 733K rows)
+    implementation_notes:
+      - Script created at .github/scripts/generate_volume_rankings.py
+      - PyArrow schema with 13 typed columns (date32, string, uint16, float64, etc.)
+      - SQL query uses DENSE_RANK() for rankings, LAG() for rank changes
+      - Incremental append detects latest date from existing Parquet file
+      - Comprehensive validation (schema check, row count, rank validity)
+      - CLI interface with argparse (--db-path, --existing-file, --output, --verbose)
+
+  - name: Phase 2 - Workflow Integration
+    status: completed
+    completion_date: 2025-11-17
+    est_time: 1-2 hours
+    deliverables:
+      - Add rankings generation step to .github/workflows/update-database.yml
+      - Download existing Parquet from latest release
+      - Run generation script with incremental append
+      - Upload updated Parquet to latest release
+      - Add rankings stats to workflow summary
+    exit_criteria:
+      - Workflow step executes successfully
+      - Parquet file published to GitHub Releases
+      - Incremental updates work (append only new dates)
+      - Failures don't block database publication (non-blocking)
+      - Workflow adds <3 minutes to total runtime
+    implementation_notes:
+      - Added 2 workflow steps after "Generate database statistics"
+      - Step 1 "Download existing rankings archive" - downloads from latest release (non-fatal)
+      - Step 2 "Generate volume rankings" - runs script with continue-on-error: true (non-blocking)
+      - Updated "Create/Update release" to include volume-rankings-timeseries.parquet
+      - Updated release notes with rankings stats (rows, size, status)
+      - Updated GitHub Actions summary with rankings section
+      - Conditional shell logic for incremental append (checks if file exists)
+
+  - name: Phase 3 - Testing & Validation
+    status: pending
+    est_time: 2-3 hours
+    deliverables:
+      - Write unit tests for ranking calculation logic
+      - Add Parquet schema validation tests
+      - Test incremental append behavior
+      - Integration test with sample database subset
+    exit_criteria:
+      - All tests pass
+      - Ranking algorithm validated (rank 1 = highest volume)
+      - Rank change calculation verified
+      - Schema validation catches type errors
+      - Incremental append prevents duplicate dates
+
+  - name: Phase 4 - Documentation
+    status: pending
+    est_time: 1-2 hours
+    deliverables:
+      - Create docs/guides/using-volume-rankings.md
+      - DuckDB query examples
+      - QuestDB import instructions
+      - Schema reference table
+      - Common query patterns
+    exit_criteria:
+      - Documentation covers all query use cases
+      - Examples tested and verified
+      - Schema table matches implementation
+
+slos:
+  availability: "Rankings generated successfully >95% of daily runs (follows database availability)"
+  correctness: "Rankings match manual SQL calculation 100% (deterministic DENSE_RANK algorithm)"
+  observability: "Workflow logs show row count, date range, file size; failures logged with context"
+  maintainability: "Reuses existing VolumeQueries patterns, minimal new code (~300 lines), OSS libraries only (pyarrow)"
+
+implementation_notes:
+  - Ranking metric: quote_volume_usdt (ADR-0007 volume metrics)
+  - Algorithm: DENSE_RANK() OVER (PARTITION BY date ORDER BY quote_volume_usdt DESC)
+  - Tie-breaking: Alphabetical by symbol (display only, tied symbols same rank)
+  - Cohort: All symbols with available=TRUE and quote_volume_usdt IS NOT NULL
+  - File format: Parquet with SNAPPY compression
+  - Storage: Single cumulative file (not daily snapshots)
+  - Retention: Forever (complete historical archive)
+  - Update strategy: Incremental append (query dates > latest_date in file)
+
+testing:
+  unit_tests:
+    - test_ranking_calculation: Verify DENSE_RANK produces correct ranks
+    - test_rank_change_calculation: Verify 1d/7d/14d/30d deltas correct
+    - test_parquet_schema: Validate 13 columns with correct types
+    - test_incremental_append: Ensure no duplicate (date, symbol) pairs
+    - test_volume_metric: Confirm quote_volume_usdt used (not file_size_bytes)
+
+  integration_tests:
+    - test_full_historical_generation: Generate rankings for all dates (2019-2025)
+    - test_duckdb_query_performance: Verify SELECT WHERE date='X' <50ms
+    - test_file_size: Confirm Parquet <50 MB for current dataset
+
+  manual_tests:
+    - Trigger workflow manually and verify Parquet published to release
+    - Download file and query with DuckDB
+    - Verify rankings match expected (BTCUSDT/ETHUSDT in top 5)
+    - Check rank changes match manual calculation
+
+deployment:
+  phase_1_completion: TBD
+  phase_2_completion: TBD
+  phase_3_completion: TBD
+  phase_4_completion: TBD
+  production_ready: TBD
+  commits: []
+
+risks:
+  - risk: Parquet file grows too large (>100 MB)
+    mitigation: Monitor file size, consider partitioning by year if exceeds 500 MB
+    likelihood: LOW (current projection: ~115 MB in 5 years)
+
+  - risk: Incremental append fails (duplicate dates)
+    mitigation: SQL query uses MAX(date) from existing file, validates no overlaps
+    likelihood: VERY_LOW (deterministic date filtering)
+
+  - risk: Rankings generation extends workflow runtime significantly
+    mitigation: Query optimized with indexes, targets <3 minutes additional time
+    likelihood: LOW (tested SQL queries execute in <30 seconds)
+
+  - risk: Parquet schema changes break existing files
+    mitigation: Version schema, regenerate full file if needed (rare event)
+    likelihood: VERY_LOW (schema designed to be stable)
+
+total_time: 6-10 hours (all phases)

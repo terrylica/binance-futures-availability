@@ -281,6 +281,77 @@ jobs:
           echo "availability_pct=$AVAILABILITY_PCT" >> $GITHUB_OUTPUT
 
       # ============================================================================
+      # RANKINGS: Generate volume rankings time-series archive (ADR-0013)
+      # ============================================================================
+
+      - name: Download existing rankings archive
+        id: download_rankings
+        if: steps.check_db.outputs.db_ready == 'true'
+        run: |
+          RANKINGS_FILE="${{ github.workspace }}/.cache/binance-futures/volume-rankings-timeseries.parquet"
+
+          echo "Attempting to download existing rankings archive..."
+
+          # Try to download from latest release (may not exist on first run)
+          if gh release download latest \
+            --pattern "volume-rankings-timeseries.parquet" \
+            --output "$RANKINGS_FILE" \
+            --clobber \
+            2>/dev/null; then
+
+            echo "✅ Existing rankings file found: $(ls -lh "$RANKINGS_FILE" | awk '{print $5}')"
+            echo "rankings_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "ℹ️ No existing rankings file, will generate from scratch"
+            echo "rankings_exists=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate volume rankings
+        id: generate_rankings
+        if: steps.check_db.outputs.db_ready == 'true'
+        continue-on-error: true  # Non-blocking: don't fail workflow if rankings generation fails
+        run: |
+          RANKINGS_FILE="${{ github.workspace }}/.cache/binance-futures/volume-rankings-timeseries.parquet"
+
+          echo "Generating volume rankings time-series archive..."
+
+          # Build command with optional existing file
+          CMD="uv run python .github/scripts/generate_volume_rankings.py \
+            --db-path \"$DB_PATH\" \
+            --output \"$RANKINGS_FILE\""
+
+          # Add existing file parameter if available (incremental append)
+          if [ -f "$RANKINGS_FILE" ]; then
+            CMD="$CMD --existing-file \"$RANKINGS_FILE\""
+            echo "Mode: INCREMENTAL APPEND"
+          else
+            echo "Mode: FULL HISTORICAL GENERATION"
+          fi
+
+          # Execute generation script
+          eval $CMD
+
+          if [ $? -eq 0 ]; then
+            echo "rankings_generated=true" >> $GITHUB_OUTPUT
+            echo "✅ Rankings generation completed successfully"
+
+            # Extract summary stats from Parquet
+            ROWS=$(uv run python -c "import pyarrow.parquet as pq; print(len(pq.read_table('$RANKINGS_FILE')))")
+            SIZE_MB=$(du -m "$RANKINGS_FILE" | awk '{print $1}')
+
+            echo "rankings_rows=$ROWS" >> $GITHUB_OUTPUT
+            echo "rankings_size_mb=$SIZE_MB" >> $GITHUB_OUTPUT
+
+            echo "📊 Rankings stats: $ROWS rows, ${SIZE_MB}MB"
+          else
+            echo "rankings_generated=false" >> $GITHUB_OUTPUT
+            echo "❌ Rankings generation failed (non-blocking)"
+            exit 1  # Fail step but continue workflow (continue-on-error: true)
+          fi
+
+      # ============================================================================
       # TEST: Run pytest to ensure code quality
       # ============================================================================
 
@@ -308,6 +379,9 @@ jobs:
           LATEST_DATE: ${{ steps.stats.outputs.latest_date }}
           TOTAL_RECORDS: ${{ steps.stats.outputs.total_records }}
           AVAILABILITY_PCT: ${{ steps.stats.outputs.availability_pct }}
+          RANKINGS_GENERATED: ${{ steps.generate_rankings.outputs.rankings_generated }}
+          RANKINGS_ROWS: ${{ steps.generate_rankings.outputs.rankings_rows }}
+          RANKINGS_SIZE_MB: ${{ steps.generate_rankings.outputs.rankings_size_mb }}
           TRIGGER: ${{ github.event_name }}
           UPDATE_MODE: ${{ github.event_name == 'schedule' && 'daily' || inputs.update_mode }}
           VALIDATION_STATUS: ${{ steps.validate.outputs.validation_passed == 'true' && 'Passed' || 'Failed' }}
@@ -329,17 +403,42 @@ jobs:
           ### Files
           - \`availability.duckdb\` - Uncompressed database (50-150 MB)
           - \`availability.duckdb.gz\` - Compressed database (recommended for download)
+          - \`volume-rankings-timeseries.parquet\` - Volume rankings archive (ADR-0013)
+
+          ### Volume Rankings Archive
+          $(if [ "$RANKINGS_GENERATED" = "true" ]; then
+            echo "- **Status**: ✅ Generated successfully"
+            echo "- **Rows**: ${RANKINGS_ROWS:-N/A}"
+            echo "- **Size**: ${RANKINGS_SIZE_MB:-N/A} MB"
+            echo "- **Format**: Parquet (columnar, SNAPPY compressed)"
+            echo "- **Schema**: 13 columns (date, symbol, rank, volume metrics, 4 rank changes)"
+          else
+            echo "- **Status**: ⚠️ Generation failed (database still published)"
+          fi)
 
           ### Usage
           \`\`\`bash
-          # Download and extract
+          # Download database
           wget https://github.com/$REPO/releases/download/latest/availability.duckdb.gz
           gunzip availability.duckdb.gz
 
-          # Query with Python
+          # Download rankings archive
+          wget https://github.com/$REPO/releases/download/latest/volume-rankings-timeseries.parquet
+
+          # Query database with Python
           import duckdb
           conn = duckdb.connect('availability.duckdb', read_only=True)
           result = conn.execute('SELECT * FROM daily_availability LIMIT 10').fetchall()
+
+          # Query rankings with DuckDB
+          import duckdb
+          conn = duckdb.connect()
+          rankings = conn.execute('''
+              SELECT * FROM read_parquet('volume-rankings-timeseries.parquet')
+              WHERE date = '2025-11-16'
+              ORDER BY rank
+              LIMIT 10
+          ''').fetchall()
           \`\`\`
           EOF
 
@@ -356,6 +455,7 @@ jobs:
           files: |
             ${{ github.workspace }}/.cache/binance-futures/availability.duckdb
             ${{ github.workspace }}/.cache/binance-futures/availability.duckdb.gz
+            ${{ github.workspace }}/.cache/binance-futures/volume-rankings-timeseries.parquet
           draft: false
           prerelease: false
           make_latest: true
@@ -373,6 +473,9 @@ jobs:
           LATEST_DATE: ${{ steps.stats.outputs.latest_date }}
           TOTAL_RECORDS: ${{ steps.stats.outputs.total_records }}
           AVAILABILITY_PCT: ${{ steps.stats.outputs.availability_pct }}
+          RANKINGS_GENERATED: ${{ steps.generate_rankings.outputs.rankings_generated }}
+          RANKINGS_ROWS: ${{ steps.generate_rankings.outputs.rankings_rows }}
+          RANKINGS_SIZE_MB: ${{ steps.generate_rankings.outputs.rankings_size_mb }}
           TRIGGER: ${{ github.event_name }}
           RUN_ID: ${{ github.run_id }}
           REPO: ${{ github.repository }}
@@ -386,6 +489,15 @@ jobs:
           - **Total Records**: $TOTAL_RECORDS
           - **Availability**: $AVAILABILITY_PCT%
 
+          ## Volume Rankings (ADR-0013)
+          $(if [ "$RANKINGS_GENERATED" = "true" ]; then
+            echo "- **Status**: ✅ Generated"
+            echo "- **Rows**: ${RANKINGS_ROWS:-N/A}"
+            echo "- **Size**: ${RANKINGS_SIZE_MB:-N/A} MB"
+          else
+            echo "- **Status**: ⚠️ Failed (non-blocking)"
+          fi)
+
           ## Workflow Details
           - **Trigger**: $TRIGGER
           - **Run ID**: $RUN_ID
@@ -393,7 +505,8 @@ jobs:
 
           ## Next Steps
           - Database published to [latest release](https://github.com/$REPO/releases/tag/latest)
-          - Download: \`wget https://github.com/$REPO/releases/download/latest/availability.duckdb.gz\`
+          - Download database: \`wget https://github.com/$REPO/releases/download/latest/availability.duckdb.gz\`
+          - Download rankings: \`wget https://github.com/$REPO/releases/download/latest/volume-rankings-timeseries.parquet\`
           EOF
 
       # ============================================================================

@@ -11,6 +11,7 @@ license = {text = "MIT"}
 dependencies = [
     "duckdb>=1.0.0",
     "urllib3>=2.0.0",
+    "pyarrow>=18.0.0",  # ADR-0013: Volume rankings Parquet generation
 ]
 
 [project.optional-dependencies]
