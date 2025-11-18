@@ -293,6 +293,22 @@ Initial futures discovery exploration (source of probe functions)
 - `historical_probe.py` → `src/binance_futures_availability/probing/s3_vision.py`
 - `futures_discovery.py` → `src/binance_futures_availability/probing/symbol_discovery.py`
 
+## Reusable Skills
+
+Project-specific skills extracted from validated workflows (ADR-0015):
+
+### [`multi-agent-parallel-investigation`](skills/multi-agent-parallel-investigation/SKILL.md)
+
+Decompose complex questions into 4-6 parallel investigations with different perspectives, synthesize into phased decision framework. Use when facing architecture decisions with multiple unknowns in crypto/trading data platforms.
+
+### [`duckdb-remote-parquet-query`](skills/duckdb-remote-parquet-query/SKILL.md)
+
+Query remote Parquet files via HTTP without downloading using DuckDB httpfs. Leverage column pruning, row filtering, and range requests for efficient bandwidth usage. Use for crypto/trading data distribution and analytics.
+
+### [`documentation-improvement-workflow`](skills/documentation-improvement-workflow/SKILL.md)
+
+Systematically improve documentation quality from 7/10 → 9/10 using assessment checklists and transformation patterns. Use when documentation exists but lacks Quick Start, clear prerequisites, or working examples. Optimized for crypto/trading data projects.
+
 ## SSoT Documentation
 
 All specification documents follow SSoT principles:
