@@ -156,6 +156,15 @@ deployment:
       insertions: 1417
       deletions: 3
       description: "Phases 1-3: Script, workflow, tests"
+    - hash: 1d43a58
+      type: docs
+      scope: adr-0013
+      message: "add comprehensive volume rankings documentation"
+      date: 2025-11-17
+      files_changed: 3
+      insertions: 515
+      deletions: 9
+      description: "Phase 4: User guide, README updates, plan finalization"
 
 risks:
   - risk: Parquet file grows too large (>100 MB)
