@@ -2,12 +2,14 @@ info:
   x-adr-id: "0014"
   title: Easy Query Access to Volume Rankings
   version: 1.0.0
-  status: in_progress
+  status: completed
   implementation_date: 2025-11-17
+  completion_date: 2025-11-17
 
 phases:
   - name: Phase 1 - Documentation Improvements
-    status: in_progress
+    status: completed
+    completion_date: 2025-11-17
     est_time: 1-2 hours
     deliverables:
       - Add Quick Start section to docs/guides/using-volume-rankings.md
@@ -25,6 +27,9 @@ phases:
       - Remote query examples use actual GitHub Release URLs
       - Prerequisites specify Python 3.12+ and pip install duckdb
       - Trade-offs documented (local vs remote queries)
+      - Added 75 lines total: Quick Start (44 lines), Remote Queries (68 lines)
+      - Fixed 5 GitHub URL placeholders across guide
+      - README updated with Option 1 (remote) + Option 2 (local) structure
 
   - name: Phase 2 - CLI Tool (Optional, Future)
     status: deferred
@@ -87,11 +92,20 @@ testing:
     - test_query_performance: Remote queries <3 seconds (cold start)
 
 deployment:
-  phase_1_completion: TBD
-  phase_2_completion: TBD (deferred, conditional)
-  phase_3_completion: TBD (deferred, conditional)
-  production_ready: false  # Pending Phase 1 completion
-  commits: []
+  phase_1_completion: 2025-11-17
+  phase_2_completion: TBD (deferred, conditional on user feedback)
+  phase_3_completion: TBD (deferred, conditional on user feedback)
+  production_ready: true  # Phase 1 completed, docs published
+  commits:
+    - hash: 769f4bd
+      type: docs
+      scope: adr-0014
+      message: "enable easy query access via remote DuckDB HTTP reads"
+      date: 2025-11-17
+      files_changed: 4
+      insertions: 483
+      deletions: 13
+      description: "Phase 1: Quick Start, Prerequisites, Remote Queries, URL fixes"
 
 risks:
   - risk: Remote queries slower than expected (network latency)
