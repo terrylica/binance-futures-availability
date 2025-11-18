@@ -83,6 +83,66 @@ print(q.get_available_symbols_on_date('2024-01-15'))
 "
 ```
 
+## Volume Rankings Archive (ADR-0013)
+
+**NEW**: Daily volume rankings time-series in Parquet format, published alongside the database.
+
+### Overview
+
+Single cumulative file containing historical daily rankings of all symbols by 24-hour trading volume (quote_volume_usdt), with rank change tracking across 1d, 7d, 14d, and 30d windows.
+
+**File**: `volume-rankings-timeseries.parquet` (20 MB, ~733K rows)
+**Format**: Parquet (columnar, SNAPPY compressed)
+**Grain**: One row per (date, symbol) combination
+**Updates**: Automated daily at 3:00 AM UTC (incremental append)
+
+### Quick Start
+
+```bash
+# Download from GitHub Releases
+gh release download latest --pattern "volume-rankings-timeseries.parquet"
+
+# Query with DuckDB
+python -c "
+import duckdb
+conn = duckdb.connect()
+
+# Top 10 symbols by volume (latest date)
+result = conn.execute('''
+    SELECT date, symbol, rank, quote_volume_usdt, rank_change_7d
+    FROM read_parquet(\"volume-rankings-timeseries.parquet\")
+    WHERE date = (SELECT MAX(date) FROM read_parquet(\"volume-rankings-timeseries.parquet\"))
+    ORDER BY rank LIMIT 10
+''').fetchall()
+
+for row in result:
+    print(f\"{row[1]:10s} | Rank {row[2]:3d} | Volume \${row[3]:,.0f} | 7d change: {row[4] or 'N/A'}\")
+"
+```
+
+### Schema (13 Columns)
+
+| Column | Type | Description |
+|--------|------|-------------|
+| date | date32 | Trading date |
+| symbol | string | Futures symbol |
+| rank | uint16 | Volume rank (1=highest) |
+| quote_volume_usdt | float64 | 24h volume (USDT) |
+| trade_count | uint64 | Number of trades |
+| rank_change_1d/7d/14d/30d | int16 | Rank delta (negative=improved) |
+| percentile | float32 | Volume percentile (0-100) |
+| market_share_pct | float32 | % of total market volume |
+| days_available | uint8 | Days available in last 30d |
+| generation_timestamp | timestamp[us] | File generation time |
+
+**Use Cases**:
+- Portfolio universe selection (top N by volume)
+- Trend analysis (rank changes over time)
+- Survivorship bias elimination
+- Market share analysis
+
+**See**: [Using Volume Rankings Guide](docs/guides/using-volume-rankings.md) for query examples and advanced usage.
+
 ## Architecture
 
 ### Database Schema
@@ -142,6 +202,7 @@ Single table with volume metrics (ADR-0006):
 
 - [Quick Start](docs/guides/QUICKSTART.md)
 - [Query Examples](docs/guides/QUERY_EXAMPLES.md)
+- [Using Volume Rankings](docs/guides/using-volume-rankings.md) - ✅ NEW
 - [Troubleshooting](docs/guides/TROUBLESHOOTING.md)
 
 **Operations**:
@@ -191,6 +252,7 @@ All decisions documented as MADRs:
 - **[ADR-0006](docs/decisions/0006-volume-metrics-collection.md)**: Volume metrics collection
 - **[ADR-0009](docs/decisions/0009-github-actions-automation.md)**: ✅ **GitHub Actions automation** (production)
 - **[ADR-0010](docs/decisions/0010-dynamic-symbol-discovery.md)**: ✅ **Dynamic symbol discovery** (daily S3 auto-update)
+- **[ADR-0013](docs/decisions/0013-volume-rankings-timeseries.md)**: ✅ **Volume rankings time-series archive** (Parquet)
 
 ## SLOs (Service Level Objectives)
 
