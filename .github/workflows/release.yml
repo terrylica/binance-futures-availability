@@ -26,13 +26,13 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: 'latest'  # Always use latest Node.js version
 
       - name: Install dependencies
-        run: npm install
+        run: npm install  # Uses package.json with ^ ranges for latest compatible versions
 
       - name: Run semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx semantic-release
+        run: npx semantic-release@latest  # Always use latest semantic-release
