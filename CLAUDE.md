@@ -2,7 +2,7 @@
 
 **Version**: v1.0.0
 **Created**: 2025-11-12
-**Updated**: 2025-11-17
+**Updated**: 2025-11-18
 **Status**: Production-ready (GitHub Actions automation enabled)
 **Pattern**: Follows `ValidationStorage` pattern from gapless-crypto-data
 **Purpose**: Track daily availability of ALL USDT perpetual futures from Binance Vision (2019-09-25 to present)
@@ -11,75 +11,100 @@
 
 ## Quick Links
 
-- **SSoT Plan**: [`docs/plans/v1.0.0-implementation-plan.yaml`](docs/plans/v1.0.0-implementation-plan.yaml)
+- **SSoT Plan**: [`docs/development/plan/v1.0.0-implementation-plan.yaml`](docs/development/plan/v1.0.0-implementation-plan.yaml)
 - **Schema**: [`docs/schema/availability-database.schema.json`](docs/schema/availability-database.schema.json)
-- **MADRs**: [`docs/decisions/`](docs/decisions/)
+- **MADRs**: [`docs/architecture/decisions/`](docs/architecture/decisions/)
 - **Guides**: [`docs/guides/`](docs/guides/)
 
 ## Architecture Decisions
 
-All architectural decisions documented as MADRs in `docs/decisions/`:
+All architectural decisions documented as MADRs in `docs/architecture/decisions/`:
 
-### [0001: Schema Design - Daily Table Pattern](docs/decisions/0001-schema-design-daily-table.md)
+### [0001: Schema Design - Daily Table Pattern](docs/architecture/decisions/0001-schema-design-daily-table.md)
 
 **Decision**: Use daily availability table (not range table) for simple append-only updates
 **Rationale**: Idempotent inserts, point-in-time accuracy, future-proof for suspensions/relistings
 
-### [0002: Storage Technology - DuckDB](docs/decisions/0002-storage-technology-duckdb.md)
+### [0002: Storage Technology - DuckDB](docs/architecture/decisions/0002-storage-technology-duckdb.md)
 
 **Decision**: DuckDB for single-file columnar storage
 **Rationale**: 50-150MB database, sub-second analytical queries, no server overhead
 
-### [0003: Error Handling - Strict Raise Policy](docs/decisions/0003-error-handling-strict-policy.md)
+### [0003: Error Handling - Strict Raise Policy](docs/architecture/decisions/0003-error-handling-strict-policy.md)
 
 **Decision**: Raise+propagate all errors immediately, no retries/fallbacks
 **Rationale**: Fail fast, workflow retries next scheduled cycle, explicit error visibility
 
-### [0004: Automation - APScheduler](docs/decisions/0004-automation-apscheduler.md)
+### [0004: Automation - APScheduler](docs/architecture/decisions/0004-automation-apscheduler.md)
 
 **Status**: ⚠️ SUPERSEDED by ADR-0009 (GitHub Actions automation)
 
-### [0005: AWS CLI for Bulk Operations](docs/decisions/0005-aws-cli-bulk-operations.md)
+### [0005: AWS CLI for Bulk Operations](docs/architecture/decisions/0005-aws-cli-bulk-operations.md)
 
 **Decision**: Hybrid approach - AWS CLI for historical backfill, HTTP HEAD for daily updates
 **Rationale**: AWS CLI is 7.2x faster for bulk operations (25 min vs 3 hours), HEAD requests simpler for incremental updates
 
-### [0006: Volume Metrics Collection](docs/decisions/0006-volume-metrics-collection.md)
+### [0006: Volume Metrics Collection](docs/architecture/decisions/0006-volume-metrics-collection.md)
 
 **Decision**: Collect file_size_bytes and last_modified from both collection methods
 **Rationale**: Zero marginal cost, enables volume analytics and audit trails, minimal storage overhead (25 MB)
 
-### [0007: Trading Volume Metrics](docs/decisions/0007-trading-volume-metrics.md)
+### [0007: Trading Volume Metrics](docs/architecture/decisions/0007-trading-volume-metrics.md)
 
 **Status**: ⚠️ PROPOSED (not yet implemented)
 **Decision**: Extend daily_availability table with 9 OHLCV columns from Binance Vision 1d klines
 **Rationale**: Portfolio universe selection, survivorship bias elimination, volume-based symbol ranking
 
-### [0008: Workspace Organization](docs/decisions/0008-workspace-organization.md)
+### [0008: Workspace Organization](docs/architecture/decisions/0008-workspace-organization.md)
 
 **Decision**: Cleanup legacy code, fix documentation drift, consolidate redundant guides
 **Rationale**: 30+ broken script references, 70% doc overlap between CLAUDE.md and README.md
 
-### [0009: GitHub Actions Automation](docs/decisions/0009-github-actions-automation.md)
+### [0009: GitHub Actions Automation](docs/architecture/decisions/0009-github-actions-automation.md)
 
 **Decision**: Replace APScheduler daemon with GitHub Actions for daily updates and distribution
 **Rationale**: Zero infrastructure overhead, 99.9% SLA, built-in observability, automated GitHub Releases publishing
 **Supersedes**: ADR-0004 (APScheduler)
 
-### [0010: Dynamic Symbol Discovery](docs/decisions/0010-dynamic-symbol-discovery.md)
+### [0010: Dynamic Symbol Discovery](docs/architecture/decisions/0010-dynamic-symbol-discovery.md)
 
 **Decision**: Daily S3 XML API enumeration to auto-update symbols.json with git auto-commit
 **Rationale**: Detect new symbol listings within 24 hours, eliminate manual symbol.json maintenance, never remove delisted symbols
 
-### [0011: 20-Day Lookback Reliability](docs/decisions/0011-20day-lookback-reliability.md)
+### [0011: 20-Day Lookback Reliability](docs/architecture/decisions/0011-20day-lookback-reliability.md)
 
 **Decision**: Probe last 20 days on each daily update (not just yesterday)
 **Rationale**: Auto-repair gaps from previous failures, handle S3 publishing delays, update changed volume metrics, validate data continuity
 
-### [0012: Auto-Backfill New Symbols](docs/decisions/0012-auto-backfill-new-symbols.md)
+### [0012: Auto-Backfill New Symbols](docs/architecture/decisions/0012-auto-backfill-new-symbols.md)
 
 **Decision**: Conditional auto-backfill workflow step that detects symbol gaps and backfills historical data for new symbols only
 **Rationale**: Zero manual intervention when Binance lists new symbols, complete historical coverage within 24 hours of discovery, zero overhead when no new symbols (99% of runs)
+
+### [0013: Volume Rankings Timeseries](docs/architecture/decisions/0013-volume-rankings-timeseries.md)
+
+**Decision**: Daily Parquet snapshots of symbol rankings with 7d/30d aggregations
+**Rationale**: Track market dynamics, identify trending symbols, enable time-series analysis without database queries
+
+### [0014: Easy Query Access](docs/architecture/decisions/0014-easy-query-access.md)
+
+**Decision**: Provide both CLI and Python API for common queries (snapshot, timeline, analytics)
+**Rationale**: Lower barrier to entry, support diverse use cases (scripts, notebooks, production), consistent query interface
+
+### [0015: Skill Extraction](docs/architecture/decisions/0015-skill-extraction.md)
+
+**Decision**: Extract validated workflows into reusable skills (multi-agent investigation, DuckDB remote queries, documentation improvement)
+**Rationale**: Codify proven patterns, enable reuse across projects, reduce repeated discovery work
+
+### [0016: Playwright E2E Testing](docs/architecture/decisions/0016-playwright-e2e-testing.md)
+
+**Decision**: Playwright 1.56+ with pytest for autonomous E2E testing with screenshot capture
+**Rationale**: Visual proof of functionality, latest 2025 tools, zero manual intervention, comprehensive test coverage
+
+### [0017: Documentation Structure Migration](docs/architecture/decisions/0017-documentation-structure-migration.md)
+
+**Decision**: Migrate ADRs to `docs/architecture/decisions/`, plans to `docs/development/plan/` with Google Design Doc format
+**Rationale**: Industry-standard paths enable tooling integration (adr-tools, Log4brains, Backstage), explicit ADR↔plan linkage via `adr-id`, narrative markdown improves readability
 
 ## Core Principles
 
@@ -126,6 +151,7 @@ Focus on 4 dimensions (explicitly **not** speed/performance/security):
 **SSoT**: See [`docs/schema/availability-database.schema.json`](docs/schema/availability-database.schema.json)
 
 **Summary**:
+
 - **Table**: `daily_availability` with PRIMARY KEY (date, symbol)
 - **Volume Metrics** (ADR-0006): `file_size_bytes`, `last_modified` enable trend analysis
 - **Indexes**: Optimized for snapshot (~1ms) and timeline (~10ms) queries
@@ -144,13 +170,13 @@ Focus on 4 dimensions (explicitly **not** speed/performance/security):
 
 **Backfill**: AWS CLI S3 listing (~1.1 min for full history, 327 symbols)
 **Daily Updates**: HTTP HEAD requests (~1.5 sec, 150 workers, GitHub Actions 3AM UTC)
-**Details**: See [ADR-0005](docs/decisions/0005-aws-cli-bulk-operations.md) and [worker benchmark](docs/benchmarks/worker-count-benchmark-2025-11-15.md)
+**Details**: See [ADR-0005](docs/architecture/decisions/0005-aws-cli-bulk-operations.md) and [worker benchmark](docs/benchmarks/worker-count-benchmark-2025-11-15.md)
 
 ### Symbol Discovery
 
 **Dynamic Discovery** (ADR-0010): S3 XML API enumeration (~327 symbols, daily 3AM UTC)
 **Auto-Update**: symbols.json committed when changes detected
-**Details**: See [ADR-0010](docs/decisions/0010-dynamic-symbol-discovery.md)
+**Details**: See [ADR-0010](docs/architecture/decisions/0010-dynamic-symbol-discovery.md)
 
 **Backfill Behavior**:
 
@@ -244,6 +270,7 @@ uv run python scripts/operations/backfill.py
 **Complete setup instructions**: See [README.md Quick Start](README.md#quick-start)
 
 **Key Points**:
+
 - First-time setup: Manual backfill via `gh workflow run` (creates initial database)
 - Automated execution: Daily at 3:00 AM UTC (zero manual intervention)
 - Distribution: GitHub Releases with gzip compression
@@ -254,6 +281,7 @@ uv run python scripts/operations/backfill.py
 **Complete examples**: See [docs/guides/QUERY_EXAMPLES.md](docs/guides/QUERY_EXAMPLES.md)
 
 **Quick reference**:
+
 ```bash
 # CLI queries
 uv run binance-futures-availability query snapshot 2024-01-15
@@ -315,7 +343,7 @@ All specification documents follow SSoT principles:
 
 ### Implementation Plan
 
-**File**: `docs/plans/v1.0.0-implementation-plan.yaml`
+**File**: `docs/development/plan/v1.0.0-implementation-plan.yaml`
 **Format**: YAML with OpenAPI-style structure
 **Version**: Semantic versioning (currently 1.0.0)
 **Content**: Phases, deliverables, SLOs, dependencies, risks, success criteria

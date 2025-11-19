@@ -118,6 +118,7 @@ Post-implementation empirical testing validated and refined the hybrid strategy:
 **Speedup**: 3.94x faster with optimized worker count
 
 **Benchmark Testing** (2025-11-15):
+
 - Tested 8 worker counts (10-200) × 5 trials = 40 production runs
 - Optimal: 150 workers (1.48s ± 0.07s, 100% success rate)
 - Rate limiting: ZERO detected (tested up to 10,000 workers, 118K requests)
@@ -136,6 +137,7 @@ Post-implementation empirical testing validated and refined the hybrid strategy:
 | Daily update        | AWS CLI       | 10      | ~1.1 min    | 327       |
 
 **Conclusion**:
+
 - AWS CLI is optimal for bulk operations (>13 dates)
 - HTTP HEAD with 150 workers is optimal for daily updates (<13 dates)
 - Hybrid strategy confirmed as correct approach

@@ -37,17 +37,20 @@ Following implementation of APScheduler automation (ADR-0004), AWS CLI bulk oper
 GitHub Actions and Releases feasibility analysis (conducted 2025-11-14):
 
 **Hard Limits (No Blocking Issues)**:
+
 - File size limit: 2 GB per release asset (current: 155 MB = 7.75% of limit)
 - Storage/bandwidth: Unlimited for GitHub Releases on public repositories
 - Runner resources: 4 vCPU, 16 GB RAM, ~25 GB disk (sufficient for database operations)
 - Job timeout: 6 hours maximum (typical workflow: 5-10 minutes)
 
 **Soft Limits (Well Within Range)**:
+
 - API rate limit: 1,000 requests/hour (workflow uses ~3 requests = 0.3%)
 - GitHub Actions minutes: Unlimited for public repositories, 2,000 min/month free tier for private
 - Estimated usage: 120-240 min/month (12% of free tier for private repos)
 
 **Storage Efficiency**:
+
 - Database: 155 MB uncompressed → 41 MB with zstd compression (73% reduction)
 - Daily growth: 70 KB/day (~327 rows)
 - 30-day retention: 1.24 GB total storage (acceptable)
@@ -60,11 +63,13 @@ Migrate database automation from local APScheduler daemon to **GitHub Actions wi
 ### Architecture
 
 **Workflow Triggers**:
+
 - Scheduled: Daily at 3:00 AM UTC (configurable for 2-3x daily)
 - Manual: On-demand via workflow_dispatch with backfill support
 - Push: Testing workflow on non-main branches
 
 **Pipeline Stages** (4 jobs):
+
 1. **Setup**: Python 3.12, uv package manager, AWS CLI, project dependencies
 2. **Restore**: Download existing database from GitHub Releases (if exists)
 3. **Update**: Execute `scheduler/daily_update.py` for incremental updates
@@ -74,6 +79,7 @@ Migrate database automation from local APScheduler daemon to **GitHub Actions wi
 7. **Notify**: Post summary to GitHub Actions job output
 
 **Distribution Strategy**:
+
 - GitHub Releases with date-based tags (`daily-YYYY-MM-DD`)
 - "latest" tag points to most recent successful update
 - 30-day retention policy (automated cleanup of old releases)
@@ -81,6 +87,7 @@ Migrate database automation from local APScheduler daemon to **GitHub Actions wi
 - SHA256 checksums for integrity verification
 
 **Error Handling** (ADR-0003 Compliant):
+
 - Strict raise+propagate policy: All errors immediately fail workflow
 - No retries in workflow: GitHub Actions scheduler retries next cycle
 - Validation gates: Prevent corrupt database publication
@@ -89,6 +96,7 @@ Migrate database automation from local APScheduler daemon to **GitHub Actions wi
 ### Integration with Existing Code
 
 **Zero Code Changes Required**:
+
 - Reuses existing `scheduler/daily_update.py` module
 - Reuses existing `scripts/operations/validate.py` validation logic
 - Reuses existing `probing/` modules for S3 Vision probing
@@ -99,34 +107,40 @@ Migrate database automation from local APScheduler daemon to **GitHub Actions wi
 ### Positive
 
 **Availability**:
+
 - 99.9% SLA from GitHub Actions (vs DIY reliability)
 - No local infrastructure dependency (eliminate single point of failure)
 - Automatic retries on next scheduled cycle
 
 **Correctness**:
+
 - Validation gates prevent corrupt database publication
 - Test suite enforcement (80% coverage requirement)
 - Idempotent operations (safe to re-run)
 
 **Observability**:
+
 - Built-in logging via GitHub Actions UI
 - Public job execution history (for public repos)
 - Downloadable logs for all workflow runs
 - Status badges for README
 
 **Maintainability**:
+
 - Zero infrastructure management (no server provisioning, monitoring, updates)
 - Declarative workflow definition (single YAML file)
 - Version controlled automation (workflow changes tracked in git)
 - Built-in concurrency control (prevent overlapping runs)
 
 **Distribution**:
+
 - Automatic publishing to GitHub Releases
 - Public URLs for database downloads
 - No manual S3 upload required
 - Versioned snapshots with retention policy
 
 **Cost**:
+
 - Public repositories: $0/month (unlimited Actions minutes and storage)
 - Private repositories: $0/month (within 2,000 min/month free tier)
 - Cost savings: $5-20/month vs local server hosting
@@ -134,24 +148,29 @@ Migrate database automation from local APScheduler daemon to **GitHub Actions wi
 ### Negative
 
 **Debugging Limitations**:
+
 - Logs-only access (no SSH into GitHub Actions runners)
 - Mitigation: Local testing script simulates all workflow steps
 
 **T+1 Latency**:
+
 - Cannot debug running workflows in real-time
 - Mitigation: Comprehensive validation gates prevent most runtime issues
 
 **Network Dependency**:
+
 - Requires S3 Vision and GitHub APIs availability
 - Mitigation: High availability services (99.9%+ uptime) + retry on next cycle
 
 **Public Visibility** (for public repos):
+
 - Workflow execution logs are publicly visible
 - Mitigation: No secrets in logs (only uses public S3 Vision API)
 
 ### Neutral
 
 **Platform Lock-in**:
+
 - Dependent on GitHub Actions availability
 - Migration path: Workflow reuses existing Python modules (minimal coupling), enabling migration to other CI/CD platforms if needed
 
@@ -194,6 +213,7 @@ Migrate database automation from local APScheduler daemon to **GitHub Actions wi
    - Updated modules: `BatchProber` default, daily update script, documentation
 
 **Operational Status**:
+
 - ✅ Workflow syntax validated
 - ✅ Cron schedule active (daily at 3:00 AM UTC)
 - ✅ Manual trigger tested and functional
@@ -201,6 +221,7 @@ Migrate database automation from local APScheduler daemon to **GitHub Actions wi
 - ⏳ Awaiting first production run (initial backfill required)
 
 **First Production Run Procedure**:
+
 1. Trigger manual backfill: `gh workflow run update-database.yml --field update_mode=backfill --field start_date=2019-09-25 --field end_date=2025-11-14`
 2. Monitor execution: `gh run watch` (estimated 25-60 minutes)
 3. Verify database published: `gh release view latest`
@@ -208,6 +229,7 @@ Migrate database automation from local APScheduler daemon to **GitHub Actions wi
 5. Monitor success rate via GitHub Actions workflow runs page
 
 **Integration with Existing Code**:
+
 - ✅ Reuses existing `probing/batch_prober.py` for parallel HTTP probing
 - ✅ Reuses existing `database/availability_db.py` for DuckDB operations
 - ✅ Reuses existing `probing/symbol_discovery.py` for perpetual symbol loading
@@ -216,12 +238,14 @@ Migrate database automation from local APScheduler daemon to **GitHub Actions wi
 - ✅ Follows ADR-0006 volume metrics collection (file_size_bytes, last_modified)
 
 **Lessons Learned**:
+
 - **Symbol count is dynamic**: Documentation updated to reflect that we probe ALL perpetual instruments available on each historical date (~327 currently, but varies)
 - **DB_PATH pattern**: Environment variable approach enables both local development and CI/CD compatibility
 - **Strict error handling pays off**: Workflow fails fast on any probe failure, ensuring data integrity
 - **Validation gates critical**: Preventing corrupt database publication more important than uptime
 
 **APScheduler Removal**:
+
 - Status: **Removed as of 2025-11-15** (all code and dependencies deleted)
 - Migration: GitHub Actions has completely replaced APScheduler for all automation
 - Commit: 873 lines of APScheduler code deleted across 9 files (scheduler module, CLI commands, dependency)
@@ -232,35 +256,41 @@ Migrate database automation from local APScheduler daemon to **GitHub Actions wi
 ### APScheduler Daemon (Status Quo)
 
 **Rejected** due to:
+
 - Infrastructure overhead (manual server management)
 - Cost ($5-20/month for always-on server)
 - Manual distribution (no built-in GitHub Releases upload)
 - DIY reliability (no SLA guarantees)
 
 **Advantages over GitHub Actions**:
+
 - Real-time debugging (SSH access)
 - No platform dependency
 
 ### AWS Lambda + EventBridge
 
 **Rejected** due to:
+
 - Additional cloud provider dependency (AWS account required)
 - Complexity (IAM roles, VPC configuration, Lambda packaging)
 - Cost (not free for private projects)
 - Distribution still requires separate solution
 
 **Advantages over GitHub Actions**:
+
 - Lower latency (can respond to events in real-time)
 - More flexible scheduling
 
 ### Git LFS for Database Storage
 
 **Rejected** due to:
+
 - Not automation solution (only storage)
 - Bandwidth limits (1 GB/month free tier)
 - Not suitable for daily-changing artifacts
 
 **Advantages over GitHub Releases**:
+
 - Integrated with git clone
 
 ## Implementation Plan
@@ -268,21 +298,25 @@ Migrate database automation from local APScheduler daemon to **GitHub Actions wi
 Detailed implementation plan: `docs/plans/0009-github-actions-automation/plan.yaml`
 
 **Phase 1: Preparation** (30 min)
+
 - Copy prototype workflow from analysis artifacts
 - Adapt workflow to project structure
 - Copy supporting documentation
 
 **Phase 2: Testing** (30 min)
+
 - Run local workflow simulation script
 - Validate workflow syntax
 - Test manual trigger
 
 **Phase 3: Deployment** (15 min)
+
 - Configure repository permissions (Actions write access)
 - Enable workflow
 - Monitor first scheduled run
 
 **Phase 4: Migration** (Completed 2025-11-15)
+
 - ✅ GitHub Actions validated through successful workflow runs
 - ✅ APScheduler code completely removed (873 lines deleted)
 - ✅ Documentation updated across all files (CLAUDE.md, README.md, ADR-0004, ADR-0009)
@@ -301,6 +335,7 @@ Detailed implementation plan: `docs/plans/0009-github-actions-automation/plan.ya
 ## Monitoring and Validation
 
 **Metrics to Track**:
+
 - Workflow success rate (target: >95%)
 - Workflow duration (expected: 5-10 minutes)
 - Database size growth (expected: 70 KB/day)
@@ -308,10 +343,12 @@ Detailed implementation plan: `docs/plans/0009-github-actions-automation/plan.ya
 - Validation check pass rate (target: 100%)
 
 **Dashboards**:
+
 - GitHub Actions workflow runs page
 - GitHub Releases page for distribution stats
 
 **Alerts**:
+
 - GitHub Actions failure notifications (built-in)
 - Email/Slack notifications (optional enhancement)
 

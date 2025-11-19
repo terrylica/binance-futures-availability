@@ -138,20 +138,21 @@ print(result)
 
 ### Schema (13 Columns)
 
-| Column | Type | Description |
-|--------|------|-------------|
-| date | date32 | Trading date |
-| symbol | string | Futures symbol |
-| rank | uint16 | Volume rank (1=highest) |
-| quote_volume_usdt | float64 | 24h volume (USDT) |
-| trade_count | uint64 | Number of trades |
-| rank_change_1d/7d/14d/30d | int16 | Rank delta (negative=improved) |
-| percentile | float32 | Volume percentile (0-100) |
-| market_share_pct | float32 | % of total market volume |
-| days_available | uint8 | Days available in last 30d |
-| generation_timestamp | timestamp[us] | File generation time |
+| Column                    | Type          | Description                    |
+| ------------------------- | ------------- | ------------------------------ |
+| date                      | date32        | Trading date                   |
+| symbol                    | string        | Futures symbol                 |
+| rank                      | uint16        | Volume rank (1=highest)        |
+| quote_volume_usdt         | float64       | 24h volume (USDT)              |
+| trade_count               | uint64        | Number of trades               |
+| rank_change_1d/7d/14d/30d | int16         | Rank delta (negative=improved) |
+| percentile                | float32       | Volume percentile (0-100)      |
+| market_share_pct          | float32       | % of total market volume       |
+| days_available            | uint8         | Days available in last 30d     |
+| generation_timestamp      | timestamp[us] | File generation time           |
 
 **Use Cases**:
+
 - Portfolio universe selection (top N by volume)
 - Trend analysis (rank changes over time)
 - Survivorship bias elimination
@@ -197,7 +198,7 @@ Single table with volume metrics (ADR-0006):
 - Use case: Automated daily updates via GitHub Actions (3 AM UTC)
 - Benchmark: [Worker Count Optimization](docs/benchmarks/worker-count-benchmark-2025-11-15.md)
 
-**See**: [ADR-0005: AWS CLI for Bulk Operations](docs/decisions/0005-aws-cli-bulk-operations.md)
+**See**: [ADR-0005: AWS CLI for Bulk Operations](docs/architecture/decisions/0005-aws-cli-bulk-operations.md)
 
 ### Error Handling
 
@@ -210,9 +211,9 @@ Single table with volume metrics (ADR-0006):
 ## Documentation
 
 **Project Memory**: [CLAUDE.md](CLAUDE.md) - AI context and patterns
-**SSoT Plan**: [docs/plans/v1.0.0-implementation-plan.yaml](docs/plans/v1.0.0-implementation-plan.yaml)
+**SSoT Plan**: [docs/development/plan/v1.0.0-implementation-plan.yaml](docs/development/plan/v1.0.0-implementation-plan.yaml)
 **Schema**: [docs/schema/availability-database.schema.json](docs/schema/availability-database.schema.json)
-**MADRs**: [docs/decisions/](docs/decisions/)
+**MADRs**: [docs/architecture/decisions/](docs/architecture/decisions/)
 
 **Guides**:
 
@@ -260,15 +261,15 @@ ruff check --fix src/ tests/
 
 All decisions documented as MADRs:
 
-- **[ADR-0001](docs/decisions/0001-schema-design-daily-table.md)**: Daily table pattern (not range table)
-- **[ADR-0002](docs/decisions/0002-storage-technology-duckdb.md)**: DuckDB for storage
-- **[ADR-0003](docs/decisions/0003-error-handling-strict-policy.md)**: Strict error handling
-- **[ADR-0004](docs/decisions/0004-automation-apscheduler.md)**: APScheduler for automation (superseded by ADR-0009)
-- **[ADR-0005](docs/decisions/0005-aws-cli-bulk-operations.md)**: AWS CLI for bulk operations
-- **[ADR-0006](docs/decisions/0006-volume-metrics-collection.md)**: Volume metrics collection
-- **[ADR-0009](docs/decisions/0009-github-actions-automation.md)**: ✅ **GitHub Actions automation** (production)
-- **[ADR-0010](docs/decisions/0010-dynamic-symbol-discovery.md)**: ✅ **Dynamic symbol discovery** (daily S3 auto-update)
-- **[ADR-0013](docs/decisions/0013-volume-rankings-timeseries.md)**: ✅ **Volume rankings time-series archive** (Parquet)
+- **[ADR-0001](docs/architecture/decisions/0001-schema-design-daily-table.md)**: Daily table pattern (not range table)
+- **[ADR-0002](docs/architecture/decisions/0002-storage-technology-duckdb.md)**: DuckDB for storage
+- **[ADR-0003](docs/architecture/decisions/0003-error-handling-strict-policy.md)**: Strict error handling
+- **[ADR-0004](docs/architecture/decisions/0004-automation-apscheduler.md)**: APScheduler for automation (superseded by ADR-0009)
+- **[ADR-0005](docs/architecture/decisions/0005-aws-cli-bulk-operations.md)**: AWS CLI for bulk operations
+- **[ADR-0006](docs/architecture/decisions/0006-volume-metrics-collection.md)**: Volume metrics collection
+- **[ADR-0009](docs/architecture/decisions/0009-github-actions-automation.md)**: ✅ **GitHub Actions automation** (production)
+- **[ADR-0010](docs/architecture/decisions/0010-dynamic-symbol-discovery.md)**: ✅ **Dynamic symbol discovery** (daily S3 auto-update)
+- **[ADR-0013](docs/architecture/decisions/0013-volume-rankings-timeseries.md)**: ✅ **Volume rankings time-series archive** (Parquet)
 
 ## SLOs (Service Level Objectives)
 

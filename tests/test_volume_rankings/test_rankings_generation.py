@@ -7,7 +7,7 @@ Test Coverage:
     - Incremental append behavior (no duplicate dates)
     - Edge cases (empty database, single symbol, ties, inactive symbols)
 
-See: docs/decisions/0013-volume-rankings-timeseries.md
+See: docs/architecture/decisions/0013-volume-rankings-timeseries.md
 """
 
 import datetime

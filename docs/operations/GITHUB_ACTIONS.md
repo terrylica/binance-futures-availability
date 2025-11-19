@@ -4,6 +4,8 @@
 
 This workflow automates daily updates to the Binance futures availability DuckDB database using GitHub Actions. The database is published as a GitHub Release asset for easy distribution.
 
+**Note**: GitHub Actions automation **replaces** the deprecated APScheduler daemon (`scheduler_daemon.py`). See [ADR-0009](../architecture/decisions/0009-github-actions-automation.md) for migration rationale. The scheduler_daemon.py script is now deprecated and should not be used for production automation.
+
 ## Architecture
 
 ```
@@ -37,10 +39,12 @@ This workflow automates daily updates to the Binance futures availability DuckDB
 The workflow requires the following permissions in your repository:
 
 **Settings → Actions → General → Workflow permissions:**
+
 - ✅ Read and write permissions
 - ✅ Allow GitHub Actions to create and approve pull requests
 
 **Required for:**
+
 - Creating/updating releases
 - Uploading database assets
 - Writing to Actions summary
@@ -84,7 +88,7 @@ gh release create latest \
 
 ```yaml
 schedule:
-  - cron: '0 3 * * *'  # Daily at 3:00 AM UTC
+  - cron: "0 3 * * *" # Daily at 3:00 AM UTC
 ```
 
 ### 2. Manual Trigger (workflow_dispatch)
@@ -92,17 +96,20 @@ schedule:
 **When**: On-demand via GitHub UI or CLI
 **What**: Either daily update OR custom backfill
 **Options**:
+
 - `update_mode`: "daily" or "backfill"
 - `start_date`: Backfill start (YYYY-MM-DD)
 - `end_date`: Backfill end (YYYY-MM-DD)
 
 **Example: Manual daily update**
+
 ```bash
 gh workflow run update-database.yml \
   --field update_mode=daily
 ```
 
 **Example: Backfill specific date range**
+
 ```bash
 gh workflow run update-database.yml \
   --field update_mode=backfill \
@@ -115,6 +122,7 @@ gh workflow run update-database.yml \
 ### Step 1: Setup
 
 Installs required tools:
+
 - **Python 3.12** via `actions/setup-python@v5`
 - **uv package manager** via `astral-sh/setup-uv@v5`
 - **AWS CLI** for bulk S3 operations (backfill mode)
@@ -136,12 +144,14 @@ gh release download latest \
 ### Step 3: Update
 
 **Daily Mode** (default for scheduled runs):
+
 ```python
 scheduler = DailyUpdateScheduler(db_path='$DB_PATH')
 scheduler.run_manual_update(date=yesterday)
 ```
 
 **Backfill Mode** (manual trigger with custom dates):
+
 ```bash
 uv run python scripts/operations/backfill.py \
   --start-date 2024-01-01 \
@@ -157,11 +167,13 @@ uv run python scripts/operations/validate.py --verbose
 ```
 
 **Validation layers:**
+
 1. **Continuity**: Check for missing dates in sequence
 2. **Completeness**: Verify symbol counts (≥700 symbols per date)
 3. **Cross-check**: Compare with Binance API (>95% match SLO)
 
 **Failure handling:**
+
 - If validation fails, workflow exits with error code
 - Database is NOT published if validation fails
 - Error details logged to Actions summary
@@ -200,10 +212,12 @@ Posts summary to GitHub Actions UI:
 
 **Tag**: `latest` (always latest snapshot, overwrites previous)
 **Assets**:
+
 - `availability.duckdb` - Uncompressed (50-150 MB)
 - `availability.duckdb.gz` - Compressed (recommended, ~10-30 MB)
 
 **Release Notes Include**:
+
 - Update timestamp
 - Database statistics
 - Validation status
@@ -212,6 +226,7 @@ Posts summary to GitHub Actions UI:
 ### Downloading Database
 
 **Via curl/wget:**
+
 ```bash
 # Compressed (recommended)
 wget https://github.com/YOUR-USERNAME/binance-futures-availability/releases/download/latest/availability.duckdb.gz
@@ -222,12 +237,14 @@ wget https://github.com/YOUR-USERNAME/binance-futures-availability/releases/down
 ```
 
 **Via gh CLI:**
+
 ```bash
 gh release download latest --pattern "availability.duckdb.gz"
 gunzip availability.duckdb.gz
 ```
 
 **Python automation:**
+
 ```python
 import urllib.request
 import gzip
@@ -245,11 +262,13 @@ with gzip.open("availability.duckdb.gz", "rb") as f_in:
 ### GitHub Actions Free Tier
 
 **Free for public repositories:**
+
 - ✅ Unlimited minutes
 - ✅ Unlimited storage
 - ✅ No cost
 
 **Free for private repositories:**
+
 - ✅ 2,000 minutes/month (Linux runners)
 - ✅ 500 MB storage
 - ⚠️ Database size: 50-150 MB (fits in free tier)
@@ -257,11 +276,13 @@ with gzip.open("availability.duckdb.gz", "rb") as f_in:
 ### Estimated Usage
 
 **Daily run:**
+
 - Duration: ~5-10 minutes
 - Storage: ~150 MB (database + compressed)
 - Minutes/month: ~300 minutes (10 min/day × 30 days)
 
 **Backfill run** (one-time or rare):
+
 - Duration: ~25-30 minutes (full historical backfill)
 - Storage: Same 150 MB
 - One-time cost
@@ -273,11 +294,13 @@ with gzip.open("availability.duckdb.gz", "rb") as f_in:
 ### View Workflow Status
 
 **GitHub UI:**
+
 1. Go to Actions tab
 2. Click "Update Binance Futures Availability Database"
 3. View run history and logs
 
 **CLI:**
+
 ```bash
 # List recent runs
 gh run list --workflow=update-database.yml
@@ -296,6 +319,7 @@ gh run download <run-id>
 **Symptom**: Workflow fails at validation step
 **Cause**: Database inconsistencies (missing dates, low symbol counts, API mismatch)
 **Solution**:
+
 ```bash
 # Re-run with backfill mode to fill gaps
 gh workflow run update-database.yml \
@@ -309,6 +333,7 @@ gh workflow run update-database.yml \
 **Symptom**: "Resource not accessible by integration" error
 **Cause**: Insufficient repository permissions
 **Solution**:
+
 1. Go to Settings → Actions → General
 2. Enable "Read and write permissions"
 3. Re-run workflow
@@ -324,6 +349,7 @@ gh workflow run update-database.yml \
 **Symptom**: `aws: command not found` or S3 access errors
 **Cause**: AWS CLI installation failure or S3 permissions
 **Solution**:
+
 - AWS CLI is installed in workflow (check logs)
 - S3 Vision is public (no credentials needed)
 - Check network connectivity
@@ -335,7 +361,7 @@ Enable verbose logging by editing workflow:
 ```yaml
 - name: Run daily update
   env:
-    LOG_LEVEL: DEBUG  # Add this
+    LOG_LEVEL: DEBUG # Add this
   run: |
     uv run python -c "..."
 ```
@@ -348,7 +374,7 @@ Edit cron expression in workflow:
 
 ```yaml
 schedule:
-  - cron: '0 3 * * *'  # Current: 3:00 AM UTC daily
+  - cron: "0 3 * * *" # Current: 3:00 AM UTC daily
 
 # Examples:
 # - cron: '0 */6 * * *'  # Every 6 hours
@@ -362,7 +388,7 @@ Edit in workflow:
 
 ```yaml
 env:
-  PYTHON_VERSION: '3.12'  # Change to 3.11, 3.13, etc.
+  PYTHON_VERSION: "3.12" # Change to 3.11, 3.13, etc.
 ```
 
 ### Add Notifications
@@ -392,7 +418,7 @@ Settings → Notifications → Actions → Configure notifications
 - name: Create/Update release
   uses: softprops/action-gh-release@v2
   with:
-    tag_name: v$(date +%Y%m%d)  # Example: v20241215
+    tag_name: v$(date +%Y%m%d) # Example: v20241215
     name: Database Snapshot $(date +%Y-%m-%d)
 ```
 
@@ -401,6 +427,7 @@ Settings → Notifications → Actions → Configure notifications
 ### 1. Token Permissions
 
 The workflow uses `GITHUB_TOKEN` with minimal required permissions:
+
 - ✅ `contents: write` - For creating releases
 - ✅ `pull-requests: write` - For PR comments (optional)
 
@@ -409,17 +436,20 @@ The workflow uses `GITHUB_TOKEN` with minimal required permissions:
 ### 2. Dependency Security
 
 **Supply chain security:**
+
 - Uses official GitHub Actions (`actions/checkout@v4`, etc.)
 - Uses official uv installer (`astral-sh/setup-uv@v5`)
 - Pins action versions (e.g., `@v4`, not `@latest`)
 
 **Python dependencies:**
+
 - Locked in `pyproject.toml`
 - No untrusted sources
 
 ### 3. Network Access
 
 **Outbound connections:**
+
 - S3 Vision API (data.binance.vision) - Public, no auth
 - Binance API (api.binance.com) - Public, validation only
 - GitHub API - Authenticated with `GITHUB_TOKEN`
@@ -429,6 +459,7 @@ The workflow uses `GITHUB_TOKEN` with minimal required permissions:
 ### 4. Database Integrity
 
 **Validation before publish:**
+
 - ✅ Continuity checks (no missing dates)
 - ✅ Completeness checks (≥700 symbols per date)
 - ✅ Cross-check with Binance API (>95% match)
@@ -492,6 +523,7 @@ gh run watch
 ### 5. Verify Automation
 
 Wait 24 hours and check:
+
 ```bash
 # Check recent runs
 gh run list --workflow=update-database.yml --limit 5
@@ -547,6 +579,7 @@ tag_name: v$(date +%Y%m%d-%H%M)
 ```
 
 Then clean old releases periodically:
+
 ```bash
 # Keep only last 30 releases
 gh release list --limit 1000 | tail -n +31 | awk '{print $1}' | xargs -I {} gh release delete {}
@@ -582,6 +615,7 @@ act workflow_dispatch \
 ```
 
 **Limitations:**
+
 - Large runner images (~10+ GB)
 - Some Actions features not supported
 - Network access may differ
@@ -625,16 +659,19 @@ chmod +x test_workflow.sh
 ### Logs and Debugging
 
 **View workflow logs:**
+
 ```bash
 gh run view --log
 ```
 
 **Download artifacts** (if workflow saves any):
+
 ```bash
 gh run download <run-id>
 ```
 
 **Check database integrity:**
+
 ```python
 import duckdb
 conn = duckdb.connect('availability.duckdb', read_only=True)

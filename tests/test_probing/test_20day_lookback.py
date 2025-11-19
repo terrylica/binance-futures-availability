@@ -7,7 +7,7 @@ Test coverage:
 - Environment variable feature flag
 - Integration with BatchProber.probe_date_range()
 
-See: docs/decisions/0011-20day-lookback-reliability.md
+See: docs/architecture/decisions/0011-20day-lookback-reliability.md
 """
 
 import datetime

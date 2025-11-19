@@ -12,7 +12,7 @@ Usage:
         --existing-file volume-rankings-timeseries.parquet \\
         --output volume-rankings-timeseries.parquet
 
-See: docs/decisions/0013-volume-rankings-timeseries.md
+See: docs/architecture/decisions/0013-volume-rankings-timeseries.md
 """
 
 import argparse

@@ -8,7 +8,7 @@ Test coverage:
 - Backward compatibility (no --symbols flag)
 - Invalid symbol handling
 
-See: docs/decisions/0012-auto-backfill-new-symbols.md
+See: docs/architecture/decisions/0012-auto-backfill-new-symbols.md
 """
 
 import datetime

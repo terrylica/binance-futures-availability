@@ -14,7 +14,7 @@ class ContinuityValidator:
     Detect gaps in date coverage.
 
     SLO: No missing dates between 2019-09-25 and yesterday
-    See: docs/plans/v1.0.0-implementation-plan.yaml (success_criteria.functional)
+    See: docs/development/plan/v1.0.0-implementation-plan.yaml (success_criteria.functional)
     """
 
     def __init__(self, db_path: Path | None = None) -> None:

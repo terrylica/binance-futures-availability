@@ -16,7 +16,7 @@ class AvailabilityDatabase:
     Database location: ~/.cache/binance-futures/availability.duckdb
 
     Pattern: Similar to ValidationStorage from gapless-crypto-data
-    See: docs/decisions/0002-storage-technology-duckdb.md
+    See: docs/architecture/decisions/0002-storage-technology-duckdb.md
     """
 
     def __init__(self, db_path: Path | None = None) -> None:

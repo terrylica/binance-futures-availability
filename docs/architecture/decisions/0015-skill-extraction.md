@@ -18,24 +18,28 @@ During implementation of ADR-0013 (Volume Rankings) and ADR-0014 (Easy Query Acc
 **Investigation Findings** (3 parallel sub-agents, 2025-11-17):
 
 **Agent 1 (Skills Architecture Analyst)**:
+
 - Analyzed 22 existing skills in `~/.claude/skills/`
 - Identified canonical structure: SKILL.md (YAML frontmatter + instructions) + references/scripts/assets
 - Found 2 relevant multi-agent skills: `multi-agent-e2e-validation`, `multi-agent-performance-profiling`
 - Recommended naming: `multi-agent-parallel-investigation`, `duckdb-remote-parquet-query`, `documentation-improvement-workflow`
 
 **Agent 2 (Skill Design Specialist)**:
+
 - Extracted core reusable patterns from ADR-0013/0014 workflows
 - Designed 3 complete specifications (Purpose, Inputs, Outputs, Workflow, Tools, Domain Context)
 - Validated against crypto/trading data analysis workflows
 - Confirmed domain-specific but generic (no ADR references in skill content)
 
 **Agent 3 (CLAUDE.md Structure Analyst)**:
+
 - Current CLAUDE.md has no skills section
 - Recommended insertion: After "Related Projects" (line 296), before "SSoT Documentation"
 - Link Farm format: H3 heading + one-liner description
-- Hub-and-Spoke: CLAUDE.md = hub, skills/*.md = spokes
+- Hub-and-Spoke: CLAUDE.md = hub, skills/\*.md = spokes
 
 **User Requirements**:
+
 - Extract 3 workflows: Multi-agent investigation, Remote Parquet query, Documentation improvement
 - Domain-specific skills (crypto/trading context)
 - Generic/abstract (no specific ADR-0013/0014 references)
@@ -54,6 +58,7 @@ Create 3 atomic, domain-specific skills under `./skills/` directory and update C
 **Domain Context**: Data platform decisions in crypto/trading projects where technical trade-offs span multiple dimensions (performance, cost, developer experience, infrastructure).
 
 **Core Workflow**:
+
 1. Define investigation question and success criteria
 2. Identify 4-6 specialist perspectives (API capabilities, performance, documentation, feasibility)
 3. Spawn parallel sub-agents with role-specific prompts and dynamic writeTodo creation
@@ -71,10 +76,11 @@ Create 3 atomic, domain-specific skills under `./skills/` directory and update C
 **Domain Context**: Crypto/trading data archives (OHLCV, volume rankings, exchange metadata, funding rates) where datasets are large (>100 MB) but queries are selective.
 
 **Core Workflow**:
+
 1. Identify remote Parquet file URL (GitHub Releases, S3, HTTP endpoint)
 2. Configure DuckDB with httpfs extension (auto-loaded in modern versions)
 3. Write query with WHERE filters for predicate pushdown (minimize data transfer)
-4. Select specific columns for column pruning (not SELECT *)
+4. Select specific columns for column pruning (not SELECT \*)
 5. Measure performance and compare to local file if needed
 
 **Tools Required**: DuckDB >=1.0.0, httpfs extension, Parquet files on HTTP-accessible storage
@@ -88,6 +94,7 @@ Create 3 atomic, domain-specific skills under `./skills/` directory and update C
 **Domain Context**: Dataset guides, API integration docs, backtest setup, pipeline configuration in crypto/trading projects where developer audience needs fast time-to-first-query.
 
 **Core Workflow**:
+
 1. Assess current documentation (identify gaps: no Quick Start, missing Prerequisites, placeholder URLs)
 2. Add Quick Start section (copy-paste example, <60 seconds to results, hardcoded values)
 3. Add Prerequisites section (Python version, installation commands, library versions)
@@ -107,12 +114,15 @@ Add "Reusable Skills" section after "Related Projects", before "SSoT Documentati
 Domain-specific skills extracted from this project for reuse across workspaces:
 
 ### [Multi-Agent Parallel Investigation](skills/multi-agent-parallel-investigation/SKILL.md)
+
 Decompose complex questions into 4-6 parallel investigations with different perspectives, synthesize into phased decision framework
 
 ### [DuckDB Remote Parquet Query](skills/duckdb-remote-parquet-query/SKILL.md)
+
 Query Parquet files on remote storage without downloading using DuckDB's httpfs extension with HTTP range requests
 
 ### [Documentation Improvement Workflow](skills/documentation-improvement-workflow/SKILL.md)
+
 Transform reference docs into quick-start structure by adding Quick Start, Prerequisites, and practical examples
 ```
 
@@ -121,17 +131,20 @@ Transform reference docs into quick-start structure by adding Quick Start, Prere
 ### Positive
 
 **Reusability**:
+
 - ✅ Validated workflows become reusable across projects (not lost in session context)
 - ✅ Future crypto/trading data projects can invoke skills directly
 - ✅ Progressive disclosure via CLAUDE.md Link Farm (Hub-and-Spoke)
 - ✅ Domain-specific optimizations preserved (crypto data characteristics)
 
 **Knowledge Capture**:
+
 - ✅ Investigation patterns documented (4-6 parallel agents, dynamic writeTodo)
 - ✅ Technical solutions captured (DuckDB HTTP range requests, performance characteristics)
 - ✅ Documentation transformation patterns standardized (7.5/10 → 9/10 improvements)
 
 **Maintainability**:
+
 - ✅ Skills follow canonical structure (SKILL.md + references/ + scripts/)
 - ✅ Generic/abstract (no ADR references - won't become outdated)
 - ✅ OSS tool dependencies (DuckDB, Claude Task tool, markdown templates)
@@ -140,11 +153,13 @@ Transform reference docs into quick-start structure by adding Quick Start, Prere
 ### Negative
 
 **Abstraction Challenges**:
+
 - ⚠️ Generic skills may lose context-specific nuances from ADR-0013/0014
 - ⚠️ Domain-specific focus limits applicability outside crypto/trading
 - ⚠️ No concrete examples in SKILL.md (must reference external docs)
 
 **Maintenance Overhead**:
+
 - ⚠️ 3 new skills to maintain (updates when tools/patterns evolve)
 - ⚠️ CLAUDE.md Link Farm grows (currently 3 skills, could expand)
 - ⚠️ Skill invocation requires user awareness (not automatic)
@@ -152,6 +167,7 @@ Transform reference docs into quick-start structure by adding Quick Start, Prere
 ### Neutral
 
 **Trade-offs**:
+
 - Skills provide methodology but require user judgment for application
 - Domain-specific focus trades broad applicability for crypto/trading optimization
 - Progressive disclosure requires 2 clicks (CLAUDE.md → SKILL.md → references/)
@@ -165,6 +181,7 @@ Transform reference docs into quick-start structure by adding Quick Start, Prere
 **Observability**: N/A (skills don't generate telemetry, user observes skill invocation results)
 
 **Maintainability**:
+
 - Skill updates: <1 hour per skill for minor changes
 - Follows canonical structure (22 existing skills as references)
 - Generic/abstract content stable (no ADR coupling)
@@ -173,18 +190,21 @@ Transform reference docs into quick-start structure by adding Quick Start, Prere
 ## Implementation
 
 **Phases**:
+
 1. Create 3 skills via `skill-architecture` skill invocation (3-5 hours)
 2. Update CLAUDE.md with Link Farm section (30 minutes)
 3. Validate skills and links (30 minutes)
 4. Commit with conventional commits (30 minutes)
 
 **Validation**:
+
 - Invoke `skill-architecture` skill for each skill creation
 - Run `quick_validate.py` on all 3 skills
 - Test skill invocation with sample problems
 - Verify CLAUDE.md links resolve correctly
 
 **Success Criteria**:
+
 - 3 skills created in `./skills/` with YAML frontmatter + core instructions
 - Each skill has progressive disclosure (references/ directory)
 - CLAUDE.md updated with Hub-and-Spoke Link Farm
@@ -197,6 +217,7 @@ Transform reference docs into quick-start structure by adding Quick Start, Prere
 **Approach**: Create generic investigation/query/documentation skills applicable to any domain
 
 **Rejected Because**:
+
 - Loses crypto/trading-specific optimizations (Parquet columnar format, range requests, cost sensitivity)
 - User explicitly requested domain-specific skills
 - Generic skills already exist in `~/.claude/skills/` (documentation-standards, etc.)
@@ -207,6 +228,7 @@ Transform reference docs into quick-start structure by adding Quick Start, Prere
 **Approach**: Reference ADR-0013/0014 as concrete examples in SKILL.md content
 
 **Rejected Because**:
+
 - User explicitly requested "no specific ADR-0013/0014 references"
 - Skills become project-coupled (less portable to other crypto projects)
 - ADRs may evolve independently (creates maintenance coupling)
@@ -217,6 +239,7 @@ Transform reference docs into quick-start structure by adding Quick Start, Prere
 **Approach**: Combine all 3 patterns into one comprehensive skill
 
 **Rejected Because**:
+
 - Violates atomic skill principle (each skill solves ONE problem)
 - Harder to discover (users must read entire skill to find relevant section)
 - Monolithic SKILL.md anti-pattern (>5k words, poor progressive disclosure)
@@ -227,6 +250,7 @@ Transform reference docs into quick-start structure by adding Quick Start, Prere
 **Approach**: Leave workflows embedded in ADR-0013/0014 documentation only
 
 **Rejected Because**:
+
 - Workflows get lost in project-specific context
 - Not reusable for future crypto/trading data projects
 - Violates knowledge capture principle (validated patterns should be preserved)

@@ -70,11 +70,13 @@ gh run list --workflow=update-database.yml --status=failure --limit 1 --json dat
 ### Manual Intervention
 
 **Trigger immediate update**:
+
 ```bash
 gh workflow run update-database.yml --field update_mode=daily
 ```
 
 **Backfill specific date range**:
+
 ```bash
 gh workflow run update-database.yml \
   --field update_mode=backfill \

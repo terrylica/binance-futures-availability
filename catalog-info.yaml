@@ -1,0 +1,81 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: binance-futures-availability
+  title: Binance Futures Availability Database
+  description: |
+    Daily availability tracking for ALL Binance USDT perpetual futures contracts from Binance Vision S3 repository.
+    Provides historical availability data from 2019-09-25 to present with automated daily updates via GitHub Actions.
+  annotations:
+    github.com/project-slug: terryli/binance-futures-availability
+    backstage.io/techdocs-ref: dir:.
+    backstage.io/adr-location: docs/architecture/decisions/
+  tags:
+    - duckdb
+    - data-engineering
+    - binance
+    - futures
+    - availability
+    - time-series
+    - python
+  links:
+    - url: https://github.com/terryli/binance-futures-availability
+      title: GitHub Repository
+      icon: github
+    - url: https://github.com/terryli/binance-futures-availability/releases
+      title: GitHub Releases
+      icon: download
+    - url: https://data.binance.vision/
+      title: Binance Vision (Data Source)
+      icon: web
+spec:
+  type: service
+  lifecycle: production
+  owner: data-team
+  system: crypto-data-platform
+  dependsOn:
+    - resource:binance-vision-s3
+  providesApis:
+    - binance-futures-availability-queries
+
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: binance-vision-s3
+  title: Binance Vision S3 Bucket
+  description: Binance public S3 bucket containing historical cryptocurrency market data
+  annotations:
+    aws.com/s3-bucket: data.binance.vision
+spec:
+  type: s3-bucket
+  owner: binance
+  system: crypto-data-platform
+
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: binance-futures-availability-queries
+  title: Futures Availability Query API
+  description: |
+    Python API for querying daily futures availability:
+    - Snapshot queries: Which symbols were available on date X?
+    - Timeline queries: When was symbol Y available?
+    - Volume analytics: Query trading volume metrics and rankings
+  annotations:
+    github.com/project-slug: terryli/binance-futures-availability
+spec:
+  type: library
+  lifecycle: production
+  owner: data-team
+  system: crypto-data-platform
+  definition: |
+    from binance_futures_availability.queries import AvailabilityQueries
+
+    # Example: Snapshot query
+    db = AvailabilityQueries()
+    symbols = db.snapshot(date="2024-01-15")
+
+    # Example: Timeline query
+    timeline = db.timeline(symbol="BTCUSDT")

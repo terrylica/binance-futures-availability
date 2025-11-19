@@ -8,7 +8,7 @@ Features:
 - UPSERT semantics: safe to re-probe same dates (no duplicates)
 - Circuit breaker: aborts if error rate exceeds threshold (ADR-0003)
 
-See: docs/decisions/0011-20day-lookback-reliability.md
+See: docs/architecture/decisions/0011-20day-lookback-reliability.md
 """
 import os
 import sys

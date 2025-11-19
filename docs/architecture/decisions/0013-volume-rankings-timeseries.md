@@ -17,6 +17,7 @@ Database contains comprehensive volume metrics (`quote_volume_usdt`, `trade_coun
 **Current Gap**: No persistent archive of historical volume rankings. Users must re-query database and recalculate rankings for each analysis. No easy way to track rank changes or identify trending symbols.
 
 **Requirements** (from user):
+
 - Single cumulative file (not daily snapshots)
 - All symbols (no filtering by minimum availability)
 - Complete historical coverage (2019-2025, grows daily)
@@ -34,12 +35,14 @@ Create single **cumulative Parquet time-series archive** containing daily volume
 **File**: `volume-rankings-timeseries.parquet` (published to GitHub Releases "latest")
 
 **Structure**: Time-series dataset with one row per (date, symbol) combination
+
 - **Rows**: ~733,000 (2,242 dates × 327 symbols)
 - **Columns**: 13 (date, symbol, rank, volume metrics, 4 rank change windows, metadata)
 - **Size**: ~20 MB compressed Parquet (vs 85 MB CSV, 220 MB if uncompressed)
 - **Growth**: +50 KB daily (~327 new rows appended)
 
 **Update Strategy**: Incremental append
+
 - Download existing file from GitHub Release
 - Query database for dates newer than file's latest date
 - Calculate rankings and append new rows
@@ -74,6 +77,7 @@ generation_timestamp: TIMESTAMP # When ranking was calculated
 ### Workflow Integration
 
 Add step to `.github/workflows/update-database.yml` after database validation:
+
 1. Download existing `volume-rankings-timeseries.parquet` from latest release
 2. Run `.github/scripts/generate_volume_rankings.py` (incremental append)
 3. Validate Parquet schema and row count
@@ -88,6 +92,7 @@ Add step to `.github/workflows/update-database.yml` after database validation:
 **Single source of truth**: One file contains complete ranking history (no need to download 2,000+ daily snapshots)
 
 **Query performance**: Parquet columnar format enables fast filtered queries
+
 - `SELECT * WHERE date='2025-11-13'` → <10ms (row group filtering)
 - `SELECT * WHERE symbol='BTCUSDT'` → <50ms (column projection)
 
@@ -116,24 +121,28 @@ Add step to `.github/workflows/update-database.yml` after database validation:
 ## Implementation
 
 ### Phase 1: Script Development
+
 - Create `.github/scripts/generate_volume_rankings.py`
 - Implement SQL ranking query with window functions
 - Add Parquet serialization with proper schema
 - Support incremental append (detect existing file's latest date)
 
 ### Phase 2: Workflow Integration
+
 - Add rankings generation step to `update-database.yml`
 - Download existing file from release before generation
 - Upload updated file after validation
 - Add rankings stats to workflow summary
 
 ### Phase 3: Testing & Validation
+
 - Unit tests for ranking calculation
 - Schema validation tests
 - Incremental append tests
 - Integration test with sample database
 
 ### Phase 4: Documentation
+
 - Usage guide (DuckDB query examples)
 - Schema reference
 - Performance benchmarks

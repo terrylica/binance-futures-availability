@@ -11,6 +11,7 @@
 ## Historical Context
 
 APScheduler-based automation was implemented for daily database updates (2AM UTC) but replaced with GitHub Actions due to:
+
 - Infrastructure overhead (24/7 local server requirement)
 - Manual distribution (no GitHub Releases integration)
 - Cost ($5-20/month vs $0 for GitHub Actions)
@@ -21,6 +22,7 @@ APScheduler-based automation was implemented for daily database updates (2AM UTC
 Use **APScheduler 3.10+** with SQLite job store for automated daily updates at 2:00 AM UTC.
 
 **Approach**:
+
 - Python BackgroundScheduler with CronTrigger
 - SQLite job store for state persistence across restarts
 - Daemon script for process management
@@ -29,6 +31,7 @@ Use **APScheduler 3.10+** with SQLite job store for automated daily updates at 2
 ## Replacement
 
 See [ADR-0009](0009-github-actions-automation.md) for current implementation:
+
 - GitHub Actions with cron triggers (daily 3AM UTC)
 - Automated GitHub Releases distribution
 - Zero infrastructure overhead
@@ -37,6 +40,7 @@ See [ADR-0009](0009-github-actions-automation.md) for current implementation:
 ## Implementation (Removed)
 
 Full implementation details available in git history before commit 5c3a9d3. Key components removed:
+
 - `scheduler/` module (APScheduler configuration)
 - `scripts/start_scheduler.py` (daemon management)
 - SQLite job store persistence

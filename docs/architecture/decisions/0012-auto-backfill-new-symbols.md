@@ -13,12 +13,14 @@ When Binance lists new perpetual futures symbols, they appear in S3 Vision with 
 **Problem**: Manual backfill intervention violates automation principles and creates incomplete data gaps.
 
 **Discovery Pattern**:
+
 - New symbols appear in S3 Vision bucket listings (detected via daily XML API enumeration)
 - `symbols.json` is updated automatically when new symbols found
 - Git commit created with `[skip ci]` to avoid workflow loops
 - **Gap**: No automatic historical backfill triggered
 
 **Example Scenario**:
+
 - Day 1: Symbol `NEWUSDT` listed, discovered, added to `symbols.json`
 - Day 1 result: Only 1 day of data collected (yesterday)
 - Day 2-N: Daily updates continue collecting new days
@@ -58,6 +60,7 @@ Daily Workflow:
 **Purpose**: Compare discovered symbols against database, identify missing symbols.
 
 **Logic**:
+
 ```python
 discovered_symbols = load_symbols_from_json()  # All symbols from symbols.json
 database_symbols = query_database_symbols()     # All symbols ever probed
@@ -79,6 +82,7 @@ return new_symbols  # Empty list if no gaps
 **New Behavior**: Backfills ONLY specified symbols when `--symbols` provided
 
 **Usage**:
+
 ```bash
 # Backfill specific symbols only
 uv run python scripts/operations/backfill.py --symbols NEWUSDT,OTHERUSDT
@@ -117,6 +121,7 @@ uv run python scripts/operations/backfill.py
 ```
 
 **Conditional Logic**:
+
 - `detect_gaps` runs ONLY if `symbols.json` changed
 - `auto-backfill` runs ONLY if gaps detected
 - Both steps skipped on 99% of daily runs (zero overhead)
@@ -126,21 +131,25 @@ uv run python scripts/operations/backfill.py
 ### Positive
 
 **Availability**:
+
 - ✅ **Zero manual intervention**: New symbols automatically get full historical data
 - ✅ **No data gaps**: Historical completeness maintained automatically
 - ✅ **Idempotent**: Re-running backfill for same symbols is safe (UPSERT semantics)
 
 **Correctness**:
+
 - ✅ **Targeted backfill**: Only new symbols processed (no redundant re-probing)
 - ✅ **Reuses proven code**: Same BatchProber + backfill.py infrastructure as manual backfills
 - ✅ **Database consistency**: UPSERT handles overlaps between backfill and daily updates
 
 **Observability**:
+
 - ✅ **Workflow logs**: Clear indication of gap detection and backfill execution
 - ✅ **GitHub commit history**: `symbols.json` updates visible with timestamps
 - ✅ **Database audit trail**: `probe_timestamp` shows when historical data was backfilled
 
 **Maintainability**:
+
 - ✅ **Minimal code changes**: Reuses 90% of existing backfill infrastructure
 - ✅ **Conditional execution**: Zero overhead when no new symbols (99% of days)
 - ✅ **Testable**: Gap detection logic isolated, easy to unit test
@@ -148,15 +157,18 @@ uv run python scripts/operations/backfill.py
 ### Neutral/Negative
 
 **Performance**:
+
 - ⚠️ **Backfill duration**: 1 new symbol adds ~4.5 seconds to workflow
 - ⚠️ **Multiple new symbols**: N symbols × 4.5s (e.g., 5 symbols = 22.5s)
 - **Mitigation**: Rare occurrence (new listings happen ~1-2 times per month)
 
 **Complexity**:
+
 - ⚠️ **Conditional workflow logic**: Adds complexity to YAML (if statements, outputs)
 - **Mitigation**: Well-documented, follows GitHub Actions best practices
 
 **Error Handling**:
+
 - ⚠️ **Backfill failure blocks daily update**: If backfill fails, entire workflow fails
 - **Mitigation**: Follows ADR-0003 strict error policy (fail fast, retry next cycle)
 - **Alternative**: Could separate backfill into independent workflow (rejected for simplicity)
@@ -168,6 +180,7 @@ uv run python scripts/operations/backfill.py
 **Approach**: Trigger separate workflow when `symbols.json` changes (via `workflow_dispatch` or repository_dispatch).
 
 **Rejected Because**:
+
 - ❌ **Higher complexity**: Two workflows to maintain instead of one
 - ❌ **Race conditions**: Backfill and daily update could conflict
 - ❌ **Lower observability**: Results split across multiple workflow runs
@@ -177,6 +190,7 @@ uv run python scripts/operations/backfill.py
 **Approach**: Send Slack/email alert when new symbols detected, require manual backfill.
 
 **Rejected Because**:
+
 - ❌ **Violates automation principle**: Requires human intervention
 - ❌ **Data gaps**: Historical data remains incomplete until manual action
 - ❌ **Not scalable**: Doesn't align with "set and forget" automation goal
@@ -186,6 +200,7 @@ uv run python scripts/operations/backfill.py
 **Approach**: Re-backfill ALL symbols nightly to catch any gaps.
 
 **Rejected Because**:
+
 - ❌ **Wasteful**: 99.9% of data re-probed unnecessarily every night
 - ❌ **S3 request overhead**: 713 symbols × 2,240 days × 150 workers = massive load
 - ❌ **Workflow duration**: Would take ~25 minutes nightly (vs 2 minutes currently)
@@ -195,6 +210,7 @@ uv run python scripts/operations/backfill.py
 **See**: `docs/plans/0012-auto-backfill/plan.yaml`
 
 **Phases**:
+
 1. **Phase 1**: Implement gap detection script + unit tests
 2. **Phase 2**: Add `--symbols` parameter to backfill.py + tests
 3. **Phase 3**: Integrate conditional steps into workflow + validation
@@ -205,19 +221,23 @@ uv run python scripts/operations/backfill.py
 ## SLOs
 
 **Availability**:
+
 - New symbols get full historical data within 24 hours of discovery (single workflow run)
 - Zero manual intervention required for symbol onboarding
 
 **Correctness**:
+
 - 100% historical coverage for all symbols (no gaps from listing date to present)
 - Targeted backfill avoids redundant re-probing (efficiency)
 
 **Observability**:
+
 - Workflow logs show gap detection results (how many new symbols found)
 - Backfill step logs show which symbols processed and duration
 - Database `probe_timestamp` distinguishes backfilled data from daily updates
 
 **Maintainability**:
+
 - Reuses existing `BatchProber` and `backfill.py` (minimal new code)
 - Conditional execution keeps workflow fast when no new symbols (99% of days)
 - Gap detection script is <50 lines, easily testable
@@ -245,6 +265,7 @@ The 20-day lookback ensures seamless handoff between backfill and daily updates:
 **Workflow Performance**:
 
 Typical daily run (no new symbols):
+
 - Symbol discovery: ~1-2s
 - Gap detection: Skipped (conditional)
 - Auto-backfill: Skipped (conditional)
@@ -252,6 +273,7 @@ Typical daily run (no new symbols):
 - **Total**: ~2 minutes (unchanged from baseline)
 
 Daily run with 1 new symbol:
+
 - Symbol discovery: ~1-2s
 - Gap detection: ~1s
 - Auto-backfill: ~4.5s (1 symbol × full history)

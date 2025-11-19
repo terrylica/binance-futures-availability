@@ -20,7 +20,7 @@ class BatchProber:
     Uses ThreadPoolExecutor for concurrent HTTP HEAD requests.
     Conservative rate limiting to avoid S3 throttling.
 
-    See: docs/decisions/0003-error-handling-strict-policy.md
+    See: docs/architecture/decisions/0003-error-handling-strict-policy.md
     """
 
     def __init__(self, max_workers: int = 150, rate_limit: float = 2.0) -> None:

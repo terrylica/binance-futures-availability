@@ -30,6 +30,7 @@ print(result)
 ```
 
 **Output Example**:
+
 ```
     symbol  rank  quote_volume_usdt  rank_change_7d
 0   BTCUSDT     1     45123456789.12            None
@@ -47,6 +48,7 @@ print(result)
 **Python**: 3.12 or higher
 
 **Required Library**:
+
 ```bash
 pip install duckdb>=1.0.0
 # or with uv
@@ -54,6 +56,7 @@ uv pip install duckdb>=1.0.0
 ```
 
 **Optional Libraries** (for alternative tools):
+
 ```bash
 pip install polars>=1.0.0  # Fast dataframe operations
 pip install pandas>=2.0.0 pyarrow>=18.0.0  # Traditional data analysis
@@ -64,6 +67,7 @@ pip install pandas>=2.0.0 pyarrow>=18.0.0  # Traditional data analysis
 The volume rankings archive is a single cumulative Parquet file containing daily rankings of all Binance USDT perpetual futures symbols, ordered by 24-hour trading volume (quote_volume_usdt). Each row represents one symbol's ranking for one date, with rank change tracking across 1-day, 7-day, 14-day, and 30-day windows.
 
 **Use Cases**:
+
 - Portfolio universe selection (top N by volume)
 - Trend analysis (rank changes over time)
 - Survivorship bias elimination (historical rankings include delisted symbols)
@@ -73,6 +77,7 @@ The volume rankings archive is a single cumulative Parquet file containing daily
 ## Download
 
 **Option 1: Remote Query (Recommended)** - No download required, query directly from GitHub:
+
 ```python
 import duckdb
 
@@ -81,6 +86,7 @@ result = duckdb.execute(f"SELECT * FROM '{url}' LIMIT 10").fetchdf()
 ```
 
 **Option 2: Local Download** - For offline use or repeated queries:
+
 ```bash
 wget https://github.com/terryli/binance-futures-availability/releases/download/latest/volume-rankings-timeseries.parquet
 ```
@@ -92,21 +98,21 @@ wget https://github.com/terryli/binance-futures-availability/releases/download/l
 
 **13 Columns** (date, symbol) grain:
 
-| Column | Type | Description | Example |
-|--------|------|-------------|---------|
-| `date` | date32 | Trading date (UTC) | 2024-01-15 |
-| `symbol` | string | Perpetual futures symbol | BTCUSDT |
-| `rank` | uint16 | Volume rank (1=highest) | 1 |
-| `quote_volume_usdt` | float64 | 24h trading volume (USDT) | 45123456789.12 |
-| `trade_count` | uint64 | Number of trades | 8245123 |
-| `rank_change_1d` | int16 | Rank delta vs 1 day ago | -2 |
-| `rank_change_7d` | int16 | Rank delta vs 7 days ago | 5 |
-| `rank_change_14d` | int16 | Rank delta vs 14 days ago | -1 |
-| `rank_change_30d` | int16 | Rank delta vs 30 days ago | 12 |
-| `percentile` | float32 | Volume percentile (0-100) | 0.5 |
-| `market_share_pct` | float32 | % of total market volume | 15.3 |
-| `days_available` | uint8 | Days available in last 30d | 30 |
-| `generation_timestamp` | timestamp[us] | File generation time | 2024-01-16T03:15:22 |
+| Column                 | Type          | Description                | Example             |
+| ---------------------- | ------------- | -------------------------- | ------------------- |
+| `date`                 | date32        | Trading date (UTC)         | 2024-01-15          |
+| `symbol`               | string        | Perpetual futures symbol   | BTCUSDT             |
+| `rank`                 | uint16        | Volume rank (1=highest)    | 1                   |
+| `quote_volume_usdt`    | float64       | 24h trading volume (USDT)  | 45123456789.12      |
+| `trade_count`          | uint64        | Number of trades           | 8245123             |
+| `rank_change_1d`       | int16         | Rank delta vs 1 day ago    | -2                  |
+| `rank_change_7d`       | int16         | Rank delta vs 7 days ago   | 5                   |
+| `rank_change_14d`      | int16         | Rank delta vs 14 days ago  | -1                  |
+| `rank_change_30d`      | int16         | Rank delta vs 30 days ago  | 12                  |
+| `percentile`           | float32       | Volume percentile (0-100)  | 0.5                 |
+| `market_share_pct`     | float32       | % of total market volume   | 15.3                |
+| `days_available`       | uint8         | Days available in last 30d | 30                  |
+| `generation_timestamp` | timestamp[us] | File generation time       | 2024-01-16T03:15:22 |
 
 **Ranking Algorithm**: DENSE_RANK() (no gaps when ties exist)
 **Tie-Breaking**: Alphabetical by symbol (display only, tied symbols get same rank)
@@ -117,6 +123,7 @@ wget https://github.com/terryli/binance-futures-availability/releases/download/l
 ### DuckDB (Recommended)
 
 **Top 10 Symbols by Volume (Latest Date)**:
+
 ```python
 import duckdb
 
@@ -134,6 +141,7 @@ for row in result:
 ```
 
 **Symbol Rank Timeline (Last 30 Days)**:
+
 ```python
 symbol = 'BTCUSDT'
 result = conn.execute("""
@@ -148,6 +156,7 @@ print(result)
 ```
 
 **Biggest Rank Movers (7-Day Window)**:
+
 ```python
 result = conn.execute("""
     SELECT date, symbol, rank, rank_change_7d, quote_volume_usdt
@@ -164,6 +173,7 @@ for row in result:
 ```
 
 **Market Share Analysis (Top 20)**:
+
 ```python
 result = conn.execute("""
     SELECT symbol, rank, market_share_pct, quote_volume_usdt
@@ -177,6 +187,7 @@ print(f"Top 20 symbols control {result['market_share_pct'].sum():.1f}% of market
 ```
 
 **Newly Listed Symbols (Appeared in Last 30 Days)**:
+
 ```python
 result = conn.execute("""
     WITH first_appearances AS (
@@ -196,17 +207,20 @@ result = conn.execute("""
 DuckDB can query Parquet files directly from GitHub Releases via HTTPS, using HTTP range requests to download only needed data.
 
 **Advantages**:
+
 - ✅ Zero local storage (no file download)
 - ✅ Always latest data (no stale local copies)
 - ✅ Efficient (DuckDB downloads only needed row groups/columns)
 - ✅ Fast (column/row pruning, 1-3 second queries)
 
 **Trade-offs**:
+
 - ⚠️ Requires internet connection
 - ⚠️ Slightly slower than local file for full table scans
 - ⚠️ GitHub rate limits apply (5,000 requests/hour authenticated)
 
 **Basic Remote Query**:
+
 ```python
 import duckdb
 
@@ -225,6 +239,7 @@ print(result)
 ```
 
 **Filtered Query (Efficient - Only Downloads Needed Data)**:
+
 ```python
 # Specific date query (fast, minimal data transfer)
 result = duckdb.execute(f"""
@@ -237,6 +252,7 @@ result = duckdb.execute(f"""
 ```
 
 **Symbol Timeline (Remote)**:
+
 ```python
 # 30-day rank history for BTCUSDT
 symbol = 'BTCUSDT'
@@ -250,11 +266,13 @@ result = duckdb.execute(f"""
 ```
 
 **Performance Tips**:
+
 - Use `WHERE` filters to minimize data transfer (DuckDB pushes predicates down)
 - Select specific columns instead of `SELECT *` (column pruning)
 - Cache frequently accessed date ranges locally if needed
 
 **When to Download Locally Instead**:
+
 - Offline analysis required
 - Repeated full table scans
 - Network unreliable or slow
@@ -263,6 +281,7 @@ result = duckdb.execute(f"""
 ### Polars
 
 **Load and Filter**:
+
 ```python
 import polars as pl
 
@@ -278,6 +297,7 @@ print(top_50.select(['symbol', 'rank', 'quote_volume_usdt', 'rank_change_7d']))
 ```
 
 **Rank Volatility (Standard Deviation)**:
+
 ```python
 # Symbols with most volatile rankings (last 30 days)
 volatility = df.filter(
@@ -296,6 +316,7 @@ print(volatility.head(10))
 ### Pandas
 
 **Load Entire Dataset**:
+
 ```python
 import pandas as pd
 
@@ -308,6 +329,7 @@ print(f"Total rows: {len(df):,}")
 ```
 
 **Portfolio Selection (Top 30 by Average Rank)**:
+
 ```python
 # Select symbols consistently in top 30 (last 90 days)
 recent = df[df['date'] >= (df['date'].max() - pd.Timedelta(days=90))]
@@ -329,6 +351,7 @@ print(portfolio.head(30))
 ### QuestDB Import
 
 **Create Table**:
+
 ```sql
 CREATE TABLE volume_rankings (
     date TIMESTAMP,
@@ -348,6 +371,7 @@ CREATE TABLE volume_rankings (
 ```
 
 **Import from Parquet** (via DuckDB):
+
 ```python
 import duckdb
 
@@ -367,6 +391,7 @@ Then import CSV via QuestDB web console or REST API.
 ### Top N by Volume
 
 **Top 10 on specific date**:
+
 ```sql
 SELECT symbol, rank, quote_volume_usdt, market_share_pct
 FROM read_parquet('volume-rankings-timeseries.parquet')
@@ -378,6 +403,7 @@ LIMIT 10
 ### Rank Change Analysis
 
 **Symbols that improved rank >10 positions in 7 days**:
+
 ```sql
 SELECT symbol, rank, rank_change_7d, quote_volume_usdt
 FROM read_parquet('volume-rankings-timeseries.parquet')
@@ -389,6 +415,7 @@ ORDER BY rank_change_7d
 ### Time-Series Queries
 
 **Symbol ranking over time**:
+
 ```sql
 SELECT date, rank, quote_volume_usdt, rank_change_1d
 FROM read_parquet('volume-rankings-timeseries.parquet')
@@ -400,6 +427,7 @@ ORDER BY date
 ### Market Concentration
 
 **Volume concentration in top 10 vs top 50**:
+
 ```sql
 WITH daily_totals AS (
     SELECT
@@ -422,26 +450,31 @@ ORDER BY date DESC
 ## Performance Tips
 
 **Query Performance**:
+
 - Filter by `date` first (Parquet column pruning)
 - Use `rank` filters for top-N queries (indexed in Parquet)
 - Avoid full table scans when possible
 
 **Memory Usage**:
+
 - Full file load: ~150 MB RAM (uncompressed)
 - Filtered queries: ~10-50 MB (DuckDB zero-copy)
 
 **Storage**:
+
 - Parquet compression: 4.4x smaller than CSV (20 MB vs 85 MB)
 - Columnar format: fast column-oriented queries
 
 ## Updating
 
 **Automated**:
+
 - GitHub Actions updates daily at 3:00 AM UTC
 - New rows appended automatically (incremental)
 - Published to GitHub Releases "latest" tag
 
 **Manual Regeneration** (if needed):
+
 ```bash
 # Download database
 wget https://github.com/YOUR_USERNAME/binance-futures-availability/releases/download/latest/availability.duckdb.gz
@@ -456,6 +489,7 @@ uv run python .github/scripts/generate_volume_rankings.py \
 ## Validation
 
 **Check Latest Date**:
+
 ```python
 import duckdb
 conn = duckdb.connect()
@@ -468,6 +502,7 @@ print(f"Latest date: {result[0]}, Total rows: {result[1]:,}")
 ```
 
 **Verify Rank Continuity** (no gaps):
+
 ```python
 # Check ranks are consecutive (DENSE_RANK property)
 result = conn.execute("""
@@ -484,6 +519,7 @@ print(f"Rank gaps found: {result[0]}")  # Should be 0
 ```
 
 **Cross-Check with Database**:
+
 ```python
 import duckdb
 
@@ -518,23 +554,27 @@ else:
 ## Troubleshooting
 
 **File Not Found**:
+
 - Check GitHub Releases "latest" tag
 - Verify download URL (replace YOUR_USERNAME with actual repo owner)
 - Ensure workflow has run at least once
 
 **Schema Mismatch**:
+
 - Re-download file (may be cached old version)
 - Check Parquet version compatibility (requires 2.6+)
 - Verify pyarrow>=18.0.0 installed
 
 **Unexpected Ranks**:
+
 - Verify ranking metric: quote_volume_usdt (not file_size_bytes)
 - Check date filter (rankings are per-date)
 - Confirm DENSE_RANK algorithm (ties get same rank, no gaps)
 
 **Missing Rank Changes**:
+
 - NULL values expected for insufficient history (<1/7/14/30 days)
-- New symbols have NULL rank_change_* until history accumulates
+- New symbols have NULL rank*change*\* until history accumulates
 - Delisted symbols frozen at last available rank
 
 ## Related

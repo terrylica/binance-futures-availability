@@ -1,7 +1,7 @@
 """S3 Vision file existence probing via HTTP HEAD requests.
 
 Copied and adapted from: scratch/vision-futures-explorer/historical_probe.py
-See: docs/decisions/0003-error-handling-strict-policy.md
+See: docs/architecture/decisions/0003-error-handling-strict-policy.md
 """
 
 import datetime

@@ -23,24 +23,26 @@ uv run python scripts/operations/backfill.py --symbols BTCUSDT ETHUSDT
 
 **Performance:** ~25 minutes for 327 symbols × 2,242 days (1.5M records)
 
-### scheduler_daemon.py
+### scheduler_daemon.py ⚠️ DEPRECATED
+
+**Status**: DEPRECATED as of 2025-11-15 (ADR-0009)
 
 APScheduler daemon for automated daily updates.
 
-**Usage:**
+**Replacement**: GitHub Actions automation (`.github/workflows/update-database.yml`)
+
+**Migration**: This script has been superseded by GitHub Actions for zero-infrastructure overhead, 99.9% SLA, and built-in observability. See [ADR-0009](../../docs/architecture/decisions/0009-github-actions-automation.md) for migration rationale.
+
+**Legacy Usage** (if needed for local testing):
 
 ```bash
-# Start scheduler in foreground (testing)
+# Start scheduler in foreground (testing only)
 uv run python scripts/operations/scheduler_daemon.py
 
-# Start as background daemon (production)
-uv run python scripts/operations/scheduler_daemon.py --daemon
-
-# Stop daemon
-uv run python scripts/operations/scheduler_daemon.py --stop
+# NOT RECOMMENDED for production - use GitHub Actions instead
 ```
 
-**Schedule:** Daily at 2:00 AM UTC, updates yesterday's data
+**Production Automation**: See [docs/operations/GITHUB_ACTIONS.md](../../docs/operations/GITHUB_ACTIONS.md)
 
 ### validate.py
 

@@ -16,10 +16,15 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=8.0.0",
+    "pytest>=8.4.0",  # Updated to match installed version 8.4.2
     "pytest-cov>=5.0.0",
     "pytest-mock>=3.14.0",
-    "ruff>=0.4.0",
+    "ruff>=0.14.0",  # Updated to match installed version 0.14.5
+]
+e2e = [
+    "playwright>=1.56.0",  # AI agent testing (Planner, Generator, Healer)
+    "pytest-playwright>=0.7.0",  # Pytest integration for Playwright
+    "httpx>=0.28.0",  # Async HTTP client for API testing
 ]
 
 [project.scripts]

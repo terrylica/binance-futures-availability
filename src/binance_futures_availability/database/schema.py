@@ -17,7 +17,7 @@ def create_schema(conn: duckdb.DuckDBPyConnection) -> None:
             - idx_available_date: Fast snapshot queries
 
     See: docs/schema/availability-database.schema.json
-    See: docs/decisions/0001-schema-design-daily-table.md
+    See: docs/architecture/decisions/0001-schema-design-daily-table.md
     """
     conn.execute("""
         CREATE TABLE IF NOT EXISTS daily_availability (

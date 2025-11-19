@@ -1,6 +1,6 @@
 """Cross-check validation: Verify against Binance exchangeInfo API.
 
-See: docs/plans/v1.0.0-implementation-plan.yaml (slos.correctness)
+See: docs/development/plan/v1.0.0-implementation-plan.yaml (slos.correctness)
 """
 
 import datetime
@@ -17,7 +17,7 @@ class CrossCheckValidator:
     Verify database accuracy against Binance exchangeInfo API.
 
     SLO: >95% match with exchangeInfo API for current date
-    See: docs/plans/v1.0.0-implementation-plan.yaml (slos.correctness)
+    See: docs/development/plan/v1.0.0-implementation-plan.yaml (slos.correctness)
 
     Note:
         exchangeInfo only provides CURRENT data (no historical snapshots).
@@ -107,7 +107,7 @@ class CrossCheckValidator:
             98.5  # 98.5% match (exceeds 95% SLO)
 
         SLO:
-            match_percentage > 95% (docs/plans/v1.0.0-implementation-plan.yaml)
+            match_percentage > 95% (docs/development/plan/v1.0.0-implementation-plan.yaml)
         """
         # Default: check yesterday (today may be incomplete)
         if date is None:
