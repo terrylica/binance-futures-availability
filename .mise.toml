@@ -1,0 +1,36 @@
+# Project-specific mise configuration
+# ADR-0002: mise System-Wide Version Management
+# This file should be committed to git
+
+[tools]
+node = "25"      # Pin Node.js to v25 for semantic-release (CI/CD compatible)
+python = "3.12"  # Will use mise-managed Python 3.12.x
+uv = "latest"    # Will use mise-managed uv
+
+[settings]
+experimental = true
+python.uv_venv_auto = true  # Auto-detect uv venvs
+
+[env]
+# Auto-create and use .venv if not exists
+_.python.venv = { path = ".venv", create = true }
+
+[tasks.install]
+description = "Install project dependencies"
+run = "uv sync || uv pip install -e '.[dev]'"
+
+[tasks.test]
+description = "Run pytest tests"
+run = "pytest"
+
+[tasks.lint]
+description = "Run ruff linter"
+run = "ruff check src/ tests/"
+
+[tasks.format]
+description = "Format code with ruff"
+run = "ruff format src/ tests/"
+
+[tasks.coverage]
+description = "Run tests with coverage"
+run = "pytest --cov=src --cov-report=term-missing"
