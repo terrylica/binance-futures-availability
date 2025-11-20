@@ -9,17 +9,17 @@ readme = "README.md"
 requires-python = ">=3.12"
 license = {text = "MIT"}
 dependencies = [
-    "duckdb>=1.0.0",
-    "urllib3>=2.0.0",
-    "pyarrow>=18.0.0",  # ADR-0013: Volume rankings Parquet generation
+    "duckdb>=1.4.0,<2.0.0",  # ADR-0018: Upgrade to 1.4 LTS with compression features
+    "urllib3>=2.5.0,<3.0.0",  # ADR-0018: Latest stable with connection pooling
+    "pyarrow>=22.0.0,<23.0.0",  # ADR-0018: Latest stable for Parquet (ADR-0013)
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=8.4.0",  # Updated to match installed version 8.4.2
+    "pytest>=8.4.0",  # ADR-0018: Constrained by pytest-playwright<9.0 compatibility
     "pytest-cov>=5.0.0",
     "pytest-mock>=3.14.0",
-    "ruff>=0.14.0",  # Updated to match installed version 0.14.5
+    "ruff>=0.14.5",  # ADR-0018: Latest stable linter
 ]
 e2e = [
     "playwright>=1.56.0",  # AI agent testing (Planner, Generator, Healer)
@@ -43,11 +43,13 @@ addopts = [
     "--cov=src/binance_futures_availability",
     "--cov-report=term-missing",
     "--cov-report=html",
+    "--cov-fail-under=80",  # ADR-0020: Enforce 80% coverage threshold
     "--strict-markers",
 ]
 markers = [
     "integration: marks tests that require live S3 Vision API (deselect with '-m \"not integration\"')",
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "ui: marks E2E UI tests with Playwright (deselect with '-m \"not ui\"')",
 ]
 
 [tool.ruff]

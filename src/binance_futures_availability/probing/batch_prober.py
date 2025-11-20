@@ -1,9 +1,13 @@
-"""Batch probing with parallel execution for efficient data collection."""
+"""Batch probing with parallel execution for efficient data collection.
+
+See: docs/architecture/decisions/0019-performance-optimization-strategy.md (DNS caching)
+"""
 
 from __future__ import annotations
 
 import datetime
 import logging
+import socket  # ADR-0019: DNS cache warming
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
 
@@ -11,6 +15,9 @@ from binance_futures_availability.probing.s3_vision import ProbeResult, check_sy
 from binance_futures_availability.probing.symbol_discovery import load_discovered_symbols
 
 logger = logging.getLogger(__name__)
+
+# ADR-0019: Binance Vision S3 hostname for DNS pre-resolution
+BINANCE_VISION_HOSTNAME = "data.binance.vision"
 
 
 class BatchProber:
@@ -38,6 +45,22 @@ class BatchProber:
         """
         self.max_workers = max_workers
         self.rate_limit = rate_limit
+
+    def _warm_dns_cache(self) -> None:
+        """
+        Pre-resolve Binance Vision hostname to warm DNS cache.
+
+        ADR-0019: Eliminates DNS lookup overhead for each parallel request.
+        Uses stdlib socket.gethostbyname() for OS-level DNS caching.
+
+        Raises:
+            RuntimeError: If DNS resolution fails (ADR-0003: strict policy)
+        """
+        try:
+            ip_address = socket.gethostbyname(BINANCE_VISION_HOSTNAME)
+            logger.debug(f"DNS cache warmed: {BINANCE_VISION_HOSTNAME} → {ip_address}")
+        except socket.gaierror as e:
+            raise RuntimeError(f"DNS resolution failed for {BINANCE_VISION_HOSTNAME}: {e}") from e
 
     def probe_all_symbols(
         self,
@@ -69,6 +92,9 @@ class BatchProber:
             symbols = load_discovered_symbols(contract_type=contract_type)  # type: ignore
 
         logger.info(f"Starting batch probe for {len(symbols)} symbols on {date}")
+
+        # ADR-0019: Warm DNS cache before parallel probes (3% performance improvement)
+        self._warm_dns_cache()
 
         results = []
         failed = []

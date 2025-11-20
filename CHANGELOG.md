@@ -2,7 +2,7 @@
 
 ### Features
 
-* **mise:** add mise configuration and CI/CD integration ([af02f1a](https://github.com/terrylica/binance-futures-availability/commit/af02f1aae697b079708d18569d682b65ae73a9c7))
+- **mise:** add mise configuration and CI/CD integration ([af02f1a](https://github.com/terrylica/binance-futures-availability/commit/af02f1aae697b079708d18569d682b65ae73a9c7))
 
 ## 1.0.0 (2025-11-19)
 

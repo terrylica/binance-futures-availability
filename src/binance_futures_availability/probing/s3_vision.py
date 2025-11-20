@@ -2,13 +2,23 @@
 
 Copied and adapted from: scratch/vision-futures-explorer/historical_probe.py
 See: docs/architecture/decisions/0003-error-handling-strict-policy.md
+See: docs/architecture/decisions/0019-performance-optimization-strategy.md (HTTP pooling)
 """
 
 import datetime
-import urllib.error
 import urllib.parse
-import urllib.request
 from typing import TypedDict
+
+import urllib3  # ADR-0019: HTTP connection pooling
+
+# ADR-0019: Global HTTP connection pool (reuses SSL/TLS connections)
+# Default pool size: 10 connections, sufficient for parallel probing
+HTTP_POOL = urllib3.PoolManager(
+    num_pools=1,  # Single pool for all requests
+    maxsize=10,   # Max connections per pool
+    timeout=urllib3.Timeout(connect=5.0, read=10.0),  # Connect + read timeouts
+    retries=False,  # ADR-0003: No automatic retries
+)
 
 
 class ProbeResult(TypedDict):
@@ -66,9 +76,10 @@ def check_symbol_availability(
     probe_timestamp = datetime.datetime.now(datetime.timezone.utc)
 
     try:
-        # HTTP HEAD request to check existence
-        request = urllib.request.Request(url, method="HEAD")
-        with urllib.request.urlopen(request, timeout=timeout) as response:
+        # ADR-0019: Use connection pool for HTTP HEAD request
+        response = HTTP_POOL.request("HEAD", url, timeout=timeout)
+
+        if response.status == 200:
             # File exists (200 OK)
             file_size = int(response.headers.get("Content-Length", 0))
             last_modified_str = response.headers.get("Last-Modified")
@@ -94,9 +105,7 @@ def check_symbol_availability(
                 probe_timestamp=probe_timestamp,
             )
 
-    except urllib.error.HTTPError as e:
-        # HTTP error (404, 403, etc.)
-        if e.code == 404:
+        elif response.status == 404:
             # File not found (symbol not available on this date)
             return ProbeResult(
                 symbol=symbol,
@@ -108,15 +117,20 @@ def check_symbol_availability(
                 status_code=404,
                 probe_timestamp=probe_timestamp,
             )
+
         else:
             # Other HTTP errors (403, 500, etc.) - raise immediately (ADR-0003)
             raise RuntimeError(
-                f"S3 probe failed for {symbol} on {date}: HTTP {e.code} - {e.reason}"
-            ) from e
+                f"S3 probe failed for {symbol} on {date}: HTTP {response.status}"
+            )
 
-    except urllib.error.URLError as e:
-        # Network error (timeout, DNS failure, etc.) - raise immediately (ADR-0003)
-        raise RuntimeError(f"Network error probing {symbol} on {date}: {e.reason}") from e
+    except urllib3.exceptions.TimeoutError as e:
+        # Timeout - raise immediately (ADR-0003)
+        raise RuntimeError(f"Timeout probing {symbol} on {date}: {e}") from e
+
+    except urllib3.exceptions.HTTPError as e:
+        # Network error (DNS failure, connection error, etc.) - raise immediately (ADR-0003)
+        raise RuntimeError(f"Network error probing {symbol} on {date}: {e}") from e
 
     except Exception as e:
         # Unexpected error - raise immediately (ADR-0003)

@@ -52,7 +52,7 @@ jobs:
       # ============================================================================
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6  # ADR-0018: Upgrade to v6 LTS
         with:
           fetch-depth: 0  # Full history for git operations
 
@@ -63,7 +63,7 @@ jobs:
           enable-cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6  # ADR-0018: Upgrade to v6 LTS
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
@@ -73,6 +73,16 @@ jobs:
       - name: Install project dependencies
         run: |
           uv pip install --system -e ".[dev]"
+
+      # ============================================================================
+      # LINT: Code quality checks (ADR-0020: fail fast on quality issues)
+      # ============================================================================
+
+      - name: Run ruff linting
+        run: |
+          echo "Running ruff linter..."
+          uv run ruff check src/ tests/ scripts/
+          echo "✓ Linting passed"
 
       # ============================================================================
       # DISCOVER: Update symbols.json from S3 Vision (daily discovery)

@@ -126,57 +126,68 @@ def populated_db(db: AvailabilityDatabase) -> AvailabilityDatabase:
 @pytest.fixture
 def mock_urlopen_success(mocker):
     """
-    Mock urllib.request.urlopen for successful S3 HEAD request (200 OK).
+    Mock urllib3.PoolManager.request for successful S3 HEAD request (200 OK).
+
+    ADR-0019: Updated to mock urllib3 connection pooling
 
     Returns:
         Mock object with status=200, headers
     """
     mock_response = mocker.MagicMock()
-    mock_response.__enter__.return_value.status = 200
-    mock_response.__enter__.return_value.headers = {
+    mock_response.status = 200
+    mock_response.headers = {
         "Content-Length": "8421945",
         "Last-Modified": "Wed, 16 Jan 2024 02:15:32 GMT",
     }
 
-    mock_urlopen = mocker.patch("urllib.request.urlopen", return_value=mock_response)
-    return mock_urlopen
+    # Mock urllib3.PoolManager.request() method
+    mock_pool = mocker.patch(
+        "binance_futures_availability.probing.s3_vision.HTTP_POOL.request",
+        return_value=mock_response
+    )
+    return mock_pool
 
 
 @pytest.fixture
 def mock_urlopen_404(mocker):
     """
-    Mock urllib.request.urlopen for 404 Not Found.
+    Mock urllib3.PoolManager.request for 404 Not Found.
+
+    ADR-0019: Updated to mock urllib3 connection pooling
 
     Returns:
-        Mock that raises HTTPError with code=404
+        Mock that returns response with status=404
     """
-    import urllib.error
+    mock_response = mocker.MagicMock()
+    mock_response.status = 404
+    mock_response.headers = {}
 
-    def raise_404(*args, **kwargs):
-        raise urllib.error.HTTPError(
-            url="https://example.com/file.zip",
-            code=404,
-            msg="Not Found",
-            hdrs={},
-            fp=None,
-        )
-
-    mock_urlopen = mocker.patch("urllib.request.urlopen", side_effect=raise_404)
-    return mock_urlopen
+    # Mock urllib3.PoolManager.request() to return 404 response
+    mock_pool = mocker.patch(
+        "binance_futures_availability.probing.s3_vision.HTTP_POOL.request",
+        return_value=mock_response
+    )
+    return mock_pool
 
 
 @pytest.fixture
 def mock_urlopen_network_error(mocker):
     """
-    Mock urllib.request.urlopen for network error.
+    Mock urllib3.PoolManager.request for network error.
+
+    ADR-0019: Updated to mock urllib3 connection pooling
 
     Returns:
-        Mock that raises URLError
+        Mock that raises urllib3.exceptions.HTTPError
     """
-    import urllib.error
+    import urllib3.exceptions
 
     def raise_network_error(*args, **kwargs):
-        raise urllib.error.URLError("Network timeout")
+        raise urllib3.exceptions.HTTPError("Network timeout")
 
-    mock_urlopen = mocker.patch("urllib.request.urlopen", side_effect=raise_network_error)
-    return mock_urlopen
+    # Mock urllib3.PoolManager.request() to raise network error
+    mock_pool = mocker.patch(
+        "binance_futures_availability.probing.s3_vision.HTTP_POOL.request",
+        side_effect=raise_network_error
+    )
+    return mock_pool

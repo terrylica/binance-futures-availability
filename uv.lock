@@ -18,7 +18,7 @@ wheels = [
 
 [[package]]
 name = "binance-futures-availability"
-version = "1.0.0"
+version = "1.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "duckdb" },
@@ -41,16 +41,16 @@ e2e = [
 
 [package.metadata]
 requires-dist = [
-    { name = "duckdb", specifier = ">=1.0.0" },
+    { name = "duckdb", specifier = ">=1.4.0,<2.0.0" },
     { name = "httpx", marker = "extra == 'e2e'", specifier = ">=0.28.0" },
     { name = "playwright", marker = "extra == 'e2e'", specifier = ">=1.56.0" },
-    { name = "pyarrow", specifier = ">=18.0.0" },
+    { name = "pyarrow", specifier = ">=22.0.0,<23.0.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.4.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0.0" },
     { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.14.0" },
     { name = "pytest-playwright", marker = "extra == 'e2e'", specifier = ">=0.7.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.14.0" },
-    { name = "urllib3", specifier = ">=2.0.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.14.5" },
+    { name = "urllib3", specifier = ">=2.5.0,<3.0.0" },
 ]
 provides-extras = ["dev", "e2e"]
 

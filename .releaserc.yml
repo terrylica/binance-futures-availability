@@ -19,9 +19,9 @@ plugins:
         # Build package for PyPI
         uv build
       publishCmd: |
-        # Publish to PyPI using Doppler for token management
-        # Doppler automatically injects PYPI_TOKEN as environment variable
-        doppler run --project claude-config --config prd -- uv publish
+        # Publish to PyPI using token from Doppler
+        # UV_PUBLISH_TOKEN environment variable is used by uv publish
+        UV_PUBLISH_TOKEN=$(doppler secrets get PYPI_TOKEN --project claude-config --config prd --plain) uv publish
 
   # Commit updated files
   - - "@semantic-release/git"
