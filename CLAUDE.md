@@ -1,9 +1,9 @@
 # Binance Futures Availability Database
 
-**Version**: v1.0.0
+**Version**: v1.2.0
 **Created**: 2025-11-12
-**Updated**: 2025-11-18
-**Status**: Production-ready (GitHub Actions automation enabled)
+**Updated**: 2025-11-20
+**Status**: Production-ready (GitHub Actions automation enabled, infrastructure v1.2.0)
 **Pattern**: Follows `ValidationStorage` pattern from gapless-crypto-data
 **Purpose**: Track daily availability of ALL USDT perpetual futures from Binance Vision (2019-09-25 to present)
 
@@ -105,6 +105,31 @@ All architectural decisions documented as MADRs in `docs/architecture/decisions/
 
 **Decision**: Migrate ADRs to `docs/architecture/decisions/`, plans to `docs/development/plan/` with Google Design Doc format
 **Rationale**: Industry-standard paths enable tooling integration (adr-tools, Log4brains, Backstage), explicit ADR↔plan linkage via `adr-id`, narrative markdown improves readability
+
+### [0018: Technology Stack Upgrade 2025](docs/architecture/decisions/0018-technology-stack-upgrade-2025.md)
+
+**Decision**: Upgrade dependencies to latest stable versions with upper-bound constraints (DuckDB 1.4, urllib3 2.5, pyarrow 22, pytest 8.4, GitHub Actions v6)
+**Rationale**: 9-15% performance improvement, 60% storage reduction, zero breaking changes, security patches applied
+**Impact**: Dependencies secured with semantic versioning constraints, pytest 8.4 constrained by pytest-playwright
+
+### [0019: Performance Optimization Strategy](docs/architecture/decisions/0019-performance-optimization-strategy.md)
+
+**Decision**: Implement 4 proven optimizations: HTTP connection pooling, DNS cache warming, column compression, materialized views
+**Rationale**: 9-15% faster daily updates (1.48s → 1.35s), 60% storage reduction (50-150MB → 20-50MB), zero complexity trade-offs
+**Impact**: HTTP pooling (7%), DNS caching (3%), compression (60% storage), materialized views (50x faster analytics)
+
+### [0020: CI/CD Maturity Improvements](docs/architecture/decisions/0020-cicd-maturity-improvements.md)
+
+**Decision**: Add critical CI/CD gates: Dependabot, ruff linting, test gates, coverage thresholds (80%)
+**Rationale**: CI/CD maturity 7.1 → 7.8 (+10%), 10:1 ROI for P0/P1 quick wins, zero infrastructure overhead
+**Impact**: Weekly automated dependency updates, fail-fast linting, enforced test coverage
+
+### [0021: Observability Phase 0 Foundation](docs/architecture/decisions/0021-observability-phase0-foundation.md)
+
+**Status**: ⚠️ DEFERRED to future sprint (8 hours effort)
+**Decision**: Establish lightweight observability foundation: schema drift detection, correlation IDs, data catalog
+**Rationale**: 3x faster debugging (>30min → <10min), 400-500% ROI, zero infrastructure overhead
+**Impact**: Deferred to Q1 2026 for deeper integration
 
 ## Core Principles
 

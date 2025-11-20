@@ -7,6 +7,9 @@ _Symbol count is dynamic (~327 currently) - we discover and track all perpetual 
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![Coverage](https://img.shields.io/badge/coverage-80%25-green.svg)]()
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)]()
+[![Update Database](https://github.com/terrylica/binance-futures-availability/actions/workflows/update-database.yml/badge.svg)](https://github.com/terrylica/binance-futures-availability/actions/workflows/update-database.yml)
+[![Release](https://github.com/terrylica/binance-futures-availability/actions/workflows/release.yml/badge.svg)](https://github.com/terrylica/binance-futures-availability/actions/workflows/release.yml)
+[![PyPI version](https://badge.fury.io/py/binance-futures-availability.svg)](https://badge.fury.io/py/binance-futures-availability)
 
 ## Overview
 
