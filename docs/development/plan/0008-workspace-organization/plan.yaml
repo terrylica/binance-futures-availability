@@ -1,10 +1,11 @@
 info:
   title: "Workspace Organization and Legacy Code Management"
   version: "1.2.0"
-  status: "proposed"
+  status: "completed"
   created: "2025-11-14"
+  completed: "2025-11-19"
   x-adr-id: "0008"
-  x-adr-ref: "docs/decisions/0008-workspace-organization.md"
+  x-adr-ref: "docs/architecture/decisions/0008-workspace-organization.md"
   description: >
     Systematic cleanup of workspace technical debt: fix 30+ broken documentation
     references, remove deprecated scripts, eliminate 40% documentation redundancy,
@@ -70,7 +71,7 @@ slos:
 phases:
   - id: "phase-1"
     name: "Build Artifact Cleanup"
-    status: "pending"
+    status: "completed"
     duration: "15 minutes"
     risk: "low"
     dependencies: []
@@ -113,7 +114,7 @@ phases:
 
   - id: "phase-2"
     name: "Documentation Reference Fixes"
-    status: "pending"
+    status: "completed"
     duration: "1 hour"
     risk: "medium"
     dependencies: []
@@ -192,7 +193,7 @@ phases:
 
   - id: "phase-3"
     name: "Documentation Archiving and Legacy Code Removal"
-    status: "pending"
+    status: "completed"
     duration: "30 minutes"
     risk: "medium"
     dependencies: ["phase-2"]
@@ -238,7 +239,7 @@ phases:
 
   - id: "phase-4"
     name: "Validation and Verification"
-    status: "pending"
+    status: "completed"
     duration: "30 minutes"
     risk: "low"
     dependencies: ["phase-1", "phase-2", "phase-3"]

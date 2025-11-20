@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.12"
 
 [[package]]
@@ -45,11 +45,11 @@ requires-dist = [
     { name = "httpx", marker = "extra == 'e2e'", specifier = ">=0.28.0" },
     { name = "playwright", marker = "extra == 'e2e'", specifier = ">=1.56.0" },
     { name = "pyarrow", specifier = ">=18.0.0" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.4.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5.0.0" },
     { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.14.0" },
     { name = "pytest-playwright", marker = "extra == 'e2e'", specifier = ">=0.7.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.4.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.14.0" },
     { name = "urllib3", specifier = ">=2.0.0" },
 ]
 provides-extras = ["dev", "e2e"]

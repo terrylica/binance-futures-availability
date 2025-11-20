@@ -9,13 +9,19 @@ plugins:
   - "@semantic-release/release-notes-generator"
   - "@semantic-release/changelog"
 
-  # Update Python version files
+  # Update Python version files and build package
   - - "@semantic-release/exec"
     - prepareCmd: |
         # Update pyproject.toml version
         sed -i.bak 's/^version = ".*"/version = "${nextRelease.version}"/' pyproject.toml && rm pyproject.toml.bak
         # Update __version__.py
         echo "__version__ = \"${nextRelease.version}\"" > src/binance_futures_availability/__version__.py
+        # Build package for PyPI
+        uv build
+      publishCmd: |
+        # Publish to PyPI using Doppler for token management
+        # Doppler automatically injects PYPI_TOKEN as environment variable
+        doppler run --project claude-config --config prd -- uv publish
 
   # Commit updated files
   - - "@semantic-release/git"

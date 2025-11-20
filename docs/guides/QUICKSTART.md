@@ -22,7 +22,7 @@ Populate the database with historical data (2019-09-25 to yesterday):
 
 ```bash
 # AWS CLI-based backfill (RECOMMENDED: 7.2x faster)
-uv run python scripts/scripts/operations/backfill.py
+uv run python scripts/operations/backfill.py
 ```
 
 **Estimated time**: ~25 minutes for ~2240 days × 327 symbols
@@ -48,7 +48,7 @@ Estimated time: ~25 minutes
 Backfill Complete! Records inserted: 732,534
 ```
 
-**Alternative (Legacy)**: HEAD request backfill available in `scripts/scripts/legacy/backfill_head.py` (~3 hours)
+**Note**: Legacy HEAD request method (deprecated per ADR-0005) took ~3 hours
 
 ### Step 2: Validate Database
 
@@ -183,10 +183,10 @@ uv run python scripts/start_scheduler.py --stop
 
 ```bash
 # AWS CLI backfill is idempotent - just re-run
-uv run python scripts/scripts/operations/backfill.py
+uv run python scripts/operations/backfill.py
 
 # For partial backfills
-uv run python scripts/scripts/operations/backfill.py --start-date 2024-01-01
+uv run python scripts/operations/backfill.py --start-date 2024-01-01
 ```
 
 **Missing dates?**
