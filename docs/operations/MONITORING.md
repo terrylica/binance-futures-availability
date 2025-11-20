@@ -123,6 +123,6 @@ APScheduler daemon monitoring (systemd, cron, Prometheus) is no longer applicabl
 
 ## References
 
-- [ADR-0009: GitHub Actions Automation](../decisions/0009-github-actions-automation.md)
+- [ADR-0009: GitHub Actions Automation](../architecture/decisions/0009-github-actions-automation.md)
 - [GitHub Actions Workflow](../../.github/workflows/update-database.yml)
 - [TROUBLESHOOTING.md](../guides/TROUBLESHOOTING.md) - Workflow debugging

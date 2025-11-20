@@ -1,6 +1,6 @@
 # Using Volume Rankings Archive
 
-**ADR**: [0013-volume-rankings-timeseries](../decisions/0013-volume-rankings-timeseries.md)
+**ADR**: [0013-volume-rankings-timeseries](../architecture/decisions/0013-volume-rankings-timeseries.md)
 **Format**: Parquet (columnar, SNAPPY compressed)
 **Update Frequency**: Daily at 3:00 AM UTC
 **Retention**: Complete historical archive (2019-09-25 to present)
@@ -579,7 +579,7 @@ else:
 
 ## Related
 
-- **ADR**: [0013-volume-rankings-timeseries](../decisions/0013-volume-rankings-timeseries.md) - Design rationale
-- **Plan**: [0013-volume-rankings/plan.yaml](../plans/0013-volume-rankings/plan.yaml) - Implementation plan
+- **ADR**: [0013-volume-rankings-timeseries](../architecture/decisions/0013-volume-rankings-timeseries.md) - Design rationale
+- **Plan**: [0013-volume-rankings/plan.yaml](../development/plan/0013-volume-rankings/plan.yaml) - Implementation plan
 - **Database Guide**: [QUERY_EXAMPLES.md](QUERY_EXAMPLES.md) - Availability database queries
 - **Schema**: [availability-database.schema.json](../schema/availability-database.schema.json) - Source data schema

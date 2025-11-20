@@ -2,7 +2,7 @@
 
 ### ⚠ BREAKING CHANGES
 
-* None (all changes backward-compatible)
+- None (all changes backward-compatible)
 
 Performance improvement: 9-15% faster (1.48s → 1.35s)
 Storage reduction: 60% (50-150MB → 20-50MB)
@@ -13,7 +13,7 @@ ADR-0018, ADR-0019, ADR-0020, ADR-0021
 
 ### Features
 
-* comprehensive infrastructure upgrade (ADR-0018 to ADR-0021) ([444fbf4](https://github.com/terrylica/binance-futures-availability/commit/444fbf4d5a48fc70f0fc281002ad0a210c01ed1b))
+- comprehensive infrastructure upgrade (ADR-0018 to ADR-0021) ([444fbf4](https://github.com/terrylica/binance-futures-availability/commit/444fbf4d5a48fc70f0fc281002ad0a210c01ed1b))
 
 ## [1.1.0](https://github.com/terrylica/binance-futures-availability/compare/v1.0.0...v1.1.0) (2025-11-20)
 

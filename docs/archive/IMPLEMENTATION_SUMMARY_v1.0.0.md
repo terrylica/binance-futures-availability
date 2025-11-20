@@ -1,8 +1,8 @@
 # Implementation Summary: Documentation Structure Migration & Pruning
 
 **Date**: 2025-11-18
-**ADR**: [ADR-0017](docs/architecture/decisions/0017-documentation-structure-migration.md)
-**Plan**: [Migration Plan](docs/development/plan/0017-documentation-structure-migration/plan.md)
+**ADR**: [ADR-0017](../architecture/decisions/0017-documentation-structure-migration.md)
+**Plan**: [Migration Plan](../development/plan/0017-documentation-structure-migration/plan.md)
 
 ---
 
@@ -429,8 +429,8 @@ ruff>=0.14.0   # Match installed 0.14.5
 
 ## References
 
-- [ADR-0017: Documentation Structure Migration](docs/architecture/decisions/0017-documentation-structure-migration.md)
-- [Migration Plan](docs/development/plan/0017-documentation-structure-migration/plan.md)
+- [ADR-0017: Documentation Structure Migration](../architecture/decisions/0017-documentation-structure-migration.md)
+- [Migration Plan](../development/plan/0017-documentation-structure-migration/plan.md)
 - [MADR Specification](https://adr.github.io/madr/)
 - [Google Design Docs](https://www.industrialempathy.com/posts/design-docs-at-google/)
 - [Backstage Catalog Format](https://backstage.io/docs/features/software-catalog/descriptor-format)

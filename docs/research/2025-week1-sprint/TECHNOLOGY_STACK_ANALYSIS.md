@@ -696,11 +696,11 @@ ruff>=0.14.5                  # Allow all 0.x (Astral maintains backward compat)
 
 ### Project Documentation
 
-- [ADR-0002: Storage Technology - DuckDB](docs/architecture/decisions/0002-storage-technology-duckdb.md)
-- [ADR-0005: AWS CLI for Bulk Operations](docs/architecture/decisions/0005-aws-cli-bulk-operations.md)
-- [ADR-0009: GitHub Actions Automation](docs/architecture/decisions/0009-github-actions-automation.md)
-- [ADR-0013: Volume Rankings Timeseries](docs/architecture/decisions/0013-volume-rankings-timeseries.md)
-- [ADR-0016: Playwright E2E Testing](docs/architecture/decisions/0016-playwright-e2e-testing.md)
+- [ADR-0002: Storage Technology - DuckDB](../../architecture/decisions/0002-storage-technology-duckdb.md)
+- [ADR-0005: AWS CLI for Bulk Operations](../../architecture/decisions/0005-aws-cli-bulk-operations.md)
+- [ADR-0009: GitHub Actions Automation](../../architecture/decisions/0009-github-actions-automation.md)
+- [ADR-0013: Volume Rankings Timeseries](../../architecture/decisions/0013-volume-rankings-timeseries.md)
+- [ADR-0016: Playwright E2E Testing](../../architecture/decisions/0016-playwright-e2e-testing.md)
 
 ---
 

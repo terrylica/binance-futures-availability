@@ -211,7 +211,7 @@ Single table with volume metrics (ADR-0006):
 ## Documentation
 
 **Project Memory**: [CLAUDE.md](CLAUDE.md) - AI context and patterns
-**SSoT Plan**: [docs/development/plan/v1.0.0-implementation-plan.yaml](docs/development/plan/v1.0.0-implementation-plan.yaml)
+**SSoT Plan**: [docs/development/plan/v1.0.0/plan.yaml](docs/development/plan/v1.0.0/plan.yaml)
 **Schema**: [docs/schema/availability-database.schema.json](docs/schema/availability-database.schema.json)
 **MADRs**: [docs/architecture/decisions/](docs/architecture/decisions/)
 

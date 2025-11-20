@@ -221,9 +221,5 @@ Implement **documentation-first approach** to enable easy querying via remote Du
 ## References
 
 - [ADR-0013: Volume Rankings Time-Series Archive](0013-volume-rankings-timeseries.md)
-- [Investigation Report: GitHub API Capabilities](../investigations/0014-github-api-capabilities.md) (sub-agent 1)
-- [Investigation Report: Remote Query Validation](../investigations/0014-remote-query-validation.md) (sub-agent 2)
-- [Investigation Report: Documentation Assessment](../investigations/0014-documentation-assessment.md) (sub-agent 3)
-- [Investigation Report: CLI Tool Feasibility](../investigations/0014-cli-tool-feasibility.md) (sub-agent 4)
 - [DuckDB HTTP Parquet Documentation](https://duckdb.org/docs/extensions/httpfs.html)
 - [PEP 723: Inline Script Metadata](https://peps.python.org/pep-0723/)

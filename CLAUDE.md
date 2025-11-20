@@ -11,7 +11,7 @@
 
 ## Quick Links
 
-- **SSoT Plan**: [`docs/development/plan/v1.0.0-implementation-plan.yaml`](docs/development/plan/v1.0.0-implementation-plan.yaml)
+- **SSoT Plan**: [`docs/development/plan/v1.0.0/plan.yaml`](docs/development/plan/v1.0.0/plan.yaml)
 - **Schema**: [`docs/schema/availability-database.schema.json`](docs/schema/availability-database.schema.json)
 - **MADRs**: [`docs/architecture/decisions/`](docs/architecture/decisions/)
 - **Guides**: [`docs/guides/`](docs/guides/)
@@ -343,7 +343,7 @@ All specification documents follow SSoT principles:
 
 ### Implementation Plan
 
-**File**: `docs/development/plan/v1.0.0-implementation-plan.yaml`
+**File**: `docs/development/plan/v1.0.0/plan.yaml`
 **Format**: YAML with OpenAPI-style structure
 **Version**: Semantic versioning (currently 1.0.0)
 **Content**: Phases, deliverables, SLOs, dependencies, risks, success criteria

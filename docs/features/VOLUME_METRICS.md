@@ -1,7 +1,7 @@
 # Volume Metrics Collection
 
 **Version**: v1.1.0
-**ADR**: [0007-trading-volume-metrics](../decisions/0007-trading-volume-metrics.md)
+**ADR**: [0007-trading-volume-metrics](../architecture/decisions/0007-trading-volume-metrics.md)
 **Status**: Implemented
 
 ## Overview
@@ -142,6 +142,6 @@ result = db.query("""
 
 ## References
 
-- **ADR**: [docs/decisions/0007-trading-volume-metrics.md](../decisions/0007-trading-volume-metrics.md)
-- **Plan**: [docs/plans/0007-trading-volume-metrics/plan.yaml](../plans/0007-trading-volume-metrics/plan.yaml)
+- **ADR**: [docs/architecture/decisions/0007-trading-volume-metrics.md](../architecture/decisions/0007-trading-volume-metrics.md)
+- **Plan**: [docs/development/plan/0007-trading-volume-metrics/plan.yaml](../development/plan/0007-trading-volume-metrics/plan.yaml)
 - **API Docs**: [VolumeQueries](../../src/binance_futures_availability/queries/volume.py)
