@@ -13,7 +13,7 @@ See: docs/architecture/decisions/0012-auto-backfill-new-symbols.md
 
 import datetime
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -177,7 +177,7 @@ class TestBackfillWorkflow:
                 "last_modified": None,
                 "url": "https://example.com/BTCUSDT",
                 "status_code": 200,
-                "probe_timestamp": datetime.datetime.now(datetime.timezone.utc),
+                "probe_timestamp": datetime.datetime.now(datetime.UTC),
             }
         ]
         db.insert_batch(existing_records)
@@ -192,7 +192,7 @@ class TestBackfillWorkflow:
                 "last_modified": None,
                 "url": "https://example.com/NEW1USDT",
                 "status_code": 200,
-                "probe_timestamp": datetime.datetime.now(datetime.timezone.utc),
+                "probe_timestamp": datetime.datetime.now(datetime.UTC),
             }
         ]
         db.insert_batch(new_symbol_records)
@@ -223,7 +223,7 @@ class TestBackfillWorkflow:
                 "last_modified": None,
                 "url": "https://example.com/BTCUSDT",
                 "status_code": 200,
-                "probe_timestamp": datetime.datetime.now(datetime.timezone.utc),
+                "probe_timestamp": datetime.datetime.now(datetime.UTC),
             }
         ])
 
@@ -239,7 +239,7 @@ class TestBackfillWorkflow:
                     "last_modified": None,
                     "url": f"https://example.com/{symbol}",
                     "status_code": 200,
-                    "probe_timestamp": datetime.datetime.now(datetime.timezone.utc),
+                    "probe_timestamp": datetime.datetime.now(datetime.UTC),
                 }
             ])
 
@@ -277,7 +277,7 @@ class TestUpsertIdempotency:
             "last_modified": None,
             "url": "https://example.com/NEWUSDT",
             "status_code": 200,
-            "probe_timestamp": datetime.datetime(2024, 1, 16, 10, 0, 0, tzinfo=datetime.timezone.utc),
+            "probe_timestamp": datetime.datetime(2024, 1, 16, 10, 0, 0, tzinfo=datetime.UTC),
         }
         db.insert_batch([first_record])
 
@@ -289,7 +289,7 @@ class TestUpsertIdempotency:
         second_record = {
             **first_record,
             "file_size_bytes": 7500000,  # Updated file size
-            "probe_timestamp": datetime.datetime(2024, 1, 17, 10, 0, 0, tzinfo=datetime.timezone.utc),
+            "probe_timestamp": datetime.datetime(2024, 1, 17, 10, 0, 0, tzinfo=datetime.UTC),
         }
         db.insert_batch([second_record])
 
@@ -333,7 +333,7 @@ class TestUnicodeSymbolTargetedBackfill:
             "last_modified": None,
             "url": "https://example.com/%E5%B8%81%E5%AE%89%E4%BA%BA%E7%94%9FUSDT",
             "status_code": 200,
-            "probe_timestamp": datetime.datetime.now(datetime.timezone.utc),
+            "probe_timestamp": datetime.datetime.now(datetime.UTC),
         }
         db.insert_batch([record])
 

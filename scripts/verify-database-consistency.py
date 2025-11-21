@@ -24,10 +24,8 @@ import sys
 import tempfile
 from datetime import date, timedelta
 from pathlib import Path
-from typing import Dict, List, Tuple
 
 import duckdb
-
 
 # =============================================================================
 # Configuration
@@ -133,7 +131,7 @@ def download_github_database(temp_dir: Path) -> Path:
     return decompressed_path
 
 
-def get_database_stats(db_path: Path) -> Dict[str, any]:
+def get_database_stats(db_path: Path) -> dict[str, any]:
     """
     Get database statistics.
 
@@ -202,8 +200,8 @@ def get_database_stats(db_path: Path) -> Dict[str, any]:
 
 
 def compare_databases(
-    local_stats: Dict[str, any], github_stats: Dict[str, any]
-) -> Tuple[bool, List[str]]:
+    local_stats: dict[str, any], github_stats: dict[str, any]
+) -> tuple[bool, list[str]]:
     """
     Compare statistics from two databases.
 
@@ -261,7 +259,7 @@ def compare_databases(
     return is_consistent, differences
 
 
-def detailed_comparison(local_path: Path, github_path: Path) -> List[str]:
+def detailed_comparison(local_path: Path, github_path: Path) -> list[str]:
     """
     Perform detailed row-by-row comparison for yesterday's data.
 

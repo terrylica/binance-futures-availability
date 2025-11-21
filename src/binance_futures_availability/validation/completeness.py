@@ -79,8 +79,7 @@ class CompletenessValidator:
                 [start_date, min_symbol_count],
             )
 
-            incomplete_dates = [{"date": str(row[0]), "symbol_count": row[1]} for row in rows]
-            return incomplete_dates
+            return [{"date": str(row[0]), "symbol_count": row[1]} for row in rows]
 
         except Exception as e:
             raise RuntimeError(

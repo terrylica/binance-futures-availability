@@ -26,8 +26,7 @@ def temp_db_path() -> Path:
         Path to temporary .duckdb file (file not created, only path)
     """
     temp_dir = Path(tempfile.gettempdir())
-    db_path = temp_dir / f"test_{tempfile.mktemp(suffix='.duckdb').split('/')[-1]}"
-    return db_path
+    return temp_dir / f"test_{tempfile.mktemp(suffix='.duckdb').split('/')[-1]}"
 
 
 @pytest.fixture
@@ -54,10 +53,10 @@ def sample_probe_result() -> dict[str, Any]:
         "date": datetime.date(2024, 1, 15),
         "available": True,
         "file_size_bytes": 8421945,
-        "last_modified": datetime.datetime(2024, 1, 16, 2, 15, 32, tzinfo=datetime.timezone.utc),
+        "last_modified": datetime.datetime(2024, 1, 16, 2, 15, 32, tzinfo=datetime.UTC),
         "url": "https://data.binance.vision/data/futures/um/daily/klines/BTCUSDT/1m/BTCUSDT-1m-2024-01-15.zip",
         "status_code": 200,
-        "probe_timestamp": datetime.datetime(2024, 1, 16, 2, 0, 0, tzinfo=datetime.timezone.utc),
+        "probe_timestamp": datetime.datetime(2024, 1, 16, 2, 0, 0, tzinfo=datetime.UTC),
     }
 
 
@@ -77,7 +76,7 @@ def sample_unavailable_result() -> dict[str, Any]:
         "last_modified": None,
         "url": "https://data.binance.vision/data/futures/um/daily/klines/NEWCOINUSDT/1m/NEWCOINUSDT-1m-2024-01-15.zip",
         "status_code": 404,
-        "probe_timestamp": datetime.datetime(2024, 1, 16, 2, 0, 0, tzinfo=datetime.timezone.utc),
+        "probe_timestamp": datetime.datetime(2024, 1, 16, 2, 0, 0, tzinfo=datetime.UTC),
     }
 
 
@@ -111,11 +110,11 @@ def populated_db(db: AvailabilityDatabase) -> AvailabilityDatabase:
                     "available": True,
                     "file_size_bytes": 8000000 + len(symbol),
                     "last_modified": datetime.datetime(
-                        date.year, date.month, date.day + 1, 2, 0, 0, tzinfo=datetime.timezone.utc
+                        date.year, date.month, date.day + 1, 2, 0, 0, tzinfo=datetime.UTC
                     ),
                     "url": f"https://data.binance.vision/data/futures/um/daily/klines/{symbol}/1m/{symbol}-1m-{date}.zip",
                     "status_code": 200,
-                    "probe_timestamp": datetime.datetime.now(datetime.timezone.utc),
+                    "probe_timestamp": datetime.datetime.now(datetime.UTC),
                 }
             )
 
@@ -141,11 +140,10 @@ def mock_urlopen_success(mocker):
     }
 
     # Mock urllib3.PoolManager.request() method
-    mock_pool = mocker.patch(
+    return mocker.patch(
         "binance_futures_availability.probing.s3_vision.HTTP_POOL.request",
         return_value=mock_response
     )
-    return mock_pool
 
 
 @pytest.fixture
@@ -163,11 +161,10 @@ def mock_urlopen_404(mocker):
     mock_response.headers = {}
 
     # Mock urllib3.PoolManager.request() to return 404 response
-    mock_pool = mocker.patch(
+    return mocker.patch(
         "binance_futures_availability.probing.s3_vision.HTTP_POOL.request",
         return_value=mock_response
     )
-    return mock_pool
 
 
 @pytest.fixture
@@ -186,8 +183,7 @@ def mock_urlopen_network_error(mocker):
         raise urllib3.exceptions.HTTPError("Network timeout")
 
     # Mock urllib3.PoolManager.request() to raise network error
-    mock_pool = mocker.patch(
+    return mocker.patch(
         "binance_futures_availability.probing.s3_vision.HTTP_POOL.request",
         side_effect=raise_network_error
     )
-    return mock_pool

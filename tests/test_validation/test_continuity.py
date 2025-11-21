@@ -2,8 +2,6 @@
 
 import datetime
 
-import pytest
-
 from binance_futures_availability.validation.continuity import ContinuityValidator
 
 
@@ -32,7 +30,7 @@ def test_check_continuity_with_gap(db, temp_db_path):
         last_modified=None,
         url="https://example.com/file.zip",
         status_code=200,
-        probe_timestamp=datetime.datetime.now(datetime.timezone.utc),
+        probe_timestamp=datetime.datetime.now(datetime.UTC),
     )
 
     db.insert_availability(
@@ -43,7 +41,7 @@ def test_check_continuity_with_gap(db, temp_db_path):
         last_modified=None,
         url="https://example.com/file.zip",
         status_code=200,
-        probe_timestamp=datetime.datetime.now(datetime.timezone.utc),
+        probe_timestamp=datetime.datetime.now(datetime.UTC),
     )
 
     validator = ContinuityValidator(db_path=temp_db_path)

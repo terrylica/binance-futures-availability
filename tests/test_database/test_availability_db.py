@@ -2,8 +2,6 @@
 
 import datetime
 
-import pytest
-
 
 def test_insert_availability(db, sample_probe_result):
     """Test inserting a single availability record."""
@@ -78,7 +76,7 @@ def test_context_manager(temp_db_path):
             last_modified=None,
             url="https://example.com/file.zip",
             status_code=200,
-            probe_timestamp=datetime.datetime.now(datetime.timezone.utc),
+            probe_timestamp=datetime.datetime.now(datetime.UTC),
         )
 
     # Connection should be closed after exiting context

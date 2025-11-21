@@ -20,7 +20,6 @@ Goal: Find the OPTIMAL worker count definitively.
 
 import datetime
 import logging
-import os
 import resource
 import statistics
 import sys
@@ -84,8 +83,7 @@ def get_peak_rss_mb() -> float:
     # macOS returns bytes, Linux returns KB
     if sys.platform == "darwin":
         return usage.ru_maxrss / (1024 * 1024)  # bytes to MB
-    else:
-        return usage.ru_maxrss / 1024  # KB to MB
+    return usage.ru_maxrss / 1024  # KB to MB
 
 
 def run_single_trial(
@@ -271,7 +269,7 @@ def generate_ascii_chart(
     chart.append("\nPerformance Chart (Total Time):")
     chart.append("=" * (width + 20))
 
-    for i, (workers, mean, stdev) in enumerate(zip(worker_counts, means, stdevs)):
+    for i, (workers, mean, stdev) in enumerate(zip(worker_counts, means, stdevs, strict=True)):
         # Normalize bar length
         normalized = (mean - min_time) / (max_time - min_time) if max_time > min_time else 0.5
         bar_length = int((1 - normalized) * width)
@@ -317,7 +315,7 @@ def generate_report(
 
     report.append("# Binance Futures Availability - Worker Count Benchmark Report")
     report.append("")
-    report.append(f"**Generated**: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    report.append(f"**Generated**: {datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%d %H:%M:%S')}")
     report.append(f"**Test Date**: {test_date}")
     report.append(f"**Symbol Count**: {symbol_count}")
     report.append(f"**Trials per Config**: {len(results[optimal_workers])}")
@@ -406,10 +404,10 @@ def generate_report(
     report.append("## Why Previous Tests Showed Different Results")
     report.append("")
     report.append("**This benchmark tests the ACTUAL production workflow**:")
-    report.append(f"- Real HTTP requests to S3 Vision (not mocked)")
+    report.append("- Real HTTP requests to S3 Vision (not mocked)")
     report.append(f"- Real DuckDB insertions ({symbol_count} records)")
-    report.append(f"- Real network latency and S3 response times")
-    report.append(f"- Multiple trials to account for variance")
+    report.append("- Real network latency and S3 response times")
+    report.append("- Multiple trials to account for variance")
     report.append("")
     report.append("**Previous inconsistencies likely due to**:")
     report.append("- Cold start effects (first request slower)")
@@ -501,9 +499,9 @@ def main():
 
     # Test date
     if args.date:
-        test_date = datetime.datetime.strptime(args.date, "%Y-%m-%d").date()
+        test_date = datetime.datetime.strptime(args.date, "%Y-%m-%d").replace(tzinfo=datetime.UTC).date()
     else:
-        test_date = datetime.date.today() - datetime.timedelta(days=1)
+        test_date = datetime.datetime.now(datetime.UTC).date() - datetime.timedelta(days=1)
 
     # Load symbols
     symbols = load_discovered_symbols(contract_type="perpetual")

@@ -84,8 +84,7 @@ class ContinuityValidator:
                 [start_date, end_date],
             )
 
-            missing_dates = [row[0] for row in rows]
-            return missing_dates
+            return [row[0] for row in rows]
 
         except Exception as e:
             raise RuntimeError(

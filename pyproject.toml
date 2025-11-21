@@ -73,7 +73,15 @@ select = [
     "RET",  # flake8-return
     "SIM",  # flake8-simplify
 ]
-ignore = ["E501"]  # Line length handled by formatter
+ignore = [
+    "E501",    # Line length handled by formatter
+    # Temporary exceptions during ADR-0020 Phase 2 cleanup (track in separate issue)
+    "DTZ005",  # datetime.now() without tz - fix in timezone cleanup sprint
+    "DTZ007",  # strptime without tz - mostly argparse validators, low risk
+    "DTZ011",  # date.today() without tz - fix in timezone cleanup sprint
+    "SIM117",  # Multiple with statements - stylistic, low priority
+    "PT017",   # pytest assert in except - valid pattern for error validation
+]
 
 [tool.ruff.format]
 quote-style = "double"

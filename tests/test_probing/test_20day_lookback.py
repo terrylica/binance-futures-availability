@@ -13,7 +13,7 @@ See: docs/architecture/decisions/0011-20day-lookback-reliability.md
 import datetime
 import os
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -86,10 +86,10 @@ class TestUpsertBehavior:
             "date": date,
             "available": True,
             "file_size_bytes": 8000000,
-            "last_modified": datetime.datetime(2024, 1, 16, 2, 0, 0, tzinfo=datetime.timezone.utc),
+            "last_modified": datetime.datetime(2024, 1, 16, 2, 0, 0, tzinfo=datetime.UTC),
             "url": f"https://data.binance.vision/data/futures/um/daily/klines/{symbol}/1m/{symbol}-1m-{date}.zip",
             "status_code": 200,
-            "probe_timestamp": datetime.datetime(2024, 1, 16, 3, 0, 0, tzinfo=datetime.timezone.utc),
+            "probe_timestamp": datetime.datetime(2024, 1, 16, 3, 0, 0, tzinfo=datetime.UTC),
         }
         db.insert_batch([first_probe])
 
@@ -97,7 +97,7 @@ class TestUpsertBehavior:
         second_probe = {
             **first_probe,
             "file_size_bytes": 9000000,
-            "probe_timestamp": datetime.datetime(2024, 1, 17, 3, 0, 0, tzinfo=datetime.timezone.utc),
+            "probe_timestamp": datetime.datetime(2024, 1, 17, 3, 0, 0, tzinfo=datetime.UTC),
         }
         db.insert_batch([second_probe])
 
@@ -130,7 +130,7 @@ class TestUpsertBehavior:
                         "last_modified": None,
                         "url": f"https://example.com/{symbol}-{current_date}.zip",
                         "status_code": 200,
-                        "probe_timestamp": datetime.datetime.now(datetime.timezone.utc),
+                        "probe_timestamp": datetime.datetime.now(datetime.UTC),
                     }
                 )
             current_date += datetime.timedelta(days=1)

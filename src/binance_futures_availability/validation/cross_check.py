@@ -65,7 +65,7 @@ class CrossCheckValidator:
                 data = json.loads(response.read().decode())
 
             # Filter for USDT perpetual contracts with TRADING status
-            symbols = {
+            return {
                 s["symbol"]
                 for s in data["symbols"]
                 if s.get("contractType") == "PERPETUAL"
@@ -73,7 +73,6 @@ class CrossCheckValidator:
                 and s["symbol"].endswith("USDT")
             }
 
-            return symbols
 
         except Exception as e:
             raise RuntimeError(f"Failed to fetch exchangeInfo from API: {e}") from e

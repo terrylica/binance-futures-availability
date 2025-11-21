@@ -13,7 +13,6 @@ import re
 import subprocess
 import zipfile
 from datetime import date, datetime
-from typing import Dict, List, Optional
 
 
 class AWSS3Lister:
@@ -21,7 +20,7 @@ class AWSS3Lister:
 
     BASE_URL = "s3://data.binance.vision/data/futures/um/daily/klines"
 
-    def list_symbol_files(self, symbol: str) -> List[Dict]:
+    def list_symbol_files(self, symbol: str) -> list[dict]:
         """
         List all available files for a symbol using AWS CLI.
 
@@ -62,7 +61,7 @@ class AWSS3Lister:
         # Empty stdout or exit code 1 = no files found (valid for delisted symbols)
         return self._parse_aws_output(result.stdout, symbol)
 
-    def _parse_aws_output(self, output: str, symbol: str) -> List[Dict]:
+    def _parse_aws_output(self, output: str, symbol: str) -> list[dict]:
         """
         Parse AWS CLI ls output into structured availability records.
 
@@ -120,7 +119,7 @@ class AWSS3Lister:
                         "url": f"https://data.binance.vision/data/futures/um/daily/klines/{symbol}/1m/{filename}",
                     }
                 )
-            except (ValueError, IndexError) as e:
+            except (ValueError, IndexError):
                 # Skip malformed lines
                 continue
 
@@ -129,9 +128,9 @@ class AWSS3Lister:
     def get_symbol_availability(
         self,
         symbol: str,
-        start_date: Optional[date] = None,
-        end_date: Optional[date] = None,
-    ) -> Dict[date, Dict]:
+        start_date: date | None = None,
+        end_date: date | None = None,
+    ) -> dict[date, dict]:
         """
         Get availability information for a symbol across date range.
 
@@ -164,7 +163,7 @@ class AWSS3Lister:
 
         return availability
 
-    def download_1d_kline(self, symbol: str, target_date: date) -> Optional[Dict]:
+    def download_1d_kline(self, symbol: str, target_date: date) -> dict | None:
         """
         Download and parse 1d kline file for a specific symbol and date.
 
@@ -249,7 +248,7 @@ class AWSS3Lister:
 
     def _parse_1d_kline_csv(
         self, csv_content: str, symbol: str, target_date: date
-    ) -> Dict:
+    ) -> dict:
         """
         Parse 1d kline CSV content into volume metrics.
 

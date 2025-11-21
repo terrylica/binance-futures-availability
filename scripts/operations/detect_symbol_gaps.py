@@ -80,8 +80,7 @@ def query_database_symbols() -> set[str]:
         db.close()
 
         # Extract symbol from each row tuple
-        database_symbols = {row[0] for row in rows}
-        return database_symbols
+        return {row[0] for row in rows}
 
     except Exception as e:
         raise RuntimeError(f"Failed to query database symbols: {e}") from e
@@ -185,11 +184,10 @@ def main() -> int:
         logger.info("Output: gaps_detected=true (triggers auto-backfill)")
         logger.info("=" * 70)
         return 0
-    else:
-        logger.info("NO GAPS: All symbols already in database")
-        logger.info("Output: gaps_detected=false (skips auto-backfill)")
-        logger.info("=" * 70)
-        return 0  # Always exit 0 (success) - use JSON output for conditional logic
+    logger.info("NO GAPS: All symbols already in database")
+    logger.info("Output: gaps_detected=false (skips auto-backfill)")
+    logger.info("=" * 70)
+    return 0  # Always exit 0 (success) - use JSON output for conditional logic
 
 
 if __name__ == "__main__":

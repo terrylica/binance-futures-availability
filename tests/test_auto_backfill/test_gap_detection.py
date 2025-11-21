@@ -12,7 +12,6 @@ See: docs/architecture/decisions/0012-auto-backfill-new-symbols.md
 
 import datetime
 import json
-import tempfile
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -45,7 +44,7 @@ class TestGapDetectionLogic:
                 "last_modified": None,
                 "url": "https://example.com/BTCUSDT",
                 "status_code": 200,
-                "probe_timestamp": datetime.datetime.now(datetime.timezone.utc),
+                "probe_timestamp": datetime.datetime.now(datetime.UTC),
             },
             {
                 "symbol": "ETHUSDT",
@@ -55,7 +54,7 @@ class TestGapDetectionLogic:
                 "last_modified": None,
                 "url": "https://example.com/ETHUSDT",
                 "status_code": 200,
-                "probe_timestamp": datetime.datetime.now(datetime.timezone.utc),
+                "probe_timestamp": datetime.datetime.now(datetime.UTC),
             },
             {
                 "symbol": "SOLUSDT",
@@ -65,42 +64,37 @@ class TestGapDetectionLogic:
                 "last_modified": None,
                 "url": "https://example.com/SOLUSDT",
                 "status_code": 200,
-                "probe_timestamp": datetime.datetime.now(datetime.timezone.utc),
+                "probe_timestamp": datetime.datetime.now(datetime.UTC),
             },
         ]
         db.insert_batch(records)
         db.close()
 
         # Create mock symbols.json with same 3 symbols
-        mock_symbols = {
-            "metadata": {"total_perpetual": 3},
-            "perpetual_symbols": ["BTCUSDT", "ETHUSDT", "SOLUSDT"],
-        }
 
         # Mock loading functions
         with patch(
             "scripts.operations.detect_symbol_gaps.load_discovered_symbols",
             return_value={"BTCUSDT", "ETHUSDT", "SOLUSDT"},
-        ):
-            with patch(
-                "scripts.operations.detect_symbol_gaps.AvailabilityDatabase"
-            ) as mock_db_class:
-                # Mock database to return same 3 symbols
-                mock_db_instance = Mock()
-                mock_db_instance.query.return_value = [
-                    ("BTCUSDT",),
-                    ("ETHUSDT",),
-                    ("SOLUSDT",),
-                ]
-                mock_db_class.return_value = mock_db_instance
+        ), patch(
+            "scripts.operations.detect_symbol_gaps.AvailabilityDatabase"
+        ) as mock_db_class:
+            # Mock database to return same 3 symbols
+            mock_db_instance = Mock()
+            mock_db_instance.query.return_value = [
+                ("BTCUSDT",),
+                ("ETHUSDT",),
+                ("SOLUSDT",),
+            ]
+            mock_db_class.return_value = mock_db_instance
 
-                # Import and test detect_gaps
-                from scripts.operations.detect_symbol_gaps import detect_gaps
+            # Import and test detect_gaps
+            from scripts.operations.detect_symbol_gaps import detect_gaps
 
-                new_symbols = detect_gaps()
+            new_symbols = detect_gaps()
 
-                # Verify: No gaps detected (empty list)
-                assert new_symbols == []
+            # Verify: No gaps detected (empty list)
+            assert new_symbols == []
 
     def test_gaps_detected_new_symbols(self, tmp_path: Path):
         """
@@ -122,7 +116,7 @@ class TestGapDetectionLogic:
                 "last_modified": None,
                 "url": "https://example.com/BTCUSDT",
                 "status_code": 200,
-                "probe_timestamp": datetime.datetime.now(datetime.timezone.utc),
+                "probe_timestamp": datetime.datetime.now(datetime.UTC),
             },
             {
                 "symbol": "ETHUSDT",
@@ -132,7 +126,7 @@ class TestGapDetectionLogic:
                 "last_modified": None,
                 "url": "https://example.com/ETHUSDT",
                 "status_code": 200,
-                "probe_timestamp": datetime.datetime.now(datetime.timezone.utc),
+                "probe_timestamp": datetime.datetime.now(datetime.UTC),
             },
             {
                 "symbol": "SOLUSDT",
@@ -142,7 +136,7 @@ class TestGapDetectionLogic:
                 "last_modified": None,
                 "url": "https://example.com/SOLUSDT",
                 "status_code": 200,
-                "probe_timestamp": datetime.datetime.now(datetime.timezone.utc),
+                "probe_timestamp": datetime.datetime.now(datetime.UTC),
             },
         ]
         db.insert_batch(records)
@@ -152,49 +146,47 @@ class TestGapDetectionLogic:
         with patch(
             "scripts.operations.detect_symbol_gaps.load_discovered_symbols",
             return_value={"BTCUSDT", "ETHUSDT", "SOLUSDT", "NEW1USDT", "NEW2USDT"},
-        ):
-            with patch(
-                "scripts.operations.detect_symbol_gaps.AvailabilityDatabase"
-            ) as mock_db_class:
-                # Mock database to return only 3 existing symbols
-                mock_db_instance = Mock()
-                mock_db_instance.query.return_value = [
-                    ("BTCUSDT",),
-                    ("ETHUSDT",),
-                    ("SOLUSDT",),
-                ]
-                mock_db_class.return_value = mock_db_instance
+        ), patch(
+            "scripts.operations.detect_symbol_gaps.AvailabilityDatabase"
+        ) as mock_db_class:
+            # Mock database to return only 3 existing symbols
+            mock_db_instance = Mock()
+            mock_db_instance.query.return_value = [
+                ("BTCUSDT",),
+                ("ETHUSDT",),
+                ("SOLUSDT",),
+            ]
+            mock_db_class.return_value = mock_db_instance
 
-                # Import and test detect_gaps
-                from scripts.operations.detect_symbol_gaps import detect_gaps
+            # Import and test detect_gaps
+            from scripts.operations.detect_symbol_gaps import detect_gaps
 
-                new_symbols = detect_gaps()
+            new_symbols = detect_gaps()
 
-                # Verify: 2 new symbols detected (sorted alphabetically)
-                assert new_symbols == ["NEW1USDT", "NEW2USDT"]
+            # Verify: 2 new symbols detected (sorted alphabetically)
+            assert new_symbols == ["NEW1USDT", "NEW2USDT"]
 
     def test_gaps_detected_single_new_symbol(self, tmp_path: Path):
         """Single new symbol detected correctly."""
         with patch(
             "scripts.operations.detect_symbol_gaps.load_discovered_symbols",
             return_value={"BTCUSDT", "ETHUSDT", "NEWUSDT"},
-        ):
-            with patch(
-                "scripts.operations.detect_symbol_gaps.AvailabilityDatabase"
-            ) as mock_db_class:
-                # Mock database with 2 existing symbols
-                mock_db_instance = Mock()
-                mock_db_instance.query.return_value = [
-                    ("BTCUSDT",),
-                    ("ETHUSDT",),
-                ]
-                mock_db_class.return_value = mock_db_instance
+        ), patch(
+            "scripts.operations.detect_symbol_gaps.AvailabilityDatabase"
+        ) as mock_db_class:
+            # Mock database with 2 existing symbols
+            mock_db_instance = Mock()
+            mock_db_instance.query.return_value = [
+                ("BTCUSDT",),
+                ("ETHUSDT",),
+            ]
+            mock_db_class.return_value = mock_db_instance
 
-                from scripts.operations.detect_symbol_gaps import detect_gaps
+            from scripts.operations.detect_symbol_gaps import detect_gaps
 
-                new_symbols = detect_gaps()
+            new_symbols = detect_gaps()
 
-                assert new_symbols == ["NEWUSDT"]
+            assert new_symbols == ["NEWUSDT"]
 
     def test_empty_database_all_symbols_are_gaps(self, tmp_path: Path):
         """
@@ -206,21 +198,20 @@ class TestGapDetectionLogic:
         with patch(
             "scripts.operations.detect_symbol_gaps.load_discovered_symbols",
             return_value={"BTCUSDT", "ETHUSDT", "SOLUSDT"},
-        ):
-            with patch(
-                "scripts.operations.detect_symbol_gaps.AvailabilityDatabase"
-            ) as mock_db_class:
-                # Mock empty database
-                mock_db_instance = Mock()
-                mock_db_instance.query.return_value = []  # No symbols in database
-                mock_db_class.return_value = mock_db_instance
+        ), patch(
+            "scripts.operations.detect_symbol_gaps.AvailabilityDatabase"
+        ) as mock_db_class:
+            # Mock empty database
+            mock_db_instance = Mock()
+            mock_db_instance.query.return_value = []  # No symbols in database
+            mock_db_class.return_value = mock_db_instance
 
-                from scripts.operations.detect_symbol_gaps import detect_gaps
+            from scripts.operations.detect_symbol_gaps import detect_gaps
 
-                new_symbols = detect_gaps()
+            new_symbols = detect_gaps()
 
-                # All 3 symbols are new
-                assert sorted(new_symbols) == ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
+            # All 3 symbols are new
+            assert sorted(new_symbols) == ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
 
 
 class TestJSONOutputFormat:
@@ -231,46 +222,44 @@ class TestJSONOutputFormat:
         with patch(
             "scripts.operations.detect_symbol_gaps.load_discovered_symbols",
             return_value={"BTCUSDT", "NEW1USDT", "NEW2USDT"},
-        ):
-            with patch(
-                "scripts.operations.detect_symbol_gaps.AvailabilityDatabase"
-            ) as mock_db_class:
-                mock_db_instance = Mock()
-                mock_db_instance.query.return_value = [("BTCUSDT",)]
-                mock_db_class.return_value = mock_db_instance
+        ), patch(
+            "scripts.operations.detect_symbol_gaps.AvailabilityDatabase"
+        ) as mock_db_class:
+            mock_db_instance = Mock()
+            mock_db_instance.query.return_value = [("BTCUSDT",)]
+            mock_db_class.return_value = mock_db_instance
 
-                from scripts.operations.detect_symbol_gaps import detect_gaps
+            from scripts.operations.detect_symbol_gaps import detect_gaps
 
-                new_symbols = detect_gaps()
+            new_symbols = detect_gaps()
 
-                # Verify JSON serializable
-                json_output = json.dumps(new_symbols)
-                assert json_output == '["NEW1USDT", "NEW2USDT"]'
+            # Verify JSON serializable
+            json_output = json.dumps(new_symbols)
+            assert json_output == '["NEW1USDT", "NEW2USDT"]'
 
-                # Verify round-trip
-                parsed = json.loads(json_output)
-                assert parsed == ["NEW1USDT", "NEW2USDT"]
+            # Verify round-trip
+            parsed = json.loads(json_output)
+            assert parsed == ["NEW1USDT", "NEW2USDT"]
 
     def test_json_output_format_no_gaps(self):
         """JSON output is empty array when no gaps."""
         with patch(
             "scripts.operations.detect_symbol_gaps.load_discovered_symbols",
             return_value={"BTCUSDT"},
-        ):
-            with patch(
-                "scripts.operations.detect_symbol_gaps.AvailabilityDatabase"
-            ) as mock_db_class:
-                mock_db_instance = Mock()
-                mock_db_instance.query.return_value = [("BTCUSDT",)]
-                mock_db_class.return_value = mock_db_instance
+        ), patch(
+            "scripts.operations.detect_symbol_gaps.AvailabilityDatabase"
+        ) as mock_db_class:
+            mock_db_instance = Mock()
+            mock_db_instance.query.return_value = [("BTCUSDT",)]
+            mock_db_class.return_value = mock_db_instance
 
-                from scripts.operations.detect_symbol_gaps import detect_gaps
+            from scripts.operations.detect_symbol_gaps import detect_gaps
 
-                new_symbols = detect_gaps()
+            new_symbols = detect_gaps()
 
-                # Verify empty array
-                json_output = json.dumps(new_symbols)
-                assert json_output == "[]"
+            # Verify empty array
+            json_output = json.dumps(new_symbols)
+            assert json_output == "[]"
 
     def test_symbols_sorted_alphabetically(self):
         """Output symbols should be sorted alphabetically for deterministic workflow."""
@@ -324,9 +313,8 @@ class TestErrorHandling:
             return_value=json.dumps(
                 {"metadata": {}, "perpetual_symbols": [], "delivery_symbols": []}
             ),
-        ):
-            with pytest.raises(RuntimeError, match="no perpetual_symbols"):
-                load_discovered_symbols()
+        ), pytest.raises(RuntimeError, match="no perpetual_symbols"):
+            load_discovered_symbols()
 
     def test_database_query_failure_raises(self):
         """Database query failure should raise RuntimeError."""
@@ -352,26 +340,25 @@ class TestUnicodeSymbolHandling:
         with patch(
             "scripts.operations.detect_symbol_gaps.load_discovered_symbols",
             return_value={"BTCUSDT", "币安人生USDT", "🚀USDT"},
-        ):
-            with patch(
-                "scripts.operations.detect_symbol_gaps.AvailabilityDatabase"
-            ) as mock_db_class:
-                mock_db_instance = Mock()
-                mock_db_instance.query.return_value = [("BTCUSDT",)]
-                mock_db_class.return_value = mock_db_instance
+        ), patch(
+            "scripts.operations.detect_symbol_gaps.AvailabilityDatabase"
+        ) as mock_db_class:
+            mock_db_instance = Mock()
+            mock_db_instance.query.return_value = [("BTCUSDT",)]
+            mock_db_class.return_value = mock_db_instance
 
-                from scripts.operations.detect_symbol_gaps import detect_gaps
+            from scripts.operations.detect_symbol_gaps import detect_gaps
 
-                new_symbols = detect_gaps()
+            new_symbols = detect_gaps()
 
-                # Verify Unicode symbols preserved
-                assert "币安人生USDT" in new_symbols
-                assert "🚀USDT" in new_symbols
+            # Verify Unicode symbols preserved
+            assert "币安人生USDT" in new_symbols
+            assert "🚀USDT" in new_symbols
 
-                # Verify JSON serializable (UTF-8)
-                json_output = json.dumps(new_symbols, ensure_ascii=False)
-                assert "币安人生USDT" in json_output
-                assert "🚀USDT" in json_output
+            # Verify JSON serializable (UTF-8)
+            json_output = json.dumps(new_symbols, ensure_ascii=False)
+            assert "币安人生USDT" in json_output
+            assert "🚀USDT" in json_output
 
 
 @pytest.mark.integration
@@ -402,7 +389,7 @@ class TestIntegrationWithRealDatabase:
                 "last_modified": None,
                 "url": "https://example.com/BTCUSDT",
                 "status_code": 200,
-                "probe_timestamp": datetime.datetime.now(datetime.timezone.utc),
+                "probe_timestamp": datetime.datetime.now(datetime.UTC),
             },
             {
                 "symbol": "ETHUSDT",
@@ -412,7 +399,7 @@ class TestIntegrationWithRealDatabase:
                 "last_modified": None,
                 "url": "https://example.com/ETHUSDT",
                 "status_code": 200,
-                "probe_timestamp": datetime.datetime.now(datetime.timezone.utc),
+                "probe_timestamp": datetime.datetime.now(datetime.UTC),
             },
         ]
         db.insert_batch(records)
@@ -422,14 +409,13 @@ class TestIntegrationWithRealDatabase:
         with patch(
             "scripts.operations.detect_symbol_gaps.load_discovered_symbols",
             return_value={"BTCUSDT", "ETHUSDT", "SOLUSDT", "AVAXUSDT"},
+        ), patch(
+            "scripts.operations.detect_symbol_gaps.AvailabilityDatabase",
+            return_value=AvailabilityDatabase(db_path=db_path),
         ):
-            with patch(
-                "scripts.operations.detect_symbol_gaps.AvailabilityDatabase",
-                return_value=AvailabilityDatabase(db_path=db_path),
-            ):
-                from scripts.operations.detect_symbol_gaps import detect_gaps
+            from scripts.operations.detect_symbol_gaps import detect_gaps
 
-                new_symbols = detect_gaps()
+            new_symbols = detect_gaps()
 
-                # Verify: 2 new symbols detected
-                assert sorted(new_symbols) == ["AVAXUSDT", "SOLUSDT"]
+            # Verify: 2 new symbols detected
+            assert sorted(new_symbols) == ["AVAXUSDT", "SOLUSDT"]

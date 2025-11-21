@@ -12,10 +12,10 @@ Root cause: ASCII encoding error for newly discovered Chinese symbol
 """
 
 import datetime
+import urllib.error
 from unittest.mock import Mock, patch
 
 import pytest
-import urllib.error
 
 from binance_futures_availability.probing.s3_vision import check_symbol_availability
 

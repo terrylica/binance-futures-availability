@@ -162,10 +162,9 @@ def main() -> int:
         logger.info("VALIDATION PASSED: All checks successful ✓")
         logger.info("=" * 70)
         return 0
-    else:
-        logger.error("VALIDATION FAILED: One or more checks failed ✗")
-        logger.error("=" * 70)
-        return 1
+    logger.error("VALIDATION FAILED: One or more checks failed ✗")
+    logger.error("=" * 70)
+    return 1
 
 
 if __name__ == "__main__":

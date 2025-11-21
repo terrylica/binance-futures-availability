@@ -11,6 +11,9 @@ See: docs/architecture/decisions/0013-volume-rankings-timeseries.md
 """
 
 import datetime
+
+# Import functions from the script we're testing
+import sys
 import tempfile
 from pathlib import Path
 
@@ -19,8 +22,6 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 
-# Import functions from the script we're testing
-import sys
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / ".github" / "scripts"))
 from generate_volume_rankings import (
     RANKINGS_SCHEMA,
@@ -31,7 +32,6 @@ from generate_volume_rankings import (
     validate_rankings_table,
     write_parquet,
 )
-
 
 # ============================================================================
 # Fixtures
@@ -234,7 +234,7 @@ def test_ranking_calculation_order(populated_db: Path):
 
     # Verify order: BTCUSDT (1), ETHUSDT (2), SOLUSDT (3), BNBUSDT (4), ADAUSDT (5)
     expected_order = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "ADAUSDT"]
-    actual_symbols = [s for _, s in sorted(zip(first_date_data['rank'], first_date_data['symbol']))]
+    actual_symbols = [s for _, s in sorted(zip(first_date_data['rank'], first_date_data['symbol'], strict=False))]
 
     assert actual_symbols == expected_order, "Rankings should be ordered by volume DESC"
 
@@ -291,11 +291,11 @@ def test_percentile_calculation(populated_db: Path):
     ).to_pydict()
 
     # Top rank (BTCUSDT) should have percentile ~0
-    btc_percentile = [p for s, p in zip(day1_data['symbol'], day1_data['percentile']) if s == 'BTCUSDT'][0]
+    btc_percentile = [p for s, p in zip(day1_data['symbol'], day1_data['percentile'], strict=False) if s == 'BTCUSDT'][0]
     assert btc_percentile < 25, "Top symbol should have low percentile"
 
     # Bottom rank (ADAUSDT) should have percentile ~100
-    ada_percentile = [p for s, p in zip(day1_data['symbol'], day1_data['percentile']) if s == 'ADAUSDT'][0]
+    ada_percentile = [p for s, p in zip(day1_data['symbol'], day1_data['percentile'], strict=False) if s == 'ADAUSDT'][0]
     assert ada_percentile > 75, "Bottom symbol should have high percentile"
 
 
@@ -457,11 +457,11 @@ def test_tied_volumes_same_rank(temp_db: Path):
     data = table.to_pydict()
 
     # Both tied symbols should have rank 1
-    tied_ranks = [r for s, r in zip(data['symbol'], data['rank']) if s in ['SYM1USDT', 'SYM2USDT']]
+    tied_ranks = [r for s, r in zip(data['symbol'], data['rank'], strict=False) if s in ['SYM1USDT', 'SYM2USDT']]
     assert tied_ranks == [1, 1], "Tied symbols should have same rank"
 
     # Third symbol should have rank 2 (DENSE_RANK, no gap)
-    third_rank = [r for s, r in zip(data['symbol'], data['rank']) if s == 'SYM3USDT'][0]
+    third_rank = [r for s, r in zip(data['symbol'], data['rank'], strict=False) if s == 'SYM3USDT'][0]
     assert third_rank == 2, "DENSE_RANK should not create gaps after ties"
 
 

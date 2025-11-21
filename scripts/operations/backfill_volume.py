@@ -39,7 +39,7 @@ import argparse
 import sys
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from pathlib import Path
 
 # Add src to path for imports
@@ -365,14 +365,14 @@ def main():
                         )
 
     # Summary
-    print(f"\n=== Backfill Complete ===")
+    print("\n=== Backfill Complete ===")
     print(f"Total records processed: {total:,}")
     print(f"✅ Success: {success_count:,}")
     print(f"⚠️  Missing 1d klines: {missing_count:,}")
     print(f"❌ Errors: {error_count:,}")
 
     # Validation query
-    print(f"\n=== Validation ===")
+    print("\n=== Validation ===")
     result = db.query(
         "SELECT COUNT(*) FROM daily_availability WHERE quote_volume_usdt IS NOT NULL"
     )
@@ -389,7 +389,7 @@ def main():
         LIMIT 5
         """
     )
-    print(f"\nTop 5 by volume:")
+    print("\nTop 5 by volume:")
     for row in sample:
         print(
             f"  {row[0]} {row[1]}: ${row[2]:,.0f} volume, {row[3]:,} trades"

@@ -5,7 +5,6 @@ Implements ADR-0007 volume ranking capabilities.
 """
 
 from datetime import date
-from typing import List, Optional
 
 from binance_futures_availability.database import AvailabilityDatabase
 
@@ -13,7 +12,7 @@ from binance_futures_availability.database import AvailabilityDatabase
 class VolumeQueries:
     """Query interface for volume ranking and analytics."""
 
-    def __init__(self, db_path: Optional[str] = None):
+    def __init__(self, db_path: str | None = None):
         """
         Initialize volume queries.
 
@@ -26,8 +25,8 @@ class VolumeQueries:
         self,
         target_date: date,
         limit: int = 10,
-        min_volume: Optional[float] = None,
-    ) -> List[dict]:
+        min_volume: float | None = None,
+    ) -> list[dict]:
         """
         Get top N symbols by trading volume for a specific date.
 
@@ -96,7 +95,7 @@ class VolumeQueries:
 
     def get_volume_percentile(
         self, symbol: str, target_date: date
-    ) -> Optional[dict]:
+    ) -> dict | None:
         """
         Get volume percentile ranking for a symbol on a specific date.
 
@@ -151,7 +150,7 @@ class VolumeQueries:
         symbol: str,
         start_date: date,
         end_date: date,
-    ) -> Optional[dict]:
+    ) -> dict | None:
         """
         Get average daily volume for a symbol over a date range.
 
@@ -202,7 +201,7 @@ class VolumeQueries:
         self,
         symbol: str,
         days: int = 30,
-    ) -> List[dict]:
+    ) -> list[dict]:
         """
         Get daily volume trend for last N days.
 
@@ -243,7 +242,7 @@ class VolumeQueries:
             for row in results
         ]
 
-    def get_market_summary(self, target_date: date) -> Optional[dict]:
+    def get_market_summary(self, target_date: date) -> dict | None:
         """
         Get overall market volume summary for a date.
 

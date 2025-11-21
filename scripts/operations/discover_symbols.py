@@ -25,7 +25,7 @@ import argparse
 import json
 import logging
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from binance_futures_availability.probing.s3_symbol_discovery import (
@@ -76,7 +76,7 @@ def main() -> int:
         perpetual = discovered["perpetual"]
         delivery = discovered["delivery"]
 
-        logger.info(f"Discovery complete:")
+        logger.info("Discovery complete:")
         logger.info(f"  Perpetual contracts: {len(perpetual)}")
         logger.info(f"  Delivery contracts: {len(delivery)}")
         logger.info(f"  Total symbols: {len(perpetual) + len(delivery)}")
@@ -112,7 +112,7 @@ def main() -> int:
 
     # Log changes
     if new_perpetual or new_delivery:
-        logger.info(f"NEW SYMBOLS DISCOVERED:")
+        logger.info("NEW SYMBOLS DISCOVERED:")
         if new_perpetual:
             logger.info(f"  Perpetual: {len(new_perpetual)} new")
             for symbol in sorted(new_perpetual):
@@ -149,8 +149,8 @@ def main() -> int:
     # Update metadata
     updated = {
         "metadata": {
-            "discovery_date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
-            "last_discovery": datetime.now(timezone.utc).isoformat(),
+            "discovery_date": datetime.now(UTC).strftime("%Y-%m-%d"),
+            "last_discovery": datetime.now(UTC).isoformat(),
             "source": "S3 Vision bucket: s3://data.binance.vision/data/futures/um/daily/klines/",
             "discovery_method": "S3 XML API",
             "note": "Symbols with historical data availability on S3 Vision (auto-updated daily)",

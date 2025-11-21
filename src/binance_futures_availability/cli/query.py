@@ -8,7 +8,6 @@ Commands:
 """
 
 import argparse
-import datetime
 import json
 import logging
 

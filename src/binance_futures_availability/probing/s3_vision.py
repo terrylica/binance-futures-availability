@@ -73,7 +73,7 @@ def check_symbol_availability(
         f"{encoded_symbol}/1m/{encoded_symbol}-1m-{date_str}.zip"
     )
 
-    probe_timestamp = datetime.datetime.now(datetime.timezone.utc)
+    probe_timestamp = datetime.datetime.now(datetime.UTC)
 
     try:
         # ADR-0019: Use connection pool for HTTP HEAD request
@@ -105,7 +105,7 @@ def check_symbol_availability(
                 probe_timestamp=probe_timestamp,
             )
 
-        elif response.status == 404:
+        if response.status == 404:
             # File not found (symbol not available on this date)
             return ProbeResult(
                 symbol=symbol,
@@ -118,11 +118,10 @@ def check_symbol_availability(
                 probe_timestamp=probe_timestamp,
             )
 
-        else:
-            # Other HTTP errors (403, 500, etc.) - raise immediately (ADR-0003)
-            raise RuntimeError(
-                f"S3 probe failed for {symbol} on {date}: HTTP {response.status}"
-            )
+        # Other HTTP errors (403, 500, etc.) - raise immediately (ADR-0003)
+        raise RuntimeError(
+            f"S3 probe failed for {symbol} on {date}: HTTP {response.status}"
+        )
 
     except urllib3.exceptions.TimeoutError as e:
         # Timeout - raise immediately (ADR-0003)

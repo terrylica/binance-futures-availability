@@ -47,7 +47,7 @@ def load_symbols(
             f"Expected location: src/binance_futures_availability/data/symbols.json"
         )
 
-    with open(SYMBOLS_FILE, "r", encoding="utf-8") as f:
+    with open(SYMBOLS_FILE, encoding="utf-8") as f:
         data = json.load(f)
 
     perpetual = data["perpetual_symbols"]
@@ -55,15 +55,14 @@ def load_symbols(
 
     if contract_type == "perpetual":
         return perpetual
-    elif contract_type == "delivery":
+    if contract_type == "delivery":
         return delivery
-    elif contract_type == "all":
+    if contract_type == "all":
         return perpetual + delivery
-    else:
-        raise ValueError(
-            f"Invalid contract_type: {contract_type}. "
-            f"Must be 'perpetual', 'delivery', or 'all'"
-        )
+    raise ValueError(
+        f"Invalid contract_type: {contract_type}. "
+        f"Must be 'perpetual', 'delivery', or 'all'"
+    )
 
 
 def get_symbol_metadata() -> dict:
@@ -85,7 +84,7 @@ def get_symbol_metadata() -> dict:
             f"Symbols data file not found: {SYMBOLS_FILE}"
         )
 
-    with open(SYMBOLS_FILE, "r", encoding="utf-8") as f:
+    with open(SYMBOLS_FILE, encoding="utf-8") as f:
         data = json.load(f)
 
     return data["metadata"]

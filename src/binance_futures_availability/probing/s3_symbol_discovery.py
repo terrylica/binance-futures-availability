@@ -17,7 +17,6 @@ Performance: ~0.51s for ~369 symbols (proven benchmark from vision-futures-explo
 import logging
 import urllib.request
 from datetime import datetime
-from typing import Any
 from xml.etree import ElementTree
 
 logger = logging.getLogger(__name__)

@@ -2,8 +2,6 @@
 
 import datetime
 
-import pytest
-
 from binance_futures_availability.queries.snapshots import SnapshotQueries
 
 

@@ -10,10 +10,12 @@ Validates:
 Does NOT require database rebuild - works with existing data.
 """
 
+import statistics
 import time
 from pathlib import Path
+
 import duckdb
-import statistics
+
 
 def measure_query(conn: duckdb.DuckDBPyConnection, query: str, params: list, iterations: int = 100) -> dict:
     """Measure query execution time over multiple iterations."""
@@ -116,7 +118,7 @@ def main():
         print(f"Std Dev: {analytics_result['stdev_ms']:.3f} ms")
         print(f"Range: {analytics_result['min_ms']:.3f} - {analytics_result['max_ms']:.3f} ms")
         print(f"Results: {analytics_result['result_count']} dates")
-        print(f"Status: ✅ PASS (materialized view exists and performant)\n")
+        print("Status: ✅ PASS (materialized view exists and performant)\n")
     else:
         print("⚠️  Materialized view 'daily_symbol_counts' not found")
         print("Note: Requires database rebuild or manual refresh\n")

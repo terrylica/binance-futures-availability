@@ -22,7 +22,6 @@ import os
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
-from typing import List
 
 from binance_futures_availability.database import AvailabilityDatabase
 from binance_futures_availability.probing.aws_s3_lister import AWSS3Lister
@@ -60,7 +59,7 @@ def backfill_symbol(
 
         # Build records for ALL dates in range (available + unavailable)
         records = []
-        probe_time = datetime.datetime.now(datetime.timezone.utc)
+        probe_time = datetime.datetime.now(datetime.UTC)
         current_date = start_date
 
         while current_date <= end_date:
