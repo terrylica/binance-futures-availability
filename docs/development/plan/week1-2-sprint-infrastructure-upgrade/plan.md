@@ -306,12 +306,14 @@ npx semantic-release
 **Status**: ✅ RESOLVED (Commit: 76b3c3a)
 
 **Problem Discovery**:
+
 - Daily scheduled updates failing since Nov 18 (4-day data gap)
 - Root cause: ADR-0020 ruff linting gate blocked on 149 pre-existing violations
 - Primary culprit: `scripts/benchmark_workers.py` (6 errors)
 - SLO breach: 0% availability vs 95% target
 
 **Solution Implemented**:
+
 1. Auto-fixed 123 linting errors (imports, f-strings, type hints)
 2. Strategic exceptions added to `pyproject.toml` for 26 remaining errors:
    - DTZ rules (datetime timezone) - deferred to Phase 2 cleanup
@@ -321,6 +323,7 @@ npx semantic-release
    - Background monitoring with notifications
 
 **Validation**:
+
 - [x] ruff check passes for src/ tests/ scripts/
 - [x] pytest: 78 passed (baseline maintained, no regressions)
 - [x] Commit 76b3c3a pushed to main
@@ -329,11 +332,13 @@ npx semantic-release
 - [x] Execution log created (logs/0020-bugfix-linting-pipeline-20251121_133907.log)
 
 **Impact**:
+
 - MTTR: 37 minutes (detection → deployment)
 - Data gap: 4 days (Nov 18-21, ~1,308 records)
 - Backfill: Optional, low priority (~6 seconds effort)
 
 **Follow-up**:
+
 - [ ] Monitor tonight's scheduled run (3AM UTC Nov 22)
 - [ ] Create Phase 2 cleanup issue for timezone errors (DTZ rules)
 - [ ] Update ADR-0020 with lessons learned

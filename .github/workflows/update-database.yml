@@ -186,21 +186,38 @@ jobs:
         id: auto_backfill
         if: steps.detect_gaps.outputs.gaps_detected == 'true'
         run: |
-          NEW_SYMBOLS="${{ steps.detect_gaps.outputs.new_symbols }}"
+          NEW_SYMBOLS='${{ steps.detect_gaps.outputs.new_symbols }}'
+
+          echo "Raw NEW_SYMBOLS: $NEW_SYMBOLS"
 
           # Parse JSON array to comma-separated string
           # ["SYM1","SYM2"] → SYM1,SYM2
-          SYMBOL_LIST=$(echo "$NEW_SYMBOLS" | jq -r '.[] | @text' | tr '\n' ',' | sed 's/,$//')
+          # Use single quotes to prevent shell expansion, jq -r extracts raw strings
+          SYMBOL_LIST=$(echo "$NEW_SYMBOLS" | jq -r '.[]' | tr '\n' ',' | sed 's/,$//')
 
           echo "🔄 Auto-backfilling new symbols: $SYMBOL_LIST"
+          echo "Parsed symbol list: $SYMBOL_LIST"
+
+          # Validate SYMBOL_LIST is not empty
+          if [ -z "$SYMBOL_LIST" ]; then
+            echo "❌ Failed to parse symbols from: $NEW_SYMBOLS"
+            exit 1
+          fi
+
           echo "Starting historical backfill from 2019-09-25 to yesterday..."
 
           # Run targeted backfill for new symbols only
-          uv run python scripts/operations/backfill.py --symbols "$SYMBOL_LIST"
+          # BUG FIX: Pass --skip-materialized-refresh to avoid concurrent conflicts
+          uv run python scripts/operations/backfill.py --symbols "$SYMBOL_LIST" --skip-materialized-refresh
 
           if [ $? -eq 0 ]; then
             echo "backfill_success=true" >> $GITHUB_OUTPUT
             echo "✅ Auto-backfill completed successfully"
+
+            # Refresh materialized views once at the end (safe, single transaction)
+            echo "Refreshing materialized views..."
+            uv run python -c "from binance_futures_availability.database import AvailabilityDatabase; db = AvailabilityDatabase(); db.refresh_materialized_views(); db.close()"
+            echo "✅ Materialized views refreshed"
           else
             echo "backfill_success=false" >> $GITHUB_OUTPUT
             echo "❌ Auto-backfill failed"

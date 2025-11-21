@@ -305,6 +305,7 @@ All CI/CD changes follow ADR-0003 strict raise policy:
 **Root Cause**: Pre-existing technical debt (149 linting violations) surfaced when strict ruff gate was added. Primary culprit: `scripts/benchmark_workers.py` (6 errors from benchmarking work).
 
 **Resolution** (Commit 76b3c3a):
+
 1. Auto-fixed 123 violations (imports, f-strings, type hints)
 2. Added strategic exceptions to `pyproject.toml` for 26 remaining violations:
    ```toml
@@ -319,17 +320,20 @@ All CI/CD changes follow ADR-0003 strict raise policy:
 3. Created monitoring infrastructure (`scripts/operations/monitor_workflow.sh` with Pushover)
 
 **Impact**:
+
 - MTTR: 37 minutes (detection → deployment)
 - Data gap: 4 days (Nov 18-21, ~1,308 records)
 - SLO breach: 0% availability vs 95% target
 
 **Lessons Learned**:
+
 1. ✅ **Linting gates work**: Successfully caught 149 code quality issues
 2. ⚠️ **Incremental rollout needed**: Should have tested gate on feature branch
 3. ✅ **Strategic exceptions valid**: Pragmatic approach to unblock critical pipeline
 4. ✅ **Monitoring gap filled**: Added Pushover alerting for workflow failures
 
 **Follow-up Actions**:
+
 - [ ] Phase 2: Fix timezone errors (DTZ rules) - track in separate issue
 - [ ] Remove strategic exceptions after Phase 2 cleanup
 - [ ] Add pre-commit hooks to catch violations locally

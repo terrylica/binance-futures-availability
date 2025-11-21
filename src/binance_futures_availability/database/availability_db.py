@@ -19,12 +19,13 @@ class AvailabilityDatabase:
     See: docs/architecture/decisions/0002-storage-technology-duckdb.md
     """
 
-    def __init__(self, db_path: Path | None = None) -> None:
+    def __init__(self, db_path: Path | None = None, skip_materialized_refresh: bool = False) -> None:
         """
         Initialize database connection and create schema if needed.
 
         Args:
             db_path: Custom database path (default: DB_PATH env var or ~/.cache/binance-futures/availability.duckdb)
+            skip_materialized_refresh: Skip auto-refresh of materialized views after batch insert (for parallel operations)
         """
         if db_path is None:
             # Check environment variable first (critical for GitHub Actions)
@@ -38,6 +39,7 @@ class AvailabilityDatabase:
                 db_path = cache_dir / "availability.duckdb"
 
         self.db_path = Path(db_path)
+        self.skip_materialized_refresh = skip_materialized_refresh
         self.conn = duckdb.connect(str(self.db_path))
         create_schema(self.conn)
 
@@ -142,7 +144,9 @@ class AvailabilityDatabase:
                 ],
             )
             # ADR-0019: Auto-refresh materialized views after batch insert
-            self.refresh_materialized_views()
+            # Skip if disabled (for parallel operations to avoid concurrent conflicts)
+            if not self.skip_materialized_refresh:
+                self.refresh_materialized_views()
         except Exception as e:
             raise RuntimeError(f"Failed to insert batch of {len(records)} records: {e}") from e
 

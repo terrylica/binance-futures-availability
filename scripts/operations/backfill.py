@@ -33,6 +33,7 @@ def backfill_symbol(
     start_date: datetime.date,
     end_date: datetime.date,
     db_path: Path | None,
+    skip_materialized_refresh: bool = False,
 ) -> dict:
     """
     Backfill all availability data for a single symbol using AWS CLI.
@@ -42,6 +43,7 @@ def backfill_symbol(
         start_date: Start of date range
         end_date: End of date range (inclusive)
         db_path: Database path (each worker creates its own connection for thread-safety)
+        skip_materialized_refresh: Skip auto-refresh of materialized views (for parallel operations)
 
     Returns:
         Dict with symbol, dates_found, error (if any)
@@ -49,7 +51,7 @@ def backfill_symbol(
     lister = AWSS3Lister()
 
     # Create thread-local database connection for thread-safety
-    db = AvailabilityDatabase(db_path=db_path)
+    db = AvailabilityDatabase(db_path=db_path, skip_materialized_refresh=skip_materialized_refresh)
 
     try:
         # Get all available dates for this symbol
@@ -147,6 +149,12 @@ def main() -> int:
         help="Number of parallel workers (default: 10)",
     )
 
+    parser.add_argument(
+        "--skip-materialized-refresh",
+        action="store_true",
+        help="Skip auto-refresh of materialized views after each batch (use for parallel operations to avoid conflicts)",
+    )
+
     args = parser.parse_args()
 
     # Setup logging
@@ -214,7 +222,7 @@ def main() -> int:
     with ThreadPoolExecutor(max_workers=args.workers) as executor:
         # Submit all symbol backfill tasks
         future_to_symbol = {
-            executor.submit(backfill_symbol, symbol, start_date, end_date, db_path): symbol
+            executor.submit(backfill_symbol, symbol, start_date, end_date, db_path, args.skip_materialized_refresh): symbol
             for symbol in symbols
         }
 
