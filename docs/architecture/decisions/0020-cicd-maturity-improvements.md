@@ -296,8 +296,48 @@ All CI/CD changes follow ADR-0003 strict raise policy:
   - ADR-0009: GitHub Actions Automation (CI/CD foundation)
   - ADR-0016: Playwright E2E Testing (future Phase 2 integration)
 
+## Implementation Notes
+
+### Post-Deployment Incident (2025-11-21)
+
+**Incident**: Linting gate blocked daily scheduled updates for 4 days (Nov 18-21).
+
+**Root Cause**: Pre-existing technical debt (149 linting violations) surfaced when strict ruff gate was added. Primary culprit: `scripts/benchmark_workers.py` (6 errors from benchmarking work).
+
+**Resolution** (Commit 76b3c3a):
+1. Auto-fixed 123 violations (imports, f-strings, type hints)
+2. Added strategic exceptions to `pyproject.toml` for 26 remaining violations:
+   ```toml
+   ignore = [
+       "DTZ005",  # datetime.now() without tz - Phase 2 cleanup
+       "DTZ007",  # strptime without tz - argparse validators, low risk
+       "DTZ011",  # date.today() without tz - Phase 2 cleanup
+       "SIM117",  # Multiple with statements - stylistic
+       "PT017",   # pytest assert in except - valid pattern
+   ]
+   ```
+3. Created monitoring infrastructure (`scripts/operations/monitor_workflow.sh` with Pushover)
+
+**Impact**:
+- MTTR: 37 minutes (detection → deployment)
+- Data gap: 4 days (Nov 18-21, ~1,308 records)
+- SLO breach: 0% availability vs 95% target
+
+**Lessons Learned**:
+1. ✅ **Linting gates work**: Successfully caught 149 code quality issues
+2. ⚠️ **Incremental rollout needed**: Should have tested gate on feature branch
+3. ✅ **Strategic exceptions valid**: Pragmatic approach to unblock critical pipeline
+4. ✅ **Monitoring gap filled**: Added Pushover alerting for workflow failures
+
+**Follow-up Actions**:
+- [ ] Phase 2: Fix timezone errors (DTZ rules) - track in separate issue
+- [ ] Remove strategic exceptions after Phase 2 cleanup
+- [ ] Add pre-commit hooks to catch violations locally
+
+**Execution Log**: `logs/0020-bugfix-linting-pipeline-20251121_133907.log`
+
 ## Notes
 
-This improvement is part of Week 1-2 Sprint (comprehensive infrastructure improvements). Associated plan: `docs/development/plan/0020-cicd-maturity/plan.md` with `adr-id=0020`.
+This improvement is part of Week 1-2 Sprint (comprehensive infrastructure improvements). Associated plan: `docs/development/plan/week1-2-sprint-infrastructure-upgrade/plan.md` with `adr-id=0020`.
 
 **Maturity Tracking**: Current 7.1/10 → Phase 1: 7.8/10 → Phase 2: 8.2/10 → Phase 3: 8.5/10 (audit report roadmap).

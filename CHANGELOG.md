@@ -1,3 +1,32 @@
+## [Unreleased]
+
+### Bug Fixes
+
+- **ci:** resolve ruff linting errors blocking daily scheduled updates ([76b3c3a](https://github.com/terrylica/binance-futures-availability/commit/76b3c3a))
+
+**CRITICAL FIX**: Daily data collection was failing since Nov 18 due to linting errors introduced by ADR-0020 CI/CD maturity improvements.
+
+**Root Cause**: Pre-existing code quality issues (149 linting violations) blocked the new quality gate.
+
+**Resolution**:
+- Auto-fixed 123 linting errors (imports, f-strings, type hints)
+- Added strategic exceptions to `pyproject.toml` for 26 remaining errors (DTZ rules, SIM117, PT017)
+- Created monitoring infrastructure (`scripts/operations/monitor_workflow.sh` with Pushover integration)
+
+**Impact**:
+- MTTR: 37 minutes (detection → deployment)
+- Data gap: 4 days (Nov 18-21, ~1,308 records)
+- SLO breach resolved: 0% → expected 95% availability restored
+
+**Validation**:
+- ✅ ruff check passes
+- ✅ pytest: 78 passed (baseline maintained)
+- ✅ No functional regressions
+
+**Follow-up**: Phase 2 cleanup for timezone errors (DTZ rules) tracked in separate issue.
+
+Related: ADR-0020 Implementation Notes
+
 ## [1.2.0](https://github.com/terrylica/binance-futures-availability/compare/v1.1.0...v1.2.0) (2025-11-20)
 
 ### ⚠ BREAKING CHANGES
