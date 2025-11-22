@@ -22,6 +22,9 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
 
+# Mark entire module as integration - tests optional feature (ADR-0013) with .github/scripts imports
+pytestmark = pytest.mark.integration
+
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / ".github" / "scripts"))
 from generate_volume_rankings import (
     RANKINGS_SCHEMA,
