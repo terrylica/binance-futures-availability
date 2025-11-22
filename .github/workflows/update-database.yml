@@ -75,6 +75,21 @@ jobs:
           uv sync --all-extras
 
       # ============================================================================
+      # SECRETS: Fetch from Doppler (ADR-0022: Pushover notifications)
+      # ============================================================================
+
+      - name: Fetch secrets from Doppler
+        uses: doppler/cli-action@v3
+
+      - name: Load Doppler secrets
+        run: |
+          doppler secrets download --no-file --format env-no-quotes >> $GITHUB_ENV
+        env:
+          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
+          DOPPLER_PROJECT: notifications
+          DOPPLER_CONFIG: prd
+
+      # ============================================================================
       # LINT: Code quality checks (ADR-0020: fail fast on quality issues)
       # ============================================================================
 
@@ -539,6 +554,90 @@ jobs:
           - Download database: \`wget https://github.com/$REPO/releases/download/latest/availability.duckdb.gz\`
           - Download rankings: \`wget https://github.com/$REPO/releases/download/latest/volume-rankings-timeseries.parquet\`
           EOF
+
+      # ============================================================================
+      # NOTIFY: Send Pushover notification (ADR-0022)
+      # ============================================================================
+
+      - name: Send Pushover Notification
+        if: always()  # Run on all statuses (success/failure/cancelled)
+        env:
+          JOB_STATUS: ${{ job.status }}
+          WORKFLOW_NAME: ${{ github.workflow }}
+          LATEST_DATE: ${{ steps.stats.outputs.latest_date || 'N/A' }}
+          TOTAL_RECORDS: ${{ steps.stats.outputs.total_records || 'N/A' }}
+          AVAILABLE_COUNT: ${{ steps.stats.outputs.available_count || 'N/A' }}
+          UNAVAILABLE_COUNT: ${{ steps.stats.outputs.unavailable_count || 'N/A' }}
+          VALIDATION_STATUS: ${{ steps.validate.outputs.validation_passed == 'true' && 'Passed' || 'Failed' }}
+          RANKINGS_GENERATED: ${{ steps.generate_rankings.outputs.rankings_generated || 'false' }}
+          RANKINGS_ROWS: ${{ steps.generate_rankings.outputs.rankings_rows || '0' }}
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          TRIGGER: ${{ github.event_name }}
+        run: |
+          # Determine notification details based on job status
+          if [ "$JOB_STATUS" = "success" ]; then
+            TITLE="✅ Binance Futures DB Updated"
+            SOUND="toy_story"
+
+            if [ "$RANKINGS_GENERATED" = "true" ]; then
+              RANKINGS_STATUS="✅ Generated ($RANKINGS_ROWS symbols)"
+            else
+              RANKINGS_STATUS="⚠️ Failed (non-blocking)"
+            fi
+
+            MESSAGE="Database Update: $LATEST_DATE
+
+          📊 Stats:
+          - Records: $TOTAL_RECORDS
+          - Available: $AVAILABLE_COUNT
+          - Unavailable: $UNAVAILABLE_COUNT
+          - Validation: $VALIDATION_STATUS
+
+          📈 Volume Rankings: $RANKINGS_STATUS
+
+          🔗 View: $RUN_URL"
+
+          elif [ "$JOB_STATUS" = "failure" ]; then
+            TITLE="❌ DB Update Failed"
+            SOUND="alien"
+            MESSAGE="Workflow Failed
+
+          Status: $VALIDATION_STATUS
+          Latest Date: $LATEST_DATE
+          Trigger: $TRIGGER
+
+          🔗 Check logs: $RUN_URL"
+
+          else
+            # Cancelled
+            TITLE="⚠️ DB Update Cancelled"
+            SOUND="mechanical"
+            MESSAGE="Workflow was manually cancelled
+
+          Trigger: $TRIGGER
+
+          🔗 View: $RUN_URL"
+          fi
+
+          # Send Pushover notification
+          HTTP_CODE=$(curl -s -w "%{http_code}" -o /tmp/pushover_response.json \
+            --form-string "token=$PUSHOVER_API_TOKEN" \
+            --form-string "user=$PUSHOVER_USER_KEY" \
+            --form-string "title=$TITLE" \
+            --form-string "message=$MESSAGE" \
+            --form-string "sound=$SOUND" \
+            --form-string "priority=0" \
+            https://api.pushover.net/1/messages.json)
+
+          if [ "$HTTP_CODE" -eq 200 ]; then
+            echo "✅ Pushover notification sent: $TITLE"
+            cat /tmp/pushover_response.json
+          else
+            echo "⚠️ Pushover notification failed (HTTP $HTTP_CODE)"
+            cat /tmp/pushover_response.json
+            # Non-blocking: don't fail workflow if notification fails
+            exit 0
+          fi
 
       # ============================================================================
       # CLEANUP: Remove temporary files

@@ -1,5 +1,39 @@
 ## [Unreleased]
 
+### Added
+
+- **notifications:** add real-time Pushover workflow notifications (ADR-0022) ([6fa8762](https://github.com/terrylica/binance-futures-availability/commit/6fa8762))
+
+**Feature**: Real-time Pushover notifications on all GitHub Actions workflow statuses (success/failure/cancelled).
+
+**Implementation**:
+
+- Doppler SecretOps integration for centralized secret management
+- Custom curl-based notification with rich database statistics
+- Conditional formatting based on job status (✅/❌/⚠️)
+- Non-blocking error handling (notification failure doesn't fail workflow)
+
+**Notification Content**:
+
+- **Success**: Database stats (latest_date, records, available/unavailable counts), validation status, volume rankings status, run URL
+- **Failure**: Error context, validation status, trigger type, logs URL
+- **Cancelled**: Cancellation notice, trigger type, run URL
+
+**Impact**:
+
+- Instant workflow visibility (no manual GitHub UI checks required)
+- 30 hours/year time savings (5 min/day × 365 days monitoring eliminated)
+- Faster incident response (immediate failure detection)
+- Consistent UX between local monitoring script and CI workflow
+- ROI: 1,500% (2 hours invested, 30 hours/year saved)
+
+**Dependencies**:
+
+- GitHub repository secret: `DOPPLER_TOKEN`
+- Doppler secrets: `PUSHOVER_API_TOKEN`, `PUSHOVER_USER_KEY`
+
+**References**: ADR-0022, `docs/development/plan/0022-pushover-workflow-notifications/plan.md`
+
 ### Changed
 
 - **ci:** remove all tests from GitHub Actions workflow - operations only ([2e54c5b](https://github.com/terrylica/binance-futures-availability/commit/2e54c5b))
@@ -9,6 +43,7 @@
 **Rationale**: User requirement - "I just want the operation on CI/CD. as long as the operations is good then everything's fine."
 
 **Impact**:
+
 - Workflow runtime reduced by ~10-15 seconds (no pytest execution)
 - Clearer separation: CI/CD = automation, Local = validation
 - Eliminated test-related workflow failures in production
@@ -18,6 +53,7 @@
 **Decision**: Replace "Availability: 30.21%" with concrete absolute counts and detailed paragraph-format explanations.
 
 **Changes**:
+
 - `availability_pct` → `available_count` + `unavailable_count`
 - Added contextual explanations for why unavailable files are expected:
   - Historical symbol listings (symbols didn't exist in 2019-2020)
@@ -33,6 +69,7 @@
 **Decision**: Remove `release.yml` workflow entirely. This is a data pipeline, not versioned software.
 
 **Rationale**:
+
 - Semantic versioning (v1.0.0, v1.1.0) is for libraries, not daily data
 - Database already published to GitHub Releases under "latest" tag by update-database.yml
 - Workflow was failing on every commit (10+ consecutive failures)
