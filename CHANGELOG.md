@@ -1,5 +1,45 @@
 ## [Unreleased]
 
+### Changed
+
+- **ci:** remove all tests from GitHub Actions workflow - operations only ([2e54c5b](https://github.com/terrylica/binance-futures-availability/commit/2e54c5b))
+
+**Decision**: CI/CD runs operations ONLY (symbol discovery, data collection, database publishing). All testing moved to local development.
+
+**Rationale**: User requirement - "I just want the operation on CI/CD. as long as the operations is good then everything's fine."
+
+**Impact**:
+- Workflow runtime reduced by ~10-15 seconds (no pytest execution)
+- Clearer separation: CI/CD = automation, Local = validation
+- Eliminated test-related workflow failures in production
+
+- **metrics:** replace confusing percentage with concrete numbers + contextual explanations ([29a9b71](https://github.com/terrylica/binance-futures-availability/commit/29a9b71))
+
+**Decision**: Replace "Availability: 30.21%" with concrete absolute counts and detailed paragraph-format explanations.
+
+**Changes**:
+- `availability_pct` → `available_count` + `unavailable_count`
+- Added contextual explanations for why unavailable files are expected:
+  - Historical symbol listings (symbols didn't exist in 2019-2020)
+  - T+1 publishing delay (yesterday's data appears 12-24 hours later)
+- Updated GitHub Actions summary, release notes, and stats output
+
+**Impact**: Clearer metrics that don't confuse users about data quality.
+
+### Removed
+
+- **ci:** delete semantic-release workflow - not needed for data pipeline ([87fbee5](https://github.com/terrylica/binance-futures-availability/commit/87fbee5))
+
+**Decision**: Remove `release.yml` workflow entirely. This is a data pipeline, not versioned software.
+
+**Rationale**:
+- Semantic versioning (v1.0.0, v1.1.0) is for libraries, not daily data
+- Database already published to GitHub Releases under "latest" tag by update-database.yml
+- Workflow was failing on every commit (10+ consecutive failures)
+- User requirement: operations-only CI/CD, this was version management overhead
+
+**Impact**: Only 1 custom workflow remains (update-database.yml), eliminating workflow noise.
+
 ### Bug Fixes
 
 - **ci:** resolve ruff linting errors blocking daily scheduled updates ([76b3c3a](https://github.com/terrylica/binance-futures-availability/commit/76b3c3a))
