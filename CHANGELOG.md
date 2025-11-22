@@ -2,7 +2,7 @@
 
 ### Added
 
-- **notifications:** add real-time Pushover workflow notifications (ADR-0022) ([6fa8762](https://github.com/terrylica/binance-futures-availability/commit/6fa8762))
+- **notifications:** add real-time Pushover workflow notifications (ADR-0022) ([1ce5e2d](https://github.com/terrylica/binance-futures-availability/commit/1ce5e2d))
 
 **Feature**: Real-time Pushover notifications on all GitHub Actions workflow statuses (success/failure/cancelled).
 
