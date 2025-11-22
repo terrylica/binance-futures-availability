@@ -22,7 +22,7 @@ try:
             COUNT(DISTINCT symbol) as total_symbols,
             COUNT(*) as total_records,
             SUM(CASE WHEN available THEN 1 ELSE 0 END) as available_count,
-            ROUND(AVG(CASE WHEN available THEN 1.0 ELSE 0.0 END) * 100, 2) as availability_pct
+            SUM(CASE WHEN NOT available THEN 1 ELSE 0 END) as unavailable_count
         FROM daily_availability
     ''').fetchone()
 
@@ -43,7 +43,8 @@ try:
     print(f'  Total Dates: {overall[2]}')
     print(f'  Total Symbols: {overall[3]}')
     print(f'  Total Records: {overall[4]:,}')
-    print(f'  Available: {overall[5]:,} ({overall[6]}%)')
+    print(f'  Available Files: {overall[5]:,}')
+    print(f'  Unavailable Files: {overall[6]:,}')
     print()
     print('Recent 7 Days:')
     for date, count in recent:
@@ -58,7 +59,7 @@ try:
             'total_symbols': overall[3],
             'total_records': overall[4],
             'available_count': overall[5],
-            'availability_pct': overall[6]
+            'unavailable_count': overall[6]
         }, f)
 
 except Exception as e:

@@ -301,11 +301,13 @@ jobs:
           # Read stats for GitHub output
           LATEST_DATE=$(cat stats.json | jq -r '.latest_date')
           TOTAL_RECORDS=$(cat stats.json | jq -r '.total_records')
-          AVAILABILITY_PCT=$(cat stats.json | jq -r '.availability_pct')
+          AVAILABLE_COUNT=$(cat stats.json | jq -r '.available_count')
+          UNAVAILABLE_COUNT=$(cat stats.json | jq -r '.unavailable_count')
 
           echo "latest_date=$LATEST_DATE" >> $GITHUB_OUTPUT
           echo "total_records=$TOTAL_RECORDS" >> $GITHUB_OUTPUT
-          echo "availability_pct=$AVAILABILITY_PCT" >> $GITHUB_OUTPUT
+          echo "available_count=$AVAILABLE_COUNT" >> $GITHUB_OUTPUT
+          echo "unavailable_count=$UNAVAILABLE_COUNT" >> $GITHUB_OUTPUT
 
       # ============================================================================
       # RANKINGS: Generate volume rankings time-series archive (ADR-0013)
@@ -396,7 +398,8 @@ jobs:
         env:
           LATEST_DATE: ${{ steps.stats.outputs.latest_date }}
           TOTAL_RECORDS: ${{ steps.stats.outputs.total_records }}
-          AVAILABILITY_PCT: ${{ steps.stats.outputs.availability_pct }}
+          AVAILABLE_COUNT: ${{ steps.stats.outputs.available_count }}
+          UNAVAILABLE_COUNT: ${{ steps.stats.outputs.unavailable_count }}
           RANKINGS_GENERATED: ${{ steps.generate_rankings.outputs.rankings_generated }}
           RANKINGS_ROWS: ${{ steps.generate_rankings.outputs.rankings_rows }}
           RANKINGS_SIZE_MB: ${{ steps.generate_rankings.outputs.rankings_size_mb }}
@@ -411,7 +414,8 @@ jobs:
           ### Statistics
           - **Latest Date**: $LATEST_DATE
           - **Total Records**: $TOTAL_RECORDS
-          - **Availability**: $AVAILABILITY_PCT%
+          - **Available Files**: $AVAILABLE_COUNT
+          - **Unavailable Files**: $UNAVAILABLE_COUNT
 
           ### Update Details
           - **Trigger**: $TRIGGER
@@ -490,7 +494,8 @@ jobs:
           VALIDATION_STATUS: ${{ steps.validate.outputs.validation_passed == 'true' && 'Passed' || 'Failed' }}
           LATEST_DATE: ${{ steps.stats.outputs.latest_date }}
           TOTAL_RECORDS: ${{ steps.stats.outputs.total_records }}
-          AVAILABILITY_PCT: ${{ steps.stats.outputs.availability_pct }}
+          AVAILABLE_COUNT: ${{ steps.stats.outputs.available_count }}
+          UNAVAILABLE_COUNT: ${{ steps.stats.outputs.unavailable_count }}
           RANKINGS_GENERATED: ${{ steps.generate_rankings.outputs.rankings_generated }}
           RANKINGS_ROWS: ${{ steps.generate_rankings.outputs.rankings_rows }}
           RANKINGS_SIZE_MB: ${{ steps.generate_rankings.outputs.rankings_size_mb }}
@@ -501,11 +506,19 @@ jobs:
           cat >> $GITHUB_STEP_SUMMARY << EOF
           # Database Update Summary
 
-          ## Status
-          - **Validation**: $VALIDATION_STATUS
-          - **Latest Date**: $LATEST_DATE
-          - **Total Records**: $TOTAL_RECORDS
-          - **Availability**: $AVAILABILITY_PCT%
+          ## Database Status
+
+          **Validation**: $VALIDATION_STATUS | **Latest Date**: $LATEST_DATE
+
+          ### Historical Coverage
+
+          The database contains **$TOTAL_RECORDS total probe records** spanning from September 2019 to present. Each record represents one daily check for a specific futures symbol on a specific date.
+
+          **Available Files**: $AVAILABLE_COUNT files were found on Binance Vision S3 storage. These are actual historical kline data files that exist and can be downloaded.
+
+          **Unavailable Files**: $UNAVAILABLE_COUNT probe records show files that don't exist on Binance Vision. This is expected for two main reasons:
+          - **Historical listings**: Most perpetual futures symbols didn't exist in 2019-2020. For example, if a symbol launched in 2023, all probe records from 2019-2022 will be "unavailable" (the symbol didn't exist yet).
+          - **Recent data publishing lag**: Binance Vision has a T+1 publishing delay. Yesterday's data typically appears 12-24 hours later, so recent dates may show as unavailable until the files are published.
 
           ## Volume Rankings (ADR-0013)
           $(if [ "$RANKINGS_GENERATED" = "true" ]; then
