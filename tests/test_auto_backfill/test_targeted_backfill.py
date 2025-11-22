@@ -19,6 +19,9 @@ import pytest
 
 from binance_futures_availability.database import AvailabilityDatabase
 
+# Mark entire module as integration - tests scripts/ which isn't a proper package
+pytestmark = pytest.mark.integration
+
 
 class TestSymbolParsing:
     """Test parsing of --symbols parameter (comma and space-separated)."""
