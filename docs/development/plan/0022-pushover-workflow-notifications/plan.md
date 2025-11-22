@@ -443,6 +443,51 @@ Track execution here as work progresses:
 
 - ⚠️ **MANUAL STEP REQUIRED**: Add DOPPLER_TOKEN to GitHub repository secrets before validation testing can proceed
 
+### 2025-11-22 [02:30] - Doppler Integration Refactor
+
+**Issue**: User confusion about Doppler integration approach
+
+**Context**:
+- User had already configured Doppler GitHub App (installation 88898750) for automatic secret sync
+- Initial implementation used Doppler CLI runtime fetch (requiring `DOPPLER_TOKEN` repository secret)
+- User expected automatic sync (no runtime fetch needed)
+
+**Fix**:
+- ✅ Removed Doppler CLI action steps from workflow (commit 8bda8ab)
+- ✅ Updated notification step to use GitHub secrets directly (`${{ secrets.PUSHOVER_APP_TOKEN }}`)
+- ✅ User configured Doppler sync successfully (5 secrets synced)
+- ✅ Fixed secret name mismatch: `PUSHOVER_APP_TOKEN` (not `PUSHOVER_API_TOKEN`) (commit fa64ef6)
+
+**Impact**: Simplified workflow, eliminated need for runtime Doppler CLI fetch
+
+### 2025-11-22 [11:30] - Workflow Validation Fix
+
+**Issue**: Workflow run 19594819459 failed with validation error "1 dates with <100 symbols"
+
+**Root Cause Analysis** (Data-First Debugging):
+1. Daily update probed all 634 symbols for 2025-11-21 (7150 records for 10-day range) ✅
+2. Most symbols returned `available=false` (S3 Vision T+1 publishing delay) ✅
+3. Completeness validator checked 2025-11-21 with `WHERE available = true` → saw only 1 symbol ❌
+4. Validation failed before Pushover notification could be tested
+
+**Root Cause**: Completeness validator checked dates within S3 Vision's T+1 publishing window without date buffer (unlike continuity validator which uses T+2 buffer)
+
+**Fix** (commit fd8cb0e):
+- ✅ Added `end_date` parameter to `check_completeness` method (default: today - 2 days)
+- ✅ Updated SQL: `WHERE date >= ? AND date <= ? AND available = true`
+- ✅ Updated `validate_completeness` and `get_symbol_counts_summary` methods
+- ✅ Added observability: log date range checked in validation output
+- ✅ Aligned completeness validator with continuity validator's proven T+2 buffer approach
+
+**Impact**:
+- Prevents false positives for dates within S3 publishing window
+- Maintains strict validation for historical data
+- Workflow can now complete successfully and test Pushover notifications
+
+**Blockers**:
+
+- ⚠️ **MANUAL STEP REQUIRED**: Add DOPPLER_TOKEN to GitHub repository secrets before validation testing can proceed
+
 ## SLO Compliance
 
 Per ADR-0000, focus on 4 dimensions (not speed/performance/security):
