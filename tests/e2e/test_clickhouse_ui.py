@@ -25,6 +25,7 @@ SCREENSHOT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 @pytest.mark.ui
+@pytest.mark.integration  # Exclude from CI - requires Playwright browsers and running ClickHouse
 class TestClickHouseUI:
     """Test suite for ClickHouse UI (port 5521)."""
 
