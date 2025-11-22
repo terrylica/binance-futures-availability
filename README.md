@@ -75,6 +75,7 @@ To enable real-time Pushover notifications for workflow runs (success/failure/ca
    - `PUSHOVER_USER_KEY` (from Pushover dashboard)
 
 **What you'll get:**
+
 - Instant notifications on all workflow runs (< 5 seconds)
 - Database stats, validation status, volume rankings status
 - Direct links to workflow logs

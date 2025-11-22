@@ -89,7 +89,9 @@ def main() -> int:
         # (2025-08 had ~550-560 symbols, early dates had even fewer)
         # This catches real data quality issues while allowing legitimate historical variation
         min_symbols = 100
-        incomplete_dates = validator.check_completeness(min_symbol_count=min_symbols)
+        # Exclude last 2 days to account for S3 Vision T+1 publishing delay (matches continuity check)
+        end_date = datetime.date.today() - datetime.timedelta(days=2)
+        incomplete_dates = validator.check_completeness(min_symbol_count=min_symbols, end_date=end_date)
 
         if incomplete_dates:
             logger.error(f"FAILED: {len(incomplete_dates)} dates with <{min_symbols} symbols")
@@ -99,11 +101,11 @@ def main() -> int:
                 logger.error(f"  ... and {len(incomplete_dates) - 10} more")
             all_passed = False
         else:
-            logger.info(f"PASSED: All dates have ≥{min_symbols} symbols")
+            logger.info(f"PASSED: All dates have ≥{min_symbols} symbols (checked through {end_date})")
 
-        # Show summary
-        summary = validator.get_symbol_counts_summary(days=7)
-        logger.info("Recent 7 days summary:")
+        # Show summary (same end_date buffer as validation check)
+        summary = validator.get_symbol_counts_summary(days=7, end_date=end_date)
+        logger.info(f"Recent 7 days summary (through {end_date}):")
         for item in summary:
             logger.info(f"  - {item['date']}: {item['symbol_count']} symbols")
 

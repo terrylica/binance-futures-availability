@@ -30,6 +30,7 @@ class CompletenessValidator:
     def check_completeness(
         self,
         start_date: datetime.date | str | None = None,
+        end_date: datetime.date | str | None = None,
         min_symbol_count: int = 700,
     ) -> list[dict[str, Any]]:
         """
@@ -37,6 +38,7 @@ class CompletenessValidator:
 
         Args:
             start_date: Start date for check (default: 90 days ago)
+            end_date: End date for check (default: 2 days ago to account for S3 T+1 publishing delay)
             min_symbol_count: Minimum expected symbols (default: 700)
 
         Returns:
@@ -55,7 +57,7 @@ class CompletenessValidator:
         Query:
             SELECT date, COUNT(*) as symbol_count
             FROM daily_availability
-            WHERE date >= ? AND available = true
+            WHERE date >= ? AND date <= ? AND available = true
             GROUP BY date
             HAVING COUNT(*) < ?
             ORDER BY date
@@ -66,29 +68,37 @@ class CompletenessValidator:
         elif isinstance(start_date, str):
             start_date = datetime.date.fromisoformat(start_date)
 
+        # Default: exclude last 2 days to account for S3 Vision T+1 publishing delay
+        # (S3 Vision publishes at 2:00 AM UTC with 12-24 hour delay, buffer prevents false positives)
+        if end_date is None:
+            end_date = datetime.date.today() - datetime.timedelta(days=2)
+        elif isinstance(end_date, str):
+            end_date = datetime.date.fromisoformat(end_date)
+
         try:
             rows = self.db.query(
                 """
                 SELECT date, COUNT(*) as symbol_count
                 FROM daily_availability
-                WHERE date >= ? AND available = true
+                WHERE date >= ? AND date <= ? AND available = true
                 GROUP BY date
                 HAVING COUNT(*) < ?
                 ORDER BY date
                 """,
-                [start_date, min_symbol_count],
+                [start_date, end_date, min_symbol_count],
             )
 
             return [{"date": str(row[0]), "symbol_count": row[1]} for row in rows]
 
         except Exception as e:
             raise RuntimeError(
-                f"Completeness check failed for dates >= {start_date}: {e}"
+                f"Completeness check failed for dates {start_date} to {end_date}: {e}"
             ) from e
 
     def validate_completeness(
         self,
         start_date: datetime.date | str | None = None,
+        end_date: datetime.date | str | None = None,
         min_symbol_count: int = 700,
     ) -> bool:
         """
@@ -96,6 +106,7 @@ class CompletenessValidator:
 
         Args:
             start_date: Start date for check (default: 90 days ago)
+            end_date: End date for check (default: 2 days ago to account for S3 T+1 publishing delay)
             min_symbol_count: Minimum expected symbols (default: 700)
 
         Returns:
@@ -110,18 +121,19 @@ class CompletenessValidator:
             True  # Success: all recent dates have ≥700 symbols
         """
         incomplete_dates = self.check_completeness(
-            start_date=start_date, min_symbol_count=min_symbol_count
+            start_date=start_date, end_date=end_date, min_symbol_count=min_symbol_count
         )
         return len(incomplete_dates) == 0
 
     def get_symbol_counts_summary(
-        self, days: int = 30
+        self, days: int = 30, end_date: datetime.date | None = None
     ) -> list[dict[str, Any]]:
         """
         Get daily symbol counts for recent dates (summary view).
 
         Args:
             days: Number of recent days to summarize (default: 30)
+            end_date: End date for summary (default: 2 days ago to account for S3 T+1 publishing delay)
 
         Returns:
             List of dicts with keys: date, symbol_count
@@ -140,22 +152,26 @@ class CompletenessValidator:
         Query:
             SELECT date, COUNT(*) as symbol_count
             FROM daily_availability
-            WHERE date >= (CURRENT_DATE - INTERVAL '? days') AND available = true
+            WHERE date >= ? AND date <= ? AND available = true
             GROUP BY date
             ORDER BY date
         """
-        start_date = datetime.date.today() - datetime.timedelta(days=days)
+        # Default: exclude last 2 days to account for S3 Vision T+1 publishing delay
+        if end_date is None:
+            end_date = datetime.date.today() - datetime.timedelta(days=2)
+
+        start_date = end_date - datetime.timedelta(days=days - 1)
 
         try:
             rows = self.db.query(
                 """
                 SELECT date, COUNT(*) as symbol_count
                 FROM daily_availability
-                WHERE date >= ? AND available = true
+                WHERE date >= ? AND date <= ? AND available = true
                 GROUP BY date
                 ORDER BY date
                 """,
-                [start_date],
+                [start_date, end_date],
             )
 
             return [{"date": str(row[0]), "symbol_count": row[1]} for row in rows]
