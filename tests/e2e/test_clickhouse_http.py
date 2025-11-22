@@ -17,6 +17,9 @@ Tests HTTP API responses without manual intervention, verifying:
 import httpx
 import pytest
 
+# Mark entire module as integration - requires running ClickHouse instance
+pytestmark = pytest.mark.integration
+
 BASE_URL = "http://localhost:8123"
 TIMEOUT = 10.0  # seconds
 
