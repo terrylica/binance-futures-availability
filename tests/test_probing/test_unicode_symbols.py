@@ -17,10 +17,10 @@ from unittest.mock import Mock, patch
 
 import pytest
 
+from binance_futures_availability.probing.s3_vision import check_symbol_availability
+
 # Mark entire module as integration - tests edge cases with live S3 API interactions
 pytestmark = pytest.mark.integration
-
-from binance_futures_availability.probing.s3_vision import check_symbol_availability
 
 
 class TestUnicodeSymbolHandling:
