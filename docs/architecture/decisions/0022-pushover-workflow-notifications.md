@@ -24,7 +24,7 @@ While functional, this approach creates **operational friction**:
 3. **Context Switching**: Must open browser, navigate to Actions tab, inspect logs
 4. **Delayed Incident Response**: Failures during scheduled runs go unnoticed until next manual check
 
-User requirement: *"When the CI/CD running on GitHub after successful running or even after whatever status where I get pushed over a notification at the end."*
+User requirement: _"When the CI/CD running on GitHub after successful running or even after whatever status where I get pushed over a notification at the end."_
 
 ## Decision Drivers
 

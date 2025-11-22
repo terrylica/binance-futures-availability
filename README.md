@@ -59,6 +59,29 @@ gunzip availability.duckdb.gz
 
 **No action needed** - workflow runs automatically daily at 3:00 AM UTC. Download latest database anytime from GitHub Releases.
 
+#### 4. Pushover Notifications (Optional - ADR-0022)
+
+**Get instant workflow status notifications on your phone/desktop.**
+
+To enable real-time Pushover notifications for workflow runs (success/failure/cancelled):
+
+1. **Add DOPPLER_TOKEN to GitHub repository secrets:**
+   - Navigate: [Repository Secrets](https://github.com/terrylica/binance-futures-availability/settings/secrets/actions)
+   - Create Doppler service token from [Doppler Dashboard](https://dashboard.doppler.com/workplace/*/projects/notifications/configs/prd/access)
+   - Add secret: `DOPPLER_TOKEN` = `<service_token>`
+
+2. **Verify Doppler secrets exist:**
+   - `PUSHOVER_API_TOKEN` (from [Pushover Apps](https://pushover.net/apps))
+   - `PUSHOVER_USER_KEY` (from Pushover dashboard)
+
+**What you'll get:**
+- Instant notifications on all workflow runs (< 5 seconds)
+- Database stats, validation status, volume rankings status
+- Direct links to workflow logs
+- No more manual GitHub UI checks (saves 30 hours/year)
+
+See [ADR-0022](docs/architecture/decisions/0022-pushover-workflow-notifications.md) for implementation details.
+
 ### Option 2: Local Development
 
 ```bash

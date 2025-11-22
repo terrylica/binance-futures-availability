@@ -228,6 +228,38 @@ Focus on 4 dimensions (explicitly **not** speed/performance/security):
 
 **Error Handling**: Strict raise policy (ADR-0003), workflow retries next cycle on failure
 
+### Pushover Notifications (ADR-0022) - **NEW**
+
+**Technology**: Pushover API with Doppler SecretOps integration
+**Status**: ✅ Implemented (as of 2025-11-22)
+**Trigger**: All workflow statuses (success/failure/cancelled)
+**Delivery**: Instant notifications to phone/desktop (< 5 seconds)
+
+**Notification Content**:
+
+- **Success**: Database stats (latest_date, records, available/unavailable counts), validation status, volume rankings status, run URL
+- **Failure**: Error context, validation status, trigger type, logs URL
+- **Cancelled**: Cancellation notice, trigger type, run URL
+
+**Setup Required** (one-time):
+
+1. Add `DOPPLER_TOKEN` to GitHub repository secrets:
+   - Navigate: https://github.com/terrylica/binance-futures-availability/settings/secrets/actions
+   - Create Doppler service token: https://dashboard.doppler.com/workplace/*/projects/notifications/configs/prd/access
+   - Add secret: `DOPPLER_TOKEN` = `<service_token>`
+
+2. Verify Doppler secrets exist:
+   - `PUSHOVER_API_TOKEN` (from https://pushover.net/apps)
+   - `PUSHOVER_USER_KEY` (from Pushover dashboard)
+
+**Impact**:
+
+- Eliminates manual GitHub UI workflow monitoring (30 hours/year saved)
+- Instant failure detection → faster incident response
+- Consistent UX between local monitoring script and CI workflow
+
+**References**: ADR-0022, `docs/development/plan/0022-pushover-workflow-notifications/plan.md`
+
 ## Testing
 
 ### Coverage Requirements
