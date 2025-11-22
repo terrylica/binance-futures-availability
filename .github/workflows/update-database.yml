@@ -72,7 +72,7 @@ jobs:
 
       - name: Install project dependencies
         run: |
-          uv pip install --system -e ".[dev]"
+          uv sync --all-extras
 
       # ============================================================================
       # LINT: Code quality checks (ADR-0020: fail fast on quality issues)
