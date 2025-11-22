@@ -75,19 +75,11 @@ jobs:
           uv sync --all-extras
 
       # ============================================================================
-      # SECRETS: Fetch from Doppler (ADR-0022: Pushover notifications)
+      # SECRETS: Synced from Doppler GitHub App (ADR-0022: Pushover notifications)
       # ============================================================================
-
-      - name: Fetch secrets from Doppler
-        uses: doppler/cli-action@v3
-
-      - name: Load Doppler secrets
-        run: |
-          doppler secrets download --no-file --format env-no-quotes >> $GITHUB_ENV
-        env:
-          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
-          DOPPLER_PROJECT: notifications
-          DOPPLER_CONFIG: prd
+      # Doppler GitHub App automatically syncs secrets to GitHub repository secrets.
+      # No runtime fetch needed - secrets available as ${{ secrets.PUSHOVER_API_TOKEN }}
+      # Configuration: https://dashboard.doppler.com/workplace/13e9e4203ede563b1d37/integrations/connections/8fc5c6ed-fd76-4220-a8be-7ba9cdb5d950
 
       # ============================================================================
       # LINT: Code quality checks (ADR-0020: fail fast on quality issues)
@@ -562,6 +554,10 @@ jobs:
       - name: Send Pushover Notification
         if: always()  # Run on all statuses (success/failure/cancelled)
         env:
+          # Pushover credentials (synced from Doppler GitHub App)
+          PUSHOVER_API_TOKEN: ${{ secrets.PUSHOVER_API_TOKEN }}
+          PUSHOVER_USER_KEY: ${{ secrets.PUSHOVER_USER_KEY }}
+          # Workflow context
           JOB_STATUS: ${{ job.status }}
           WORKFLOW_NAME: ${{ github.workflow }}
           LATEST_DATE: ${{ steps.stats.outputs.latest_date || 'N/A' }}
