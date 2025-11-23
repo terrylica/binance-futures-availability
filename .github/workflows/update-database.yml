@@ -40,11 +40,11 @@ jobs:
     env:
       DB_PATH: ${{ github.workspace }}/.cache/binance-futures/availability.duckdb
       PYTHON_VERSION: '3.12'
-      # ADR-0011: 20-Day Lookback for Data Reliability
-      # workflow_dispatch: Use input parameter (testing: 1/7/20)
-      # schedule (cron): Use default '1' (Phase 1: safe deployment)
-      # Phase 3 (production): Change default to '20' for scheduled runs
-      LOOKBACK_DAYS: ${{ github.event.inputs.lookback_days || '1' }}
+      # ADR-0011: 20-Day Lookback for Data Reliability (Phase 3: Production)
+      # workflow_dispatch: Use input parameter (testing/override)
+      # schedule (cron): Use 20-day lookback for auto-repair and S3 delay tolerance
+      # Benefits: Auto-fills gaps from failed runs, handles S3 publishing delays, updates changed volume metrics
+      LOOKBACK_DAYS: ${{ github.event.inputs.lookback_days || '20' }}
 
     steps:
       # ============================================================================
