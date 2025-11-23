@@ -60,9 +60,9 @@ def main() -> int:
     logger.info("\n[1/3] Continuity Check: Detecting missing dates...")
     try:
         validator = ContinuityValidator()
-        # Check up to 2 days ago to account for S3 Vision publishing delays
-        # (S3 Vision publishes at 2:00 AM UTC with T+1 availability, but delays can occur)
-        end_date = datetime.date.today() - datetime.timedelta(days=2)
+        # Check up to 3 days ago to account for S3 Vision publishing delays
+        # (S3 Vision publishes at 2:00 AM UTC with T+1 availability, but can take 24-48 hours)
+        end_date = datetime.date.today() - datetime.timedelta(days=3)
         missing_dates = validator.check_continuity(end_date=end_date)
 
         if missing_dates:
@@ -89,8 +89,9 @@ def main() -> int:
         # (2025-08 had ~550-560 symbols, early dates had even fewer)
         # This catches real data quality issues while allowing legitimate historical variation
         min_symbols = 100
-        # Exclude last 2 days to account for S3 Vision T+1 publishing delay (matches continuity check)
-        end_date = datetime.date.today() - datetime.timedelta(days=2)
+        # Exclude last 3 days to account for S3 Vision T+1 publishing delay + variability
+        # (S3 Vision can take 24-48 hours to publish data, T+3 provides safe buffer)
+        end_date = datetime.date.today() - datetime.timedelta(days=3)
         incomplete_dates = validator.check_completeness(min_symbol_count=min_symbols, end_date=end_date)
 
         if incomplete_dates:

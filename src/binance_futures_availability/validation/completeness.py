@@ -38,7 +38,7 @@ class CompletenessValidator:
 
         Args:
             start_date: Start date for check (default: 90 days ago)
-            end_date: End date for check (default: 2 days ago to account for S3 T+1 publishing delay)
+            end_date: End date for check (default: 3 days ago to account for S3 T+1 publishing delay + variability)
             min_symbol_count: Minimum expected symbols (default: 700)
 
         Returns:
@@ -68,10 +68,10 @@ class CompletenessValidator:
         elif isinstance(start_date, str):
             start_date = datetime.date.fromisoformat(start_date)
 
-        # Default: exclude last 2 days to account for S3 Vision T+1 publishing delay
-        # (S3 Vision publishes at 2:00 AM UTC with 12-24 hour delay, buffer prevents false positives)
+        # Default: exclude last 3 days to account for S3 Vision T+1 publishing delay + variability
+        # (S3 Vision publishes at 2:00 AM UTC but can take 24-48 hours, T+3 buffer prevents false positives)
         if end_date is None:
-            end_date = datetime.date.today() - datetime.timedelta(days=2)
+            end_date = datetime.date.today() - datetime.timedelta(days=3)
         elif isinstance(end_date, str):
             end_date = datetime.date.fromisoformat(end_date)
 
@@ -106,7 +106,7 @@ class CompletenessValidator:
 
         Args:
             start_date: Start date for check (default: 90 days ago)
-            end_date: End date for check (default: 2 days ago to account for S3 T+1 publishing delay)
+            end_date: End date for check (default: 3 days ago to account for S3 T+1 publishing delay + variability)
             min_symbol_count: Minimum expected symbols (default: 700)
 
         Returns:
@@ -133,7 +133,7 @@ class CompletenessValidator:
 
         Args:
             days: Number of recent days to summarize (default: 30)
-            end_date: End date for summary (default: 2 days ago to account for S3 T+1 publishing delay)
+            end_date: End date for summary (default: 3 days ago to account for S3 T+1 publishing delay + variability)
 
         Returns:
             List of dicts with keys: date, symbol_count
@@ -156,9 +156,9 @@ class CompletenessValidator:
             GROUP BY date
             ORDER BY date
         """
-        # Default: exclude last 2 days to account for S3 Vision T+1 publishing delay
+        # Default: exclude last 3 days to account for S3 Vision T+1 publishing delay + variability
         if end_date is None:
-            end_date = datetime.date.today() - datetime.timedelta(days=2)
+            end_date = datetime.date.today() - datetime.timedelta(days=3)
 
         start_date = end_date - datetime.timedelta(days=days - 1)
 

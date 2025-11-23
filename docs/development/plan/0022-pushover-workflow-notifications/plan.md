@@ -500,29 +500,34 @@ Track execution here as work progresses:
 **Root Cause Analysis** (Data-First Debugging):
 
 **Layer 1** - Run 19594819459 (2025-11-22 11:26 UTC):
+
 - ✅ Probed 2025-11-12 to 2025-11-21 (7150 records, 715 symbols including 2025-11-21)
 - ✅ Inserted to local database
 - ❌ Validation failed → Release step skipped
 - ❌ Database with 2025-11-21 data LOST (runner terminated)
 
 **Layer 2** - Run 19605522534 (2025-11-23 03:55 UTC, scheduled):
+
 - ✅ Downloaded latest release from previous successful run (missing 2025-11-21 data)
 - ✅ Probed only 2025-11-22 (LOOKBACK_DAYS=1 default)
 - ❌ Validation failed - 2025-11-21 still has only 1 symbol (auto-backfill BOBUSDT)
 - ❌ Release step skipped
 
 **Root Cause**: LOOKBACK_DAYS=1 default created catch-22:
+
 1. Can't publish database without passing validation
 2. Can't pass validation without 2025-11-21 data
 3. Can't get 2025-11-21 data because LOOKBACK_DAYS=1 only probes yesterday
 
 **Fix** (commit da2bf10): Implement ADR-0011 Phase 3
+
 - ✅ Changed default LOOKBACK_DAYS: 1 → 20 for scheduled runs
 - ✅ Auto-repair: Re-probes last 20 days on every run
 - ✅ S3 delay tolerance: Handles 12-24 hour T+1 publishing delays
 - ✅ Gap filling: Catches missing data from failed runs
 
 **Impact**: Next scheduled run (2025-11-24 03:00 UTC) will:
+
 1. Re-probe 2025-11-04 to 2025-11-23 (20 days, ~14,300 probes)
 2. Fill 2025-11-21 gap (715 symbols with available=true when S3 data ready)
 3. Validate through 2025-11-22 (today-2 buffer) → should pass
