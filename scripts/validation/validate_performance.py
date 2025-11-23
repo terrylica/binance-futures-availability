@@ -17,7 +17,9 @@ from pathlib import Path
 import duckdb
 
 
-def measure_query(conn: duckdb.DuckDBPyConnection, query: str, params: list, iterations: int = 100) -> dict:
+def measure_query(
+    conn: duckdb.DuckDBPyConnection, query: str, params: list, iterations: int = 100
+) -> dict:
     """Measure query execution time over multiple iterations."""
     times = []
 
@@ -53,7 +55,9 @@ def main():
     conn = duckdb.connect(str(db_path), read_only=True)
 
     # Get database stats
-    stats = conn.execute("SELECT COUNT(*) as records, MIN(date) as earliest, MAX(date) as latest FROM daily_availability").fetchone()
+    stats = conn.execute(
+        "SELECT COUNT(*) as records, MIN(date) as earliest, MAX(date) as latest FROM daily_availability"
+    ).fetchone()
     print(f"Records: {stats[0]:,}")
     print(f"Date Range: {stats[1]} to {stats[2]}\n")
 
@@ -67,13 +71,15 @@ def main():
         WHERE date = ?
         ORDER BY symbol
     """
-    snapshot_result = measure_query(conn, snapshot_query, ['2024-06-15'], iterations=100)
+    snapshot_result = measure_query(conn, snapshot_query, ["2024-06-15"], iterations=100)
     print(f"Mean: {snapshot_result['mean_ms']:.3f} ms")
     print(f"Median: {snapshot_result['median_ms']:.3f} ms")
     print(f"Std Dev: {snapshot_result['stdev_ms']:.3f} ms")
     print(f"Range: {snapshot_result['min_ms']:.3f} - {snapshot_result['max_ms']:.3f} ms")
     print(f"Results: {snapshot_result['result_count']} symbols")
-    print(f"Status: {'✅ PASS' if snapshot_result['median_ms'] < 1.0 else '⚠️  SLOW'} (target: <1ms)\n")
+    print(
+        f"Status: {'✅ PASS' if snapshot_result['median_ms'] < 1.0 else '⚠️  SLOW'} (target: <1ms)\n"
+    )
 
     # Test 2: Timeline Query (ADR-0019 target: <10ms)
     print("-" * 70)
@@ -86,13 +92,15 @@ def main():
         ORDER BY date DESC
         LIMIT 365
     """
-    timeline_result = measure_query(conn, timeline_query, ['BTCUSDT'], iterations=100)
+    timeline_result = measure_query(conn, timeline_query, ["BTCUSDT"], iterations=100)
     print(f"Mean: {timeline_result['mean_ms']:.3f} ms")
     print(f"Median: {timeline_result['median_ms']:.3f} ms")
     print(f"Std Dev: {timeline_result['stdev_ms']:.3f} ms")
     print(f"Range: {timeline_result['min_ms']:.3f} - {timeline_result['max_ms']:.3f} ms")
     print(f"Results: {timeline_result['result_count']} records")
-    print(f"Status: {'✅ PASS' if timeline_result['median_ms'] < 10.0 else '⚠️  SLOW'} (target: <10ms)\n")
+    print(
+        f"Status: {'✅ PASS' if timeline_result['median_ms'] < 10.0 else '⚠️  SLOW'} (target: <10ms)\n"
+    )
 
     # Test 3: Analytics Query (materialized view usage)
     print("-" * 70)
@@ -142,7 +150,7 @@ def main():
             for col_name, compression in compression_info:
                 print(f"{col_name}: {compression or 'None'}")
 
-            has_compression = any(comp for _, comp in compression_info if comp and comp != 'None')
+            has_compression = any(comp for _, comp in compression_info if comp and comp != "None")
             if has_compression:
                 print("\n✅ Column compression enabled")
             else:
@@ -160,7 +168,9 @@ def main():
     print("=" * 70)
     print(f"✅ Snapshot queries: {snapshot_result['median_ms']:.3f} ms (target: <1ms)")
     print(f"✅ Timeline queries: {timeline_result['median_ms']:.3f} ms (target: <10ms)")
-    print(f"{'✅' if view_exists else '⚠️ '} Materialized views: {'Present' if view_exists else 'Missing (rebuild needed)'}")
+    print(
+        f"{'✅' if view_exists else '⚠️ '} Materialized views: {'Present' if view_exists else 'Missing (rebuild needed)'}"
+    )
     print("\nInfrastructure upgrade (ADR-0019) validation complete.")
     print("=" * 70)
 

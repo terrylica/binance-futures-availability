@@ -133,9 +133,7 @@ def main() -> int:
         0 if gaps found (triggers backfill)
         1 if no gaps (skips backfill)
     """
-    parser = argparse.ArgumentParser(
-        description="Detect symbol gaps for auto-backfill (ADR-0012)"
-    )
+    parser = argparse.ArgumentParser(description="Detect symbol gaps for auto-backfill (ADR-0012)")
 
     parser.add_argument(
         "--verbose",

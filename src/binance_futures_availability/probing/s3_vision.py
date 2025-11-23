@@ -15,7 +15,7 @@ import urllib3  # ADR-0019: HTTP connection pooling
 # Default pool size: 10 connections, sufficient for parallel probing
 HTTP_POOL = urllib3.PoolManager(
     num_pools=1,  # Single pool for all requests
-    maxsize=10,   # Max connections per pool
+    maxsize=10,  # Max connections per pool
     timeout=urllib3.Timeout(connect=5.0, read=10.0),  # Connect + read timeouts
     retries=False,  # ADR-0003: No automatic retries
 )
@@ -34,9 +34,7 @@ class ProbeResult(TypedDict):
     probe_timestamp: datetime.datetime
 
 
-def check_symbol_availability(
-    symbol: str, date: datetime.date, timeout: int = 10
-) -> ProbeResult:
+def check_symbol_availability(symbol: str, date: datetime.date, timeout: int = 10) -> ProbeResult:
     """
     Check if a symbol's 1m klines file exists on Binance Vision S3.
 
@@ -67,7 +65,7 @@ def check_symbol_availability(
     date_str = date.strftime("%Y-%m-%d")
     # URL-encode symbol to handle non-ASCII characters (e.g., 币安人生USDT)
     # safe='' ensures all non-ASCII chars are percent-encoded
-    encoded_symbol = urllib.parse.quote(symbol, safe='')
+    encoded_symbol = urllib.parse.quote(symbol, safe="")
     url = (
         f"https://data.binance.vision/data/futures/um/daily/klines/"
         f"{encoded_symbol}/1m/{encoded_symbol}-1m-{date_str}.zip"
@@ -119,9 +117,7 @@ def check_symbol_availability(
             )
 
         # Other HTTP errors (403, 500, etc.) - raise immediately (ADR-0003)
-        raise RuntimeError(
-            f"S3 probe failed for {symbol} on {date}: HTTP {response.status}"
-        )
+        raise RuntimeError(f"S3 probe failed for {symbol} on {date}: HTTP {response.status}")
 
     except urllib3.exceptions.TimeoutError as e:
         # Timeout - raise immediately (ADR-0003)

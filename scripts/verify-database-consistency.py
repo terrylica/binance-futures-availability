@@ -40,6 +40,7 @@ GITHUB_COMPRESSED_FILE = "availability.duckdb.zst"
 # Helper Functions
 # =============================================================================
 
+
 def log_info(message: str) -> None:
     """Log informational message."""
     print(f"[INFO] {message}")
@@ -63,6 +64,7 @@ def log_warning(message: str) -> None:
 # =============================================================================
 # Database Operations
 # =============================================================================
+
 
 def download_github_database(temp_dir: Path) -> Path:
     """
@@ -108,7 +110,9 @@ def download_github_database(temp_dir: Path) -> Path:
     if not compressed_path.exists():
         raise FileNotFoundError(f"Downloaded file not found: {compressed_path}")
 
-    log_success(f"Downloaded: {compressed_path} ({compressed_path.stat().st_size / 1024 / 1024:.1f} MB)")
+    log_success(
+        f"Downloaded: {compressed_path} ({compressed_path.stat().st_size / 1024 / 1024:.1f} MB)"
+    )
 
     # Decompress with zstd
     log_info("Decompressing database...")
@@ -126,7 +130,9 @@ def download_github_database(temp_dir: Path) -> Path:
     if not decompressed_path.exists():
         raise FileNotFoundError(f"Decompressed file not found: {decompressed_path}")
 
-    log_success(f"Decompressed: {decompressed_path} ({decompressed_path.stat().st_size / 1024 / 1024:.1f} MB)")
+    log_success(
+        f"Decompressed: {decompressed_path} ({decompressed_path.stat().st_size / 1024 / 1024:.1f} MB)"
+    )
 
     return decompressed_path
 
@@ -161,9 +167,7 @@ def get_database_stats(db_path: Path) -> dict[str, any]:
         ).fetchone()[0]
 
         # Get date range
-        date_range = conn.execute(
-            "SELECT MIN(date), MAX(date) FROM daily_availability"
-        ).fetchone()
+        date_range = conn.execute("SELECT MIN(date), MAX(date) FROM daily_availability").fetchone()
 
         # Get volume data coverage
         volume_count = conn.execute(
@@ -339,6 +343,7 @@ def detailed_comparison(local_path: Path, github_path: Path) -> list[str]:
 # Main Function
 # =============================================================================
 
+
 def main() -> int:
     """
     Main function.
@@ -419,7 +424,9 @@ def main() -> int:
 
             print()
             print(f"{'Date range':<30} {local_stats['min_date']} to {local_stats['max_date']}")
-            print(f"{'GitHub date range':<30} {github_stats['min_date']} to {github_stats['max_date']}")
+            print(
+                f"{'GitHub date range':<30} {github_stats['min_date']} to {github_stats['max_date']}"
+            )
 
             # Compare databases
             is_consistent, differences = compare_databases(local_stats, github_stats)
@@ -470,7 +477,9 @@ def main() -> int:
             else:
                 log_warning("⚠ DO NOT deprecate APScheduler yet")
                 log_warning("⚠ Investigate differences before proceeding")
-                log_info("  1. Check GitHub Actions workflow logs: gh run list --workflow=update-database.yml")
+                log_info(
+                    "  1. Check GitHub Actions workflow logs: gh run list --workflow=update-database.yml"
+                )
                 log_info("  2. Verify validation checks passed in workflow output")
                 log_info("  3. Compare APScheduler logs with GitHub Actions logs")
 

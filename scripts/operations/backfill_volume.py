@@ -161,7 +161,7 @@ def update_volume_metrics(
 
 
 def process_record(
-    record_data: tuple[int, int, str, date, AWSS3Lister, AvailabilityDatabase]
+    record_data: tuple[int, int, str, date, AWSS3Lister, AvailabilityDatabase],
 ) -> dict:
     """
     Process a single record: download 1d kline and update database.
@@ -315,20 +315,18 @@ def main():
                 )
             else:  # error
                 error_count += 1
-                print(
-                    f"[{idx}/{total}] ❌ {result['symbol']} {result['date']}: "
-                    f"{result['error']}"
-                )
+                print(f"[{idx}/{total}] ❌ {result['symbol']} {result['date']}: {result['error']}")
 
     else:
         # Parallel processing with ThreadPoolExecutor
         with ThreadPoolExecutor(max_workers=args.workers) as executor:
             # Submit all tasks
             futures = {
-                executor.submit(
-                    process_record,
-                    (idx, total, symbol, target_date, lister, db)
-                ): (idx, symbol, target_date)
+                executor.submit(process_record, (idx, total, symbol, target_date, lister, db)): (
+                    idx,
+                    symbol,
+                    target_date,
+                )
                 for idx, (symbol, target_date) in enumerate(records, 1)
             }
 
@@ -373,9 +371,7 @@ def main():
 
     # Validation query
     print("\n=== Validation ===")
-    result = db.query(
-        "SELECT COUNT(*) FROM daily_availability WHERE quote_volume_usdt IS NOT NULL"
-    )
+    result = db.query("SELECT COUNT(*) FROM daily_availability WHERE quote_volume_usdt IS NOT NULL")
     rows_with_volume = result[0][0]
     print(f"Total rows with volume data: {rows_with_volume:,}")
 
@@ -391,9 +387,7 @@ def main():
     )
     print("\nTop 5 by volume:")
     for row in sample:
-        print(
-            f"  {row[0]} {row[1]}: ${row[2]:,.0f} volume, {row[3]:,} trades"
-        )
+        print(f"  {row[0]} {row[1]}: ${row[2]:,.0f} volume, {row[3]:,} trades")
 
     return 1 if error_count > 0 else 0
 

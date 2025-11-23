@@ -46,17 +46,13 @@ class AWSS3Lister:
         except subprocess.TimeoutExpired as e:
             raise RuntimeError(f"AWS CLI timeout for {symbol}: {e}") from e
         except FileNotFoundError as e:
-            raise RuntimeError(
-                "AWS CLI not found. Install with: brew install awscli"
-            ) from e
+            raise RuntimeError("AWS CLI not found. Install with: brew install awscli") from e
 
         # Exit code 1 with empty stdout = path doesn't exist (no files) - this is valid
         # Exit code 0 = success
         # Other exit codes with stderr = real errors
         if result.returncode != 0 and result.stderr.strip():
-            raise RuntimeError(
-                f"AWS CLI failed for {symbol}: {result.stderr.strip()}"
-            )
+            raise RuntimeError(f"AWS CLI failed for {symbol}: {result.stderr.strip()}")
 
         # Empty stdout or exit code 1 = no files found (valid for delisted symbols)
         return self._parse_aws_output(result.stdout, symbol)
@@ -107,9 +103,7 @@ class AWSS3Lister:
             try:
                 file_date = datetime.strptime(file_date_str, "%Y-%m-%d").date()
                 file_size = int(size_str)
-                last_modified = datetime.strptime(
-                    f"{date_str} {time_str}", "%Y-%m-%d %H:%M:%S"
-                )
+                last_modified = datetime.strptime(f"{date_str} {time_str}", "%Y-%m-%d %H:%M:%S")
 
                 records.append(
                     {
@@ -209,9 +203,7 @@ class AWSS3Lister:
                 f"AWS CLI timeout downloading 1d kline for {symbol} {date_str}: {e}"
             ) from e
         except FileNotFoundError as e:
-            raise RuntimeError(
-                "AWS CLI not found. Install with: brew install awscli"
-            ) from e
+            raise RuntimeError("AWS CLI not found. Install with: brew install awscli") from e
 
         # Exit code 1 = file not found (valid for dates without data)
         if result.returncode == 1:
@@ -234,21 +226,13 @@ class AWSS3Lister:
                     csv_content = csv_file.read().decode("utf-8")
                     return self._parse_1d_kline_csv(csv_content, symbol, target_date)
         except zipfile.BadZipFile as e:
-            raise RuntimeError(
-                f"Invalid ZIP file for {symbol} {date_str}"
-            ) from e
+            raise RuntimeError(f"Invalid ZIP file for {symbol} {date_str}") from e
         except KeyError as e:
-            raise RuntimeError(
-                f"CSV file not found in ZIP for {symbol} {date_str}: {e}"
-            ) from e
+            raise RuntimeError(f"CSV file not found in ZIP for {symbol} {date_str}: {e}") from e
         except Exception as e:
-            raise RuntimeError(
-                f"Failed to parse 1d kline for {symbol} {date_str}: {e}"
-            ) from e
+            raise RuntimeError(f"Failed to parse 1d kline for {symbol} {date_str}: {e}") from e
 
-    def _parse_1d_kline_csv(
-        self, csv_content: str, symbol: str, target_date: date
-    ) -> dict:
+    def _parse_1d_kline_csv(self, csv_content: str, symbol: str, target_date: date) -> dict:
         """
         Parse 1d kline CSV content into volume metrics.
 
@@ -280,15 +264,12 @@ class AWSS3Lister:
             row = rows[0]
         else:
             raise RuntimeError(
-                f"Expected 1-2 rows in 1d kline CSV for {symbol} {target_date}, "
-                f"got {len(rows)}"
+                f"Expected 1-2 rows in 1d kline CSV for {symbol} {target_date}, got {len(rows)}"
             )
-
 
         if len(row) != 12:
             raise RuntimeError(
-                f"Expected 12 fields in 1d kline CSV for {symbol} {target_date}, "
-                f"got {len(row)}"
+                f"Expected 12 fields in 1d kline CSV for {symbol} {target_date}, got {len(row)}"
             )
 
         # Extract fields (indices 0-11)
@@ -301,9 +282,7 @@ class AWSS3Lister:
                 "trade_count": int(row[8]),  # count
                 "volume_base": float(row[5]),  # volume
                 "taker_buy_volume_base": float(row[9]),  # taker_buy_volume
-                "taker_buy_quote_volume_usdt": float(
-                    row[10]
-                ),  # taker_buy_quote_volume
+                "taker_buy_quote_volume_usdt": float(row[10]),  # taker_buy_quote_volume
                 "open_price": float(row[1]),  # open
                 "high_price": float(row[2]),  # high
                 "low_price": float(row[3]),  # low

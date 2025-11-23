@@ -180,16 +180,18 @@ def run_benchmark_matrix(
     current_run = 0
 
     for worker_count in worker_counts:
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"Testing {worker_count} workers ({trials_per_config} trials)")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
 
         worker_results = []
 
         for trial_num in range(1, trials_per_config + 1):
             current_run += 1
             progress = (current_run / total_runs) * 100
-            print(f"\n[{progress:.1f}%] Worker count: {worker_count}, Trial: {trial_num}/{trials_per_config}")
+            print(
+                f"\n[{progress:.1f}%] Worker count: {worker_count}, Trial: {trial_num}/{trials_per_config}"
+            )
 
             # Clean database before each trial
             if db_path.exists():
@@ -210,8 +212,12 @@ def run_benchmark_matrix(
             if result.error:
                 print(f"  ❌ FAILED: {result.error}")
             else:
-                print(f"  ✓ Total: {result.total_time:.2f}s (probe: {result.probe_time:.2f}s, db: {result.db_insert_time:.2f}s)")
-                print(f"    Success: {result.success_count}/{result.total_count} ({result.success_rate:.1%}), Memory: {result.peak_rss_mb:.1f} MB")
+                print(
+                    f"  ✓ Total: {result.total_time:.2f}s (probe: {result.probe_time:.2f}s, db: {result.db_insert_time:.2f}s)"
+                )
+                print(
+                    f"    Success: {result.success_count}/{result.total_count} ({result.success_rate:.1%}), Memory: {result.peak_rss_mb:.1f} MB"
+                )
 
         results[worker_count] = worker_results
 
@@ -300,9 +306,7 @@ def generate_report(
         stats[worker_count] = calculate_statistics(trials)
 
     # Find optimal configuration
-    valid_configs = {
-        w: s for w, s in stats.items() if "error" not in s and s["valid_trials"] > 0
-    }
+    valid_configs = {w: s for w, s in stats.items() if "error" not in s and s["valid_trials"] > 0}
 
     if not valid_configs:
         return "# BENCHMARK FAILED\n\nAll trials failed. Check network connectivity and S3 Vision availability."
@@ -315,7 +319,9 @@ def generate_report(
 
     report.append("# Binance Futures Availability - Worker Count Benchmark Report")
     report.append("")
-    report.append(f"**Generated**: {datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%d %H:%M:%S')}")
+    report.append(
+        f"**Generated**: {datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%d %H:%M:%S')}"
+    )
     report.append(f"**Test Date**: {test_date}")
     report.append(f"**Symbol Count**: {symbol_count}")
     report.append(f"**Trials per Config**: {len(results[optimal_workers])}")
@@ -326,9 +332,15 @@ def generate_report(
     report.append("")
     report.append(f"**Optimal Worker Count**: **{optimal_workers} workers**")
     report.append("")
-    report.append(f"- **Total Time**: {optimal_stats['total_time_mean']:.2f}s ± {optimal_stats['total_time_stdev']:.2f}s")
-    report.append(f"- **Probe Time**: {optimal_stats['probe_time_mean']:.2f}s ± {optimal_stats['probe_time_stdev']:.2f}s")
-    report.append(f"- **Database Time**: {optimal_stats['db_time_mean']:.2f}s ± {optimal_stats['db_time_stdev']:.2f}s")
+    report.append(
+        f"- **Total Time**: {optimal_stats['total_time_mean']:.2f}s ± {optimal_stats['total_time_stdev']:.2f}s"
+    )
+    report.append(
+        f"- **Probe Time**: {optimal_stats['probe_time_mean']:.2f}s ± {optimal_stats['probe_time_stdev']:.2f}s"
+    )
+    report.append(
+        f"- **Database Time**: {optimal_stats['db_time_mean']:.2f}s ± {optimal_stats['db_time_stdev']:.2f}s"
+    )
     report.append(f"- **Success Rate**: {optimal_stats['success_rate_mean']:.1%}")
     report.append(f"- **Memory Usage**: {optimal_stats['memory_mb_mean']:.1f} MB")
     report.append("")
@@ -352,8 +364,12 @@ def generate_report(
     # Detailed Results Table
     report.append("## Detailed Results")
     report.append("")
-    report.append("| Workers | Total Time (s) | Probe Time (s) | DB Time (s) | Success Rate | Memory (MB) | Trials |")
-    report.append("|---------|----------------|----------------|-------------|--------------|-------------|--------|")
+    report.append(
+        "| Workers | Total Time (s) | Probe Time (s) | DB Time (s) | Success Rate | Memory (MB) | Trials |"
+    )
+    report.append(
+        "|---------|----------------|----------------|-------------|--------------|-------------|--------|"
+    )
 
     for worker_count in sorted(valid_configs.keys()):
         s = valid_configs[worker_count]
@@ -395,7 +411,9 @@ def generate_report(
     report.append("")
     report.append("Justification:")
     report.append(f"- Fastest mean total time: {optimal_stats['total_time_mean']:.2f}s")
-    report.append(f"- Low variance: ±{optimal_stats['total_time_stdev']:.2f}s (consistent performance)")
+    report.append(
+        f"- Low variance: ±{optimal_stats['total_time_stdev']:.2f}s (consistent performance)"
+    )
     report.append(f"- High success rate: {optimal_stats['success_rate_mean']:.1%}")
     report.append(f"- Reasonable memory usage: {optimal_stats['memory_mb_mean']:.1f} MB")
     report.append("")
@@ -499,7 +517,9 @@ def main():
 
     # Test date
     if args.date:
-        test_date = datetime.datetime.strptime(args.date, "%Y-%m-%d").replace(tzinfo=datetime.UTC).date()
+        test_date = (
+            datetime.datetime.strptime(args.date, "%Y-%m-%d").replace(tzinfo=datetime.UTC).date()
+        )
     else:
         test_date = datetime.datetime.now(datetime.UTC).date() - datetime.timedelta(days=1)
 

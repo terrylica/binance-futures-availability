@@ -60,8 +60,7 @@ def load_symbols(
     if contract_type == "all":
         return perpetual + delivery
     raise ValueError(
-        f"Invalid contract_type: {contract_type}. "
-        f"Must be 'perpetual', 'delivery', or 'all'"
+        f"Invalid contract_type: {contract_type}. Must be 'perpetual', 'delivery', or 'all'"
     )
 
 
@@ -80,9 +79,7 @@ def get_symbol_metadata() -> dict:
         708
     """
     if not SYMBOLS_FILE.exists():
-        raise FileNotFoundError(
-            f"Symbols data file not found: {SYMBOLS_FILE}"
-        )
+        raise FileNotFoundError(f"Symbols data file not found: {SYMBOLS_FILE}")
 
     with open(SYMBOLS_FILE, encoding="utf-8") as f:
         data = json.load(f)

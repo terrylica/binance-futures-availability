@@ -120,9 +120,7 @@ def backfill_symbol(
 def main() -> int:
     """Run AWS CLI-based historical backfill."""
 
-    parser = argparse.ArgumentParser(
-        description="AWS CLI-based historical backfill (3.5x faster)"
-    )
+    parser = argparse.ArgumentParser(description="AWS CLI-based historical backfill (3.5x faster)")
 
     parser.add_argument(
         "--start-date",
@@ -183,7 +181,9 @@ def main() -> int:
         # Parse comma-separated symbols: "BTCUSDT,ETHUSDT" → ["BTCUSDT", "ETHUSDT"]
         # Also supports space for backward compatibility (though comma is preferred)
         symbols = [s.strip() for s in args.symbols.replace(",", " ").split() if s.strip()]
-        logger.info(f"Using {len(symbols)} specified symbols: {', '.join(symbols[:5])}{' ...' if len(symbols) > 5 else ''}")
+        logger.info(
+            f"Using {len(symbols)} specified symbols: {', '.join(symbols[:5])}{' ...' if len(symbols) > 5 else ''}"
+        )
     else:
         symbols = load_discovered_symbols()
         logger.info(f"Using all {len(symbols)} perpetual USDT futures")
@@ -200,7 +200,7 @@ def main() -> int:
     logger.info("=" * 60)
 
     # Determine database path (respect DB_PATH environment variable if set)
-    db_path_str = os.environ.get('DB_PATH')
+    db_path_str = os.environ.get("DB_PATH")
     if db_path_str:
         logger.info(f"Using database from DB_PATH: {db_path_str}")
         db_path = Path(db_path_str)
@@ -222,7 +222,14 @@ def main() -> int:
     with ThreadPoolExecutor(max_workers=args.workers) as executor:
         # Submit all symbol backfill tasks
         future_to_symbol = {
-            executor.submit(backfill_symbol, symbol, start_date, end_date, db_path, args.skip_materialized_refresh): symbol
+            executor.submit(
+                backfill_symbol,
+                symbol,
+                start_date,
+                end_date,
+                db_path,
+                args.skip_materialized_refresh,
+            ): symbol
             for symbol in symbols
         }
 
@@ -236,9 +243,7 @@ def main() -> int:
 
                 if result["error"]:
                     failed_symbols.append(symbol)
-                    logger.error(
-                        f"[{i}/{len(symbols)}] ❌ {symbol}: {result['error']}"
-                    )
+                    logger.error(f"[{i}/{len(symbols)}] ❌ {symbol}: {result['error']}")
                 else:
                     logger.info(
                         f"[{i}/{len(symbols)}] ✅ {symbol}: {result['dates_found']}/{result['total_dates']} dates available"
@@ -257,7 +262,9 @@ def main() -> int:
     logger.info("=" * 60)
     logger.info(f"Symbols processed: {len(results) - len(failed_symbols)}/{len(symbols)}")
     logger.info(f"Records inserted: {total_records:,}")
-    logger.info(f"Available: {available_count:,} ({available_count*100//total_records if total_records else 0}%)")
+    logger.info(
+        f"Available: {available_count:,} ({available_count * 100 // total_records if total_records else 0}%)"
+    )
     logger.info(f"Unavailable: {total_records - available_count:,}")
 
     if failed_symbols:

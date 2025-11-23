@@ -19,7 +19,9 @@ class AvailabilityDatabase:
     See: docs/architecture/decisions/0002-storage-technology-duckdb.md
     """
 
-    def __init__(self, db_path: Path | None = None, skip_materialized_refresh: bool = False) -> None:
+    def __init__(
+        self, db_path: Path | None = None, skip_materialized_refresh: bool = False
+    ) -> None:
         """
         Initialize database connection and create schema if needed.
 
@@ -30,7 +32,8 @@ class AvailabilityDatabase:
         if db_path is None:
             # Check environment variable first (critical for GitHub Actions)
             import os
-            db_path_env = os.environ.get('DB_PATH')
+
+            db_path_env = os.environ.get("DB_PATH")
             if db_path_env:
                 db_path = Path(db_path_env)
             else:
@@ -89,9 +92,7 @@ class AvailabilityDatabase:
                 ],
             )
         except Exception as e:
-            raise RuntimeError(
-                f"Failed to insert availability for {symbol} on {date}: {e}"
-            ) from e
+            raise RuntimeError(f"Failed to insert availability for {symbol} on {date}: {e}") from e
 
     def insert_batch(self, records: list[dict[str, Any]]) -> None:
         """

@@ -92,7 +92,9 @@ def main() -> int:
         # Exclude last 3 days to account for S3 Vision T+1 publishing delay + variability
         # (S3 Vision can take 24-48 hours to publish data, T+3 provides safe buffer)
         end_date = datetime.date.today() - datetime.timedelta(days=3)
-        incomplete_dates = validator.check_completeness(min_symbol_count=min_symbols, end_date=end_date)
+        incomplete_dates = validator.check_completeness(
+            min_symbol_count=min_symbols, end_date=end_date
+        )
 
         if incomplete_dates:
             logger.error(f"FAILED: {len(incomplete_dates)} dates with <{min_symbols} symbols")
@@ -102,7 +104,9 @@ def main() -> int:
                 logger.error(f"  ... and {len(incomplete_dates) - 10} more")
             all_passed = False
         else:
-            logger.info(f"PASSED: All dates have ≥{min_symbols} symbols (checked through {end_date})")
+            logger.info(
+                f"PASSED: All dates have ≥{min_symbols} symbols (checked through {end_date})"
+            )
 
         # Show summary (same end_date buffer as validation check)
         summary = validator.get_symbol_counts_summary(days=7, end_date=end_date)
@@ -151,8 +155,12 @@ def main() -> int:
         error_msg = str(e)
         if "HTTP Error 451" in error_msg or "451:" in error_msg:
             logger.warning("SKIPPED: Cross-check unavailable (Binance API geo-blocking detected)")
-            logger.warning("  Note: HTTP 451 indicates censorship/geo-blocking, not a data quality issue")
-            logger.info("  Continuity and completeness checks are sufficient for data integrity validation")
+            logger.warning(
+                "  Note: HTTP 451 indicates censorship/geo-blocking, not a data quality issue"
+            )
+            logger.info(
+                "  Continuity and completeness checks are sufficient for data integrity validation"
+            )
             # Don't fail validation for geo-blocking - this is outside our control
         else:
             # For other errors, log as error and fail validation

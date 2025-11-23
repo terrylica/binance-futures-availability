@@ -100,7 +100,10 @@ class TestTargetedBackfill:
             return {"symbol": symbol, "dates_found": 100, "total_dates": 100, "error": None}
 
         with patch("scripts.operations.backfill.backfill_symbol", side_effect=mock_backfill):
-            with patch("scripts.operations.backfill.load_discovered_symbols", return_value=["BTCUSDT", "ETHUSDT", "NEWUSDT"]):
+            with patch(
+                "scripts.operations.backfill.load_discovered_symbols",
+                return_value=["BTCUSDT", "ETHUSDT", "NEWUSDT"],
+            ):
                 # Simulate: python backfill.py --symbols NEWUSDT
                 symbols_arg = "NEWUSDT"
                 symbols = [s.strip() for s in symbols_arg.replace(",", " ").split() if s.strip()]
@@ -147,6 +150,7 @@ class TestTargetedBackfill:
             else:
                 # Should use all discovered symbols (backward compatibility)
                 from scripts.operations.backfill import load_discovered_symbols
+
                 symbols = load_discovered_symbols()
 
             # Verify all symbols loaded
@@ -217,34 +221,38 @@ class TestBackfillWorkflow:
         db = AvailabilityDatabase(db_path=db_path)
 
         # Insert existing symbol
-        db.insert_batch([
-            {
-                "symbol": "BTCUSDT",
-                "date": datetime.date(2024, 1, 15),
-                "available": True,
-                "file_size_bytes": 8000000,
-                "last_modified": None,
-                "url": "https://example.com/BTCUSDT",
-                "status_code": 200,
-                "probe_timestamp": datetime.datetime.now(datetime.UTC),
-            }
-        ])
+        db.insert_batch(
+            [
+                {
+                    "symbol": "BTCUSDT",
+                    "date": datetime.date(2024, 1, 15),
+                    "available": True,
+                    "file_size_bytes": 8000000,
+                    "last_modified": None,
+                    "url": "https://example.com/BTCUSDT",
+                    "status_code": 200,
+                    "probe_timestamp": datetime.datetime.now(datetime.UTC),
+                }
+            ]
+        )
 
         # Backfill 3 new symbols
         new_symbols = ["NEW1USDT", "NEW2USDT", "NEW3USDT"]
         for symbol in new_symbols:
-            db.insert_batch([
-                {
-                    "symbol": symbol,
-                    "date": datetime.date(2024, 1, 15),
-                    "available": True,
-                    "file_size_bytes": 7000000,
-                    "last_modified": None,
-                    "url": f"https://example.com/{symbol}",
-                    "status_code": 200,
-                    "probe_timestamp": datetime.datetime.now(datetime.UTC),
-                }
-            ])
+            db.insert_batch(
+                [
+                    {
+                        "symbol": symbol,
+                        "date": datetime.date(2024, 1, 15),
+                        "available": True,
+                        "file_size_bytes": 7000000,
+                        "last_modified": None,
+                        "url": f"https://example.com/{symbol}",
+                        "status_code": 200,
+                        "probe_timestamp": datetime.datetime.now(datetime.UTC),
+                    }
+                ]
+            )
 
         # Verify all 4 symbols in database
         rows = db.query("SELECT DISTINCT symbol FROM daily_availability ORDER BY symbol")
@@ -285,7 +293,9 @@ class TestUpsertIdempotency:
         db.insert_batch([first_record])
 
         # Verify 1 record
-        rows = db.query("SELECT COUNT(*) FROM daily_availability WHERE symbol = 'NEWUSDT' AND date = '2024-01-15'")
+        rows = db.query(
+            "SELECT COUNT(*) FROM daily_availability WHERE symbol = 'NEWUSDT' AND date = '2024-01-15'"
+        )
         assert rows[0][0] == 1
 
         # Second backfill (re-run) - should UPSERT, not INSERT
@@ -297,11 +307,15 @@ class TestUpsertIdempotency:
         db.insert_batch([second_record])
 
         # Verify still only 1 record (UPSERT replaced, not duplicated)
-        rows = db.query("SELECT COUNT(*) FROM daily_availability WHERE symbol = 'NEWUSDT' AND date = '2024-01-15'")
+        rows = db.query(
+            "SELECT COUNT(*) FROM daily_availability WHERE symbol = 'NEWUSDT' AND date = '2024-01-15'"
+        )
         assert rows[0][0] == 1
 
         # Verify file size updated (UPSERT worked)
-        rows = db.query("SELECT file_size_bytes FROM daily_availability WHERE symbol = 'NEWUSDT' AND date = '2024-01-15'")
+        rows = db.query(
+            "SELECT file_size_bytes FROM daily_availability WHERE symbol = 'NEWUSDT' AND date = '2024-01-15'"
+        )
         assert rows[0][0] == 7500000
 
         db.close()

@@ -1,6 +1,5 @@
 """Tests for database schema creation."""
 
-
 from binance_futures_availability.database.schema import create_schema
 
 

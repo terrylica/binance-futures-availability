@@ -139,7 +139,8 @@ class TestUpsertBehavior:
 
         # Second batch: Re-probe same dates (simulates 20-day lookback overlap)
         second_batch = [
-            {**record, "file_size_bytes": 9000000} for record in first_batch  # Updated file size
+            {**record, "file_size_bytes": 9000000}
+            for record in first_batch  # Updated file size
         ]
         db.insert_batch(second_batch)
 
@@ -203,7 +204,9 @@ class TestBatchProberDateRange:
 
     @patch("binance_futures_availability.probing.batch_prober.load_discovered_symbols")
     @patch("binance_futures_availability.probing.batch_prober.check_symbol_availability")
-    def test_probe_date_range_20days(self, mock_check_symbol, mock_load_symbols, sample_probe_result):
+    def test_probe_date_range_20days(
+        self, mock_check_symbol, mock_load_symbols, sample_probe_result
+    ):
         """probe_date_range should handle 20-day window efficiently."""
         # Mock 3 symbols (reduced for test speed)
         test_symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT"]

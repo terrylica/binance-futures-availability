@@ -142,7 +142,7 @@ def mock_urlopen_success(mocker):
     # Mock urllib3.PoolManager.request() method
     return mocker.patch(
         "binance_futures_availability.probing.s3_vision.HTTP_POOL.request",
-        return_value=mock_response
+        return_value=mock_response,
     )
 
 
@@ -163,7 +163,7 @@ def mock_urlopen_404(mocker):
     # Mock urllib3.PoolManager.request() to return 404 response
     return mocker.patch(
         "binance_futures_availability.probing.s3_vision.HTTP_POOL.request",
-        return_value=mock_response
+        return_value=mock_response,
     )
 
 
@@ -185,5 +185,5 @@ def mock_urlopen_network_error(mocker):
     # Mock urllib3.PoolManager.request() to raise network error
     return mocker.patch(
         "binance_futures_availability.probing.s3_vision.HTTP_POOL.request",
-        side_effect=raise_network_error
+        side_effect=raise_network_error,
     )

@@ -141,9 +141,7 @@ def main() -> int:
                 logger.warning(f"    - {symbol}")
             if len(removed_delivery) > 10:
                 logger.warning(f"    ... and {len(removed_delivery) - 10} more")
-        logger.warning(
-            "Note: Symbols retained in list (ADR-0010: never remove, probe forever)"
-        )
+        logger.warning("Note: Symbols retained in list (ADR-0010: never remove, probe forever)")
         logger.info("")
 
     # Update metadata

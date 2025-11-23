@@ -93,9 +93,7 @@ class VolumeQueries:
             for row in results
         ]
 
-    def get_volume_percentile(
-        self, symbol: str, target_date: date
-    ) -> dict | None:
+    def get_volume_percentile(self, symbol: str, target_date: date) -> dict | None:
         """
         Get volume percentile ranking for a symbol on a specific date.
 

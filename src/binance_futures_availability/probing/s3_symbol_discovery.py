@@ -66,9 +66,7 @@ def discover_all_futures_symbols(
     # S3 XML namespace
     ns = {"s3": "http://s3.amazonaws.com/doc/2006-03-01/"}
 
-    logger.info(
-        f"Discovering {market_type.upper()} futures symbols from Binance Vision S3..."
-    )
+    logger.info(f"Discovering {market_type.upper()} futures symbols from Binance Vision S3...")
     logger.debug(f"S3 prefix: {prefix}")
 
     while True:
@@ -109,15 +107,11 @@ def discover_all_futures_symbols(
                 batch_symbols.append(symbol)
 
         all_symbols.extend(batch_symbols)
-        logger.debug(
-            f"Found {len(batch_symbols)} symbols this batch (total: {len(all_symbols)})"
-        )
+        logger.debug(f"Found {len(batch_symbols)} symbols this batch (total: {len(all_symbols)})")
 
         # Check if more results exist (pagination)
         is_truncated_elem = root.find(".//s3:IsTruncated", ns)
-        is_truncated = (
-            is_truncated_elem is not None and is_truncated_elem.text == "true"
-        )
+        is_truncated = is_truncated_elem is not None and is_truncated_elem.text == "true"
 
         if not is_truncated:
             break

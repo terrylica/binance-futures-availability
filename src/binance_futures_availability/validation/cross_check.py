@@ -73,13 +73,10 @@ class CrossCheckValidator:
                 and s["symbol"].endswith("USDT")
             }
 
-
         except Exception as e:
             raise RuntimeError(f"Failed to fetch exchangeInfo from API: {e}") from e
 
-    def cross_check_current_date(
-        self, date: datetime.date | None = None
-    ) -> dict[str, Any]:
+    def cross_check_current_date(self, date: datetime.date | None = None) -> dict[str, Any]:
         """
         Compare database symbols against live exchangeInfo API.
 
