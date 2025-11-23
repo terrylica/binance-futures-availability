@@ -448,11 +448,13 @@ Track execution here as work progresses:
 **Issue**: User confusion about Doppler integration approach
 
 **Context**:
+
 - User had already configured Doppler GitHub App (installation 88898750) for automatic secret sync
 - Initial implementation used Doppler CLI runtime fetch (requiring `DOPPLER_TOKEN` repository secret)
 - User expected automatic sync (no runtime fetch needed)
 
 **Fix**:
+
 - ✅ Removed Doppler CLI action steps from workflow (commit 8bda8ab)
 - ✅ Updated notification step to use GitHub secrets directly (`${{ secrets.PUSHOVER_APP_TOKEN }}`)
 - ✅ User configured Doppler sync successfully (5 secrets synced)
@@ -465,6 +467,7 @@ Track execution here as work progresses:
 **Issue**: Workflow run 19594819459 failed with validation error "1 dates with <100 symbols"
 
 **Root Cause Analysis** (Data-First Debugging):
+
 1. Daily update probed all 634 symbols for 2025-11-21 (7150 records for 10-day range) ✅
 2. Most symbols returned `available=false` (S3 Vision T+1 publishing delay) ✅
 3. Completeness validator checked 2025-11-21 with `WHERE available = true` → saw only 1 symbol ❌
@@ -473,6 +476,7 @@ Track execution here as work progresses:
 **Root Cause**: Completeness validator checked dates within S3 Vision's T+1 publishing window without date buffer (unlike continuity validator which uses T+2 buffer)
 
 **Fix** (commit fd8cb0e):
+
 - ✅ Added `end_date` parameter to `check_completeness` method (default: today - 2 days)
 - ✅ Updated SQL: `WHERE date >= ? AND date <= ? AND available = true`
 - ✅ Updated `validate_completeness` and `get_symbol_counts_summary` methods
@@ -480,9 +484,52 @@ Track execution here as work progresses:
 - ✅ Aligned completeness validator with continuity validator's proven T+2 buffer approach
 
 **Impact**:
+
 - Prevents false positives for dates within S3 publishing window
 - Maintains strict validation for historical data
 - Workflow can now complete successfully and test Pushover notifications
+
+**Blockers**:
+
+- ⚠️ **MANUAL STEP REQUIRED**: Add DOPPLER_TOKEN to GitHub repository secrets before validation testing can proceed
+
+### 2025-11-23 [04:15] - ADR-0011 Phase 3 Implementation
+
+**Issue**: Run 19605522534 failed - data gap for 2025-11-21 persisted
+
+**Root Cause Analysis** (Data-First Debugging):
+
+**Layer 1** - Run 19594819459 (2025-11-22 11:26 UTC):
+- ✅ Probed 2025-11-12 to 2025-11-21 (7150 records, 715 symbols including 2025-11-21)
+- ✅ Inserted to local database
+- ❌ Validation failed → Release step skipped
+- ❌ Database with 2025-11-21 data LOST (runner terminated)
+
+**Layer 2** - Run 19605522534 (2025-11-23 03:55 UTC, scheduled):
+- ✅ Downloaded latest release from previous successful run (missing 2025-11-21 data)
+- ✅ Probed only 2025-11-22 (LOOKBACK_DAYS=1 default)
+- ❌ Validation failed - 2025-11-21 still has only 1 symbol (auto-backfill BOBUSDT)
+- ❌ Release step skipped
+
+**Root Cause**: LOOKBACK_DAYS=1 default created catch-22:
+1. Can't publish database without passing validation
+2. Can't pass validation without 2025-11-21 data
+3. Can't get 2025-11-21 data because LOOKBACK_DAYS=1 only probes yesterday
+
+**Fix** (commit da2bf10): Implement ADR-0011 Phase 3
+- ✅ Changed default LOOKBACK_DAYS: 1 → 20 for scheduled runs
+- ✅ Auto-repair: Re-probes last 20 days on every run
+- ✅ S3 delay tolerance: Handles 12-24 hour T+1 publishing delays
+- ✅ Gap filling: Catches missing data from failed runs
+
+**Impact**: Next scheduled run (2025-11-24 03:00 UTC) will:
+1. Re-probe 2025-11-04 to 2025-11-23 (20 days, ~14,300 probes)
+2. Fill 2025-11-21 gap (715 symbols with available=true when S3 data ready)
+3. Validate through 2025-11-22 (today-2 buffer) → should pass
+4. Publish complete database to GitHub Releases
+5. **Test Pushover notification** → Success message with database stats
+
+**Performance**: 20 days × 715 symbols = ~14,300 HEAD requests (~3 seconds with 150 workers)
 
 **Blockers**:
 
