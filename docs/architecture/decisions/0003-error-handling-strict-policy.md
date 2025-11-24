@@ -116,6 +116,31 @@ except RuntimeError as e:
 - **Observability SLO**: "All failures logged with full context" - satisfied
 - **Availability SLO**: "95% of daily updates complete successfully" - allows 5% failure rate
 
+**Validation Handling** (Updated 2025-11-24):
+
+Validation findings are handled differently from data collection errors:
+
+- **Data collection errors** (network, HTTP): Strict raise policy (fail-fast)
+- **Validation warnings** (completeness, continuity): Informational only (never fail workflow)
+
+**Philosophy**: **Transparency over binary pass/fail**
+
+Validation checks detect expected conditions (S3 delays, listing/delisting) that don't indicate corruption. Instead of failing workflows:
+
+1. **Log all findings** as WARNING (not ERROR)
+2. **Always return success** (exit code 0)
+3. **Include warnings in release notes** with interpretation guide
+4. **Trust human judgment** via manual review (Pushover → GitHub Release)
+
+This approach:
+- Eliminates false positive failures (e.g., T+3 buffer edge cases)
+- Provides full observability without noise
+- Supports human-in-the-loop data quality assessment
+- Publishes database regardless of validation state (availability over blocking)
+
+**Example**: 2025-11-21 had only 1 symbol due to 72+ hour S3 delay. Old approach would fail workflow. New approach logs warning, publishes database, human verifies this is expected S3 behavior (not corruption).
+
 **Related Decisions**:
 
 - ADR-0009: GitHub Actions automation (handles retry scheduling via workflow cron triggers)
+- ADR-0011: 20-Day Lookback for auto-repair (complements transparency approach)

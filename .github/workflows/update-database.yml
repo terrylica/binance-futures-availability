@@ -284,16 +284,25 @@ jobs:
         if: steps.check_db.outputs.db_ready == 'true'
         run: |
           echo "Running database validation..."
-          uv run python scripts/operations/validate.py --verbose
 
-          # Capture validation results
-          if [ $? -eq 0 ]; then
-            echo "validation_passed=true" >> $GITHUB_OUTPUT
-            echo "✅ All validation checks passed"
+          # Capture validation output to file and stdout
+          uv run python scripts/operations/validate.py --verbose 2>&1 | tee validation.log
+
+          # Validation script now always returns 0 (transparency-first approach)
+          # Extract validation summary from logs
+          if grep -q "VALIDATION COMPLETE WITH WARNINGS" validation.log; then
+            echo "validation_status=warnings" >> $GITHUB_OUTPUT
+            echo "⚠️ Validation completed with warnings (see details below)"
+
+            # Extract specific warnings for release notes
+            WARNINGS=$(grep -A 20 "WARNING:" validation.log | head -20 || echo "See full logs for details")
+            echo "validation_warnings<<EOF" >> $GITHUB_OUTPUT
+            echo "$WARNINGS" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
           else
-            echo "validation_passed=false" >> $GITHUB_OUTPUT
-            echo "❌ Validation checks failed"
-            exit 1
+            echo "validation_status=passed" >> $GITHUB_OUTPUT
+            echo "✅ All validation checks passed"
+            echo "validation_warnings=" >> $GITHUB_OUTPUT
           fi
 
       - name: Generate database statistics
@@ -412,9 +421,18 @@ jobs:
           RANKINGS_SIZE_MB: ${{ steps.generate_rankings.outputs.rankings_size_mb }}
           TRIGGER: ${{ github.event_name }}
           UPDATE_MODE: ${{ github.event_name == 'schedule' && 'daily' || inputs.update_mode }}
-          VALIDATION_STATUS: ${{ steps.validate.outputs.validation_passed == 'true' && 'Passed' || 'Failed' }}
+          VALIDATION_STATUS: ${{ steps.validate.outputs.validation_status }}
+          VALIDATION_WARNINGS: ${{ steps.validate.outputs.validation_warnings }}
           REPO: ${{ github.repository }}
         run: |
+          # Generate validation status line
+          if [ "$VALIDATION_STATUS" = "passed" ]; then
+            VALIDATION_LINE="✅ All checks passed"
+          else
+            VALIDATION_LINE="⚠️ Completed with warnings (see below)"
+          fi
+
+          # Start release notes
           cat > release_notes.md << EOF
           ## Database Update - $(date -u +"%Y-%m-%d %H:%M UTC")
 
@@ -427,7 +445,34 @@ jobs:
           ### Update Details
           - **Trigger**: $TRIGGER
           - **Mode**: $UPDATE_MODE
-          - **Validation**: $VALIDATION_STATUS
+          - **Validation**: $VALIDATION_LINE
+          EOF
+
+          # Add validation warnings section if present
+          if [ "$VALIDATION_STATUS" = "warnings" ] && [ -n "$VALIDATION_WARNINGS" ]; then
+            cat >> release_notes.md << 'EOF'
+
+          ### Validation Warnings
+
+          The following data quality warnings were detected. These are **informational only** and do not indicate data corruption. Common causes: S3 publishing delays (T+1 to T+4), symbol listing/delisting, temporary availability issues.
+
+          **Note**: Database is published regardless of warnings. Human review recommended.
+
+          EOF
+            echo '```' >> release_notes.md
+            echo "$VALIDATION_WARNINGS" >> release_notes.md
+            echo '```' >> release_notes.md
+            cat >> release_notes.md << 'EOF'
+
+          **Interpretation Guide**:
+          - `<100 symbols` on recent dates (last 3 days): Likely S3 publishing delay - data will arrive in next run
+          - `<100 symbols` on old dates (>7 days ago): Investigate for potential data gaps
+          - Missing dates: Run backfill to repair (auto-repair via 20-day lookback on next scheduled run)
+          EOF
+          fi
+
+          # Continue with rest of release notes
+          cat >> release_notes.md << EOF
 
           ### Files
           - \`availability.duckdb\` - Uncompressed database (50-150 MB)

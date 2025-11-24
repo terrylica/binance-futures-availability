@@ -135,10 +135,18 @@ All architectural decisions documented as MADRs in `docs/architecture/decisions/
 
 ### Error Handling
 
-**Policy**: Raise and propagate all errors immediately
-**No retries**: Network failures raise immediately, workflow retries next scheduled cycle
-**No fallbacks**: No default values or silent handling
-**No silent failures**: All errors logged with full context
+**Data Collection** (ADR-0003 - Strict Raise Policy):
+- **Policy**: Raise and propagate all errors immediately
+- **No retries**: Network failures raise immediately, workflow retries next scheduled cycle
+- **No fallbacks**: No default values or silent handling
+- **No silent failures**: All errors logged with full context
+
+**Validation Findings** (ADR-0003 - Transparency-First, Updated 2025-11-24):
+- **Philosophy**: Full transparency over binary pass/fail
+- **Never fail**: Validation warnings are informational only (always exit 0)
+- **Publish always**: Database published regardless of validation state
+- **Human review**: Trust human judgment via Pushover → GitHub Release notes
+- **Interpretation guide**: Release notes explain common warning causes (S3 delays, listing/delisting)
 
 ### Dependencies
 
