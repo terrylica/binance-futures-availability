@@ -25,7 +25,7 @@
               },
               "type": {
                 "type": "string",
-                "enum": ["DATE", "VARCHAR", "BOOLEAN", "BIGINT", "TIMESTAMP", "INTEGER"],
+                "enum": ["DATE", "VARCHAR", "BOOLEAN", "BIGINT", "TIMESTAMP", "INTEGER", "DOUBLE"],
                 "description": "DuckDB data type"
               },
               "nullable": {
@@ -39,8 +39,8 @@
             },
             "required": ["name", "type", "nullable", "description"]
           },
-          "minItems": 8,
-          "description": "Column definitions"
+          "minItems": 17,
+          "description": "Column definitions (8 original + 9 volume metrics from ADR-0007)"
         },
         "primaryKey": {
           "type": "array",
@@ -142,6 +142,60 @@
                   "type": "TIMESTAMP",
                   "nullable": false,
                   "description": "UTC timestamp when probe was executed"
+                },
+                {
+                  "name": "quote_volume_usdt",
+                  "type": "DOUBLE",
+                  "nullable": true,
+                  "description": "ADR-0007: USDT trading volume (primary ranking metric)"
+                },
+                {
+                  "name": "trade_count",
+                  "type": "BIGINT",
+                  "nullable": true,
+                  "description": "ADR-0007: Number of trades executed"
+                },
+                {
+                  "name": "volume_base",
+                  "type": "DOUBLE",
+                  "nullable": true,
+                  "description": "ADR-0007: Base asset trading volume (e.g., BTC for BTCUSDT)"
+                },
+                {
+                  "name": "taker_buy_volume_base",
+                  "type": "DOUBLE",
+                  "nullable": true,
+                  "description": "ADR-0007: Taker buy base asset volume"
+                },
+                {
+                  "name": "taker_buy_quote_volume_usdt",
+                  "type": "DOUBLE",
+                  "nullable": true,
+                  "description": "ADR-0007: Taker buy USDT volume"
+                },
+                {
+                  "name": "open_price",
+                  "type": "DOUBLE",
+                  "nullable": true,
+                  "description": "ADR-0007: Opening price for the day"
+                },
+                {
+                  "name": "high_price",
+                  "type": "DOUBLE",
+                  "nullable": true,
+                  "description": "ADR-0007: Highest price reached during the day"
+                },
+                {
+                  "name": "low_price",
+                  "type": "DOUBLE",
+                  "nullable": true,
+                  "description": "ADR-0007: Lowest price reached during the day"
+                },
+                {
+                  "name": "close_price",
+                  "type": "DOUBLE",
+                  "nullable": true,
+                  "description": "ADR-0007: Closing price for the day"
                 }
               ]
             },
@@ -159,6 +213,11 @@
                   "name": "idx_available_date",
                   "columns": ["available", "date"],
                   "purpose": "Fast snapshot queries (get_available_symbols_on_date)"
+                },
+                {
+                  "name": "idx_quote_volume_date",
+                  "columns": ["quote_volume_usdt", "date"],
+                  "purpose": "ADR-0007: Fast volume ranking queries (top N symbols by volume)"
                 }
               ]
             }
@@ -219,6 +278,60 @@
             "type": "TIMESTAMP",
             "nullable": false,
             "description": "UTC timestamp when probe was executed"
+          },
+          {
+            "name": "quote_volume_usdt",
+            "type": "DOUBLE",
+            "nullable": true,
+            "description": "ADR-0007: USDT trading volume (primary ranking metric)"
+          },
+          {
+            "name": "trade_count",
+            "type": "BIGINT",
+            "nullable": true,
+            "description": "ADR-0007: Number of trades executed"
+          },
+          {
+            "name": "volume_base",
+            "type": "DOUBLE",
+            "nullable": true,
+            "description": "ADR-0007: Base asset trading volume (e.g., BTC for BTCUSDT)"
+          },
+          {
+            "name": "taker_buy_volume_base",
+            "type": "DOUBLE",
+            "nullable": true,
+            "description": "ADR-0007: Taker buy base asset volume"
+          },
+          {
+            "name": "taker_buy_quote_volume_usdt",
+            "type": "DOUBLE",
+            "nullable": true,
+            "description": "ADR-0007: Taker buy USDT volume"
+          },
+          {
+            "name": "open_price",
+            "type": "DOUBLE",
+            "nullable": true,
+            "description": "ADR-0007: Opening price for the day"
+          },
+          {
+            "name": "high_price",
+            "type": "DOUBLE",
+            "nullable": true,
+            "description": "ADR-0007: Highest price reached during the day"
+          },
+          {
+            "name": "low_price",
+            "type": "DOUBLE",
+            "nullable": true,
+            "description": "ADR-0007: Lowest price reached during the day"
+          },
+          {
+            "name": "close_price",
+            "type": "DOUBLE",
+            "nullable": true,
+            "description": "ADR-0007: Closing price for the day"
           }
         ],
         "primaryKey": ["date", "symbol"],
@@ -232,6 +345,11 @@
             "name": "idx_available_date",
             "columns": ["available", "date"],
             "purpose": "Fast snapshot queries (get_available_symbols_on_date)"
+          },
+          {
+            "name": "idx_quote_volume_date",
+            "columns": ["quote_volume_usdt", "date"],
+            "purpose": "ADR-0007: Fast volume ranking queries (top N symbols by volume)"
           }
         ]
       }

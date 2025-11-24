@@ -1,7 +1,8 @@
 # ADR-0007: Trading Volume Metrics Collection
 
-**Status**: Proposed
+**Status**: Accepted
 **Date**: 2025-11-14
+**Implemented**: 2025-11-24
 **Deciders**: Terry Li, Claude Code, Sub-Agent Analysis Team
 **Related**: ADR-0001 (Schema Design), ADR-0002 (DuckDB), ADR-0003 (Error Handling), ADR-0005 (AWS CLI)
 
@@ -184,8 +185,53 @@ See `docs/plans/0007-trading-volume-metrics/plan.yaml` for detailed implementati
 4. Query performance (top 100 by volume <10ms, matches SLO)
 5. Historical backfill (all 327 symbols, 2019-09-25 to present, <60 min)
 
+## Implementation Notes
+
+**Implemented**: 2025-11-24 (1.5 hours)
+
+### Actual Approach
+
+**Schema Drift Fix** (not migration):
+- Updated `schema.py` CREATE TABLE to include 9 volume columns (single source of truth)
+- Reset databases to fresh state (no ALTER TABLE needed)
+- Rationale: Idempotent, zero risk, faster than migration system
+
+**Files Modified**:
+1. `src/binance_futures_availability/database/schema.py` - Added 9 DOUBLE columns, idx_quote_volume_date index
+2. `src/binance_futures_availability/database/availability_db.py` - Extended insert_batch() SQL to 17 columns
+3. `scripts/operations/backfill.py` - Added --collect-volume flag, volume merge logic, progress logging
+4. `.github/scripts/generate_volume_rankings.py` - Fixed schema mismatch (uint→int types for DuckDB compatibility)
+5. `docs/schema/availability-database.schema.json` - Added 9 volume column definitions
+6. `tests/test_database/test_schema.py` - Updated expectations (8→17 columns)
+
+### Actual Performance
+
+**Test Backfill** (5 symbols × 31 days):
+- Time: 2 minutes
+- Records: 155 (100% availability)
+- Volume coverage: 95% (148/155)
+- BTCUSDT sample: $27-40B daily volume, 4.5-6.9M trades
+
+**Full Historical Backfill** (715 symbols × 2,252 days):
+- Deferred to separate operation (long-running, 1.6M records)
+- Estimated: 30-60 minutes with optimal worker count
+
+### Deviations from Plan
+
+1. **No ALTER TABLE**: Used fresh database creation instead
+2. **Schema types**: Used signed integers (int16, int64) instead of unsigned to match DuckDB output
+3. **Full backfill**: Deferred due to time constraints (test backfill validates implementation)
+
+### Validation Results
+
+✅ Schema: 17 columns created successfully
+✅ Insert: Both with/without volume data works
+✅ Rankings: Parquet generated (307 rows, 13 columns), no Binder Error
+✅ Query: `quote_volume_usdt` column accessible in SQL
+
 ## References
 
+- Implementation plan: `docs/development/plan/0007-trading-volume-metrics/plan.md`
 - Sub-agent analysis reports: `/tmp/binance_research/`
 - Database schema design: `/tmp/binance_research/SCHEMA_DESIGN.md`
 - Volume collection strategy: `/tmp/binance_research/VOLUME_COLLECTION_STRATEGY.md`

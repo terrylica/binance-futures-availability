@@ -51,9 +51,10 @@ All architectural decisions documented as MADRs in `docs/architecture/decisions/
 
 ### [0007: Trading Volume Metrics](docs/architecture/decisions/0007-trading-volume-metrics.md)
 
-**Status**: ⚠️ PROPOSED (not yet implemented)
+**Status**: ✅ ACCEPTED (Implemented 2025-11-24)
 **Decision**: Extend daily_availability table with 9 OHLCV columns from Binance Vision 1d klines
 **Rationale**: Portfolio universe selection, survivorship bias elimination, volume-based symbol ranking
+**Implementation**: Schema drift fix (no migration), integrated into backfill.py with --collect-volume flag
 
 ### [0008: Workspace Organization](docs/architecture/decisions/0008-workspace-organization.md)
 
@@ -136,12 +137,14 @@ All architectural decisions documented as MADRs in `docs/architecture/decisions/
 ### Error Handling
 
 **Data Collection** (ADR-0003 - Strict Raise Policy):
+
 - **Policy**: Raise and propagate all errors immediately
 - **No retries**: Network failures raise immediately, workflow retries next scheduled cycle
 - **No fallbacks**: No default values or silent handling
 - **No silent failures**: All errors logged with full context
 
 **Validation Findings** (ADR-0003 - Transparency-First, Updated 2025-11-24):
+
 - **Philosophy**: Full transparency over binary pass/fail
 - **Never fail**: Validation warnings are informational only (always exit 0)
 - **Publish always**: Database published regardless of validation state

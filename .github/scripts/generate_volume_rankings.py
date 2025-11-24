@@ -32,20 +32,23 @@ except ImportError as e:
 
 
 # Schema definition (ADR-0013)
+# Note: DuckDB returns signed integers (SMALLINT=int16, BIGINT=int64, TINYINT=int8)
+# even though these values are semantically unsigned (ranks, counts, days).
+# We use signed types to match DuckDB's output and avoid casting overhead.
 RANKINGS_SCHEMA = pa.schema([
     ('date', pa.date32()),
     ('symbol', pa.string()),
-    ('rank', pa.uint16()),
+    ('rank', pa.int16()),  # DuckDB SMALLINT (signed)
     ('quote_volume_usdt', pa.float64()),
-    ('trade_count', pa.uint64()),
+    ('trade_count', pa.int64()),  # DuckDB BIGINT (signed)
     ('rank_change_1d', pa.int16()),
     ('rank_change_7d', pa.int16()),
     ('rank_change_14d', pa.int16()),
     ('rank_change_30d', pa.int16()),
     ('percentile', pa.float32()),
     ('market_share_pct', pa.float32()),
-    ('days_available', pa.uint8()),
-    ('generation_timestamp', pa.timestamp('us')),
+    ('days_available', pa.int8()),  # DuckDB TINYINT (signed)
+    ('generation_timestamp', pa.timestamp('us')),  # Allow timezone from CURRENT_TIMESTAMP
 ])
 
 
@@ -140,7 +143,7 @@ def generate_rankings_sql(start_date: str | None) -> str:
         CAST(dr.percentile AS FLOAT) as percentile,
         CAST(dr.market_share_pct AS FLOAT) as market_share_pct,
         CAST(COALESCE(ta.days_available_30d, 0) AS TINYINT) as days_available,
-        CURRENT_TIMESTAMP as generation_timestamp
+        CAST(CURRENT_TIMESTAMP AS TIMESTAMP) as generation_timestamp
     FROM daily_ranks dr
     JOIN rank_changes rc ON dr.date = rc.date AND dr.symbol = rc.symbol
     LEFT JOIN trailing_availability ta ON dr.date = ta.date AND dr.symbol = ta.symbol

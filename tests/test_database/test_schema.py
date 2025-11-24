@@ -23,6 +23,7 @@ def test_schema_has_correct_columns(db):
     column_names = [row[1] for row in result]
 
     expected_columns = [
+        # Original 8 columns
         "date",
         "symbol",
         "available",
@@ -31,10 +32,23 @@ def test_schema_has_correct_columns(db):
         "url",
         "status_code",
         "probe_timestamp",
+        # ADR-0007: 9 volume metrics columns
+        "quote_volume_usdt",
+        "trade_count",
+        "volume_base",
+        "taker_buy_volume_base",
+        "taker_buy_quote_volume_usdt",
+        "open_price",
+        "high_price",
+        "low_price",
+        "close_price",
     ]
 
     for col in expected_columns:
         assert col in column_names, f"Column {col} not found in schema"
+
+    # Verify total column count (17 columns)
+    assert len(column_names) == 17, f"Expected 17 columns, got {len(column_names)}"
 
 
 def test_schema_has_primary_key(db):

@@ -39,6 +39,21 @@ def create_schema(conn: duckdb.DuckDBPyConnection) -> None:
             url VARCHAR NOT NULL USING COMPRESSION dictionary,
             status_code INTEGER NOT NULL USING COMPRESSION bitpacking,
             probe_timestamp TIMESTAMP NOT NULL,
+
+            -- ADR-0007: Trading volume metrics (2025-11-24)
+            -- Sourced from Binance Vision 1d kline files (350 bytes each)
+            -- Primary ranking metric: quote_volume_usdt (USDT trading volume)
+            -- Nullable: Volume data may not exist for all dates (2019-09-25 to 2019-12-30 gap)
+            quote_volume_usdt DOUBLE,
+            trade_count BIGINT,
+            volume_base DOUBLE,
+            taker_buy_volume_base DOUBLE,
+            taker_buy_quote_volume_usdt DOUBLE,
+            open_price DOUBLE,
+            high_price DOUBLE,
+            low_price DOUBLE,
+            close_price DOUBLE,
+
             PRIMARY KEY (date, symbol)
         )
     """)
@@ -53,6 +68,12 @@ def create_schema(conn: duckdb.DuckDBPyConnection) -> None:
     conn.execute("""
         CREATE INDEX IF NOT EXISTS idx_available_date
         ON daily_availability(available, date)
+    """)
+
+    # ADR-0007: Index for volume rankings (DESC for top-N queries)
+    conn.execute("""
+        CREATE INDEX IF NOT EXISTS idx_quote_volume_date
+        ON daily_availability(quote_volume_usdt DESC, date)
     """)
 
     # ADR-0019: Materialized view for analytics queries (50x faster)

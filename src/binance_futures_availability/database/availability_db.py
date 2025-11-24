@@ -56,6 +56,15 @@ class AvailabilityDatabase:
         url: str,
         status_code: int,
         probe_timestamp: datetime.datetime,
+        quote_volume_usdt: float | None = None,
+        trade_count: int | None = None,
+        volume_base: float | None = None,
+        taker_buy_volume_base: float | None = None,
+        taker_buy_quote_volume_usdt: float | None = None,
+        open_price: float | None = None,
+        high_price: float | None = None,
+        low_price: float | None = None,
+        close_price: float | None = None,
     ) -> None:
         """
         Insert or update a single availability record (UPSERT).
@@ -69,6 +78,15 @@ class AvailabilityDatabase:
             url: Full S3 URL probed
             status_code: HTTP status code (200, 404, etc.)
             probe_timestamp: UTC timestamp when probe was executed
+            quote_volume_usdt: ADR-0007: USDT trading volume (None if unavailable)
+            trade_count: ADR-0007: Number of trades (None if unavailable)
+            volume_base: ADR-0007: Base asset volume (None if unavailable)
+            taker_buy_volume_base: ADR-0007: Taker buy base volume (None if unavailable)
+            taker_buy_quote_volume_usdt: ADR-0007: Taker buy USDT volume (None if unavailable)
+            open_price: ADR-0007: Opening price (None if unavailable)
+            high_price: ADR-0007: Highest price (None if unavailable)
+            low_price: ADR-0007: Lowest price (None if unavailable)
+            close_price: ADR-0007: Closing price (None if unavailable)
 
         Raises:
             RuntimeError: On database error (ADR-0003: strict raise policy)
@@ -77,8 +95,10 @@ class AvailabilityDatabase:
             self.conn.execute(
                 """
                 INSERT OR REPLACE INTO daily_availability
-                (date, symbol, available, file_size_bytes, last_modified, url, status_code, probe_timestamp)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                (date, symbol, available, file_size_bytes, last_modified, url, status_code, probe_timestamp,
+                 quote_volume_usdt, trade_count, volume_base, taker_buy_volume_base,
+                 taker_buy_quote_volume_usdt, open_price, high_price, low_price, close_price)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 [
                     date,
@@ -89,6 +109,15 @@ class AvailabilityDatabase:
                     url,
                     status_code,
                     probe_timestamp,
+                    quote_volume_usdt,
+                    trade_count,
+                    volume_base,
+                    taker_buy_volume_base,
+                    taker_buy_quote_volume_usdt,
+                    open_price,
+                    high_price,
+                    low_price,
+                    close_price,
                 ],
             )
         except Exception as e:
@@ -100,6 +129,7 @@ class AvailabilityDatabase:
 
         Args:
             records: List of dicts with keys matching insert_availability() parameters
+                     (8 required fields + 9 optional ADR-0007 volume fields)
 
         Raises:
             RuntimeError: On database error (ADR-0003: strict raise policy)
@@ -115,7 +145,10 @@ class AvailabilityDatabase:
             ...         'last_modified': datetime.datetime(2024, 1, 16, 2, 15, 32),
             ...         'url': 'https://data.binance.vision/...',
             ...         'status_code': 200,
-            ...         'probe_timestamp': datetime.datetime.now(datetime.timezone.utc)
+            ...         'probe_timestamp': datetime.datetime.now(datetime.timezone.utc),
+            ...         # ADR-0007: Optional volume metrics
+            ...         'quote_volume_usdt': 123456789.12,
+            ...         'trade_count': 987654
             ...     }
             ... ]
             >>> db.insert_batch(records)
@@ -127,8 +160,10 @@ class AvailabilityDatabase:
             self.conn.executemany(
                 """
                 INSERT OR REPLACE INTO daily_availability
-                (date, symbol, available, file_size_bytes, last_modified, url, status_code, probe_timestamp)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                (date, symbol, available, file_size_bytes, last_modified, url, status_code, probe_timestamp,
+                 quote_volume_usdt, trade_count, volume_base, taker_buy_volume_base,
+                 taker_buy_quote_volume_usdt, open_price, high_price, low_price, close_price)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 [
                     (
@@ -140,6 +175,16 @@ class AvailabilityDatabase:
                         r["url"],
                         r["status_code"],
                         r["probe_timestamp"],
+                        # ADR-0007: Volume metrics (all nullable)
+                        r.get("quote_volume_usdt"),
+                        r.get("trade_count"),
+                        r.get("volume_base"),
+                        r.get("taker_buy_volume_base"),
+                        r.get("taker_buy_quote_volume_usdt"),
+                        r.get("open_price"),
+                        r.get("high_price"),
+                        r.get("low_price"),
+                        r.get("close_price"),
                     )
                     for r in records
                 ],

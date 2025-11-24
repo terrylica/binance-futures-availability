@@ -34,6 +34,7 @@ def backfill_symbol(
     end_date: datetime.date,
     db_path: Path | None,
     skip_materialized_refresh: bool = False,
+    collect_volume: bool = True,
 ) -> dict:
     """
     Backfill all availability data for a single symbol using AWS CLI.
@@ -44,9 +45,10 @@ def backfill_symbol(
         end_date: End of date range (inclusive)
         db_path: Database path (each worker creates its own connection for thread-safety)
         skip_materialized_refresh: Skip auto-refresh of materialized views (for parallel operations)
+        collect_volume: ADR-0007: Download 1d klines for volume metrics (default: True)
 
     Returns:
-        Dict with symbol, dates_found, error (if any)
+        Dict with symbol, dates_found, volume_count, error (if any)
     """
     lister = AWSS3Lister()
 
@@ -59,6 +61,19 @@ def backfill_symbol(
             symbol, start_date=start_date, end_date=end_date
         )
 
+        # ADR-0007: Download 1d klines for volume metrics
+        volume_data = {}
+        if collect_volume and availability:
+            for date in availability.keys():
+                try:
+                    volume_metrics = lister.download_1d_kline(symbol, date)
+                    if volume_metrics:
+                        volume_data[date] = volume_metrics
+                except Exception:
+                    # Silently skip volume download failures (volume is optional)
+                    # Main availability data still gets inserted
+                    pass
+
         # Build records for ALL dates in range (available + unavailable)
         records = []
         probe_time = datetime.datetime.now(datetime.UTC)
@@ -68,18 +83,20 @@ def backfill_symbol(
             if current_date in availability:
                 # Available: file exists
                 meta = availability[current_date]
-                records.append(
-                    {
-                        "date": current_date,
-                        "symbol": symbol,
-                        "available": True,
-                        "file_size_bytes": meta["file_size_bytes"],
-                        "last_modified": meta["last_modified"],
-                        "url": meta["url"],
-                        "status_code": 200,  # Inferred from file existence
-                        "probe_timestamp": probe_time,
-                    }
-                )
+                record = {
+                    "date": current_date,
+                    "symbol": symbol,
+                    "available": True,
+                    "file_size_bytes": meta["file_size_bytes"],
+                    "last_modified": meta["last_modified"],
+                    "url": meta["url"],
+                    "status_code": 200,  # Inferred from file existence
+                    "probe_timestamp": probe_time,
+                }
+                # ADR-0007: Merge volume metrics if downloaded
+                if current_date in volume_data:
+                    record.update(volume_data[current_date])
+                records.append(record)
             else:
                 # Unavailable: file does not exist
                 records.append(
@@ -103,12 +120,13 @@ def backfill_symbol(
         result = {
             "symbol": symbol,
             "dates_found": len(availability),
+            "volume_count": len(volume_data),
             "total_dates": len(records),
             "error": None,
         }
 
     except Exception as e:
-        result = {"symbol": symbol, "dates_found": 0, "total_dates": 0, "error": str(e)}
+        result = {"symbol": symbol, "dates_found": 0, "volume_count": 0, "total_dates": 0, "error": str(e)}
 
     finally:
         # Always close the thread-local connection
@@ -151,6 +169,20 @@ def main() -> int:
         "--skip-materialized-refresh",
         action="store_true",
         help="Skip auto-refresh of materialized views after each batch (use for parallel operations to avoid conflicts)",
+    )
+
+    parser.add_argument(
+        "--collect-volume",
+        action="store_true",
+        default=True,
+        help="ADR-0007: Download 1d klines for volume metrics (default: True)",
+    )
+
+    parser.add_argument(
+        "--no-collect-volume",
+        dest="collect_volume",
+        action="store_false",
+        help="ADR-0007: Skip volume collection (only collect availability)",
     )
 
     args = parser.parse_args()
@@ -196,6 +228,7 @@ def main() -> int:
     logger.info(f"Date range: {start_date} to {end_date} ({total_days} days)")
     logger.info(f"Symbols: {len(symbols)}")
     logger.info(f"Parallel workers: {args.workers}")
+    logger.info(f"Volume collection (ADR-0007): {'ENABLED' if args.collect_volume else 'DISABLED'}")
     logger.info(f"Estimated time: ~{len(symbols) * 4.5 / 60:.0f} minutes")
     logger.info("=" * 60)
 
@@ -229,6 +262,7 @@ def main() -> int:
                 end_date,
                 db_path,
                 args.skip_materialized_refresh,
+                args.collect_volume,  # ADR-0007: Volume collection flag
             ): symbol
             for symbol in symbols
         }
@@ -245,8 +279,15 @@ def main() -> int:
                     failed_symbols.append(symbol)
                     logger.error(f"[{i}/{len(symbols)}] ❌ {symbol}: {result['error']}")
                 else:
+                    # ADR-0007: Show volume coverage in progress logs
+                    volume_pct = (
+                        result["volume_count"] * 100 // result["dates_found"]
+                        if result["dates_found"] > 0
+                        else 0
+                    )
                     logger.info(
-                        f"[{i}/{len(symbols)}] ✅ {symbol}: {result['dates_found']}/{result['total_dates']} dates available"
+                        f"[{i}/{len(symbols)}] ✅ {symbol}: {result['dates_found']}/{result['total_dates']} available, "
+                        f"{result['volume_count']} volume ({volume_pct}%)"
                     )
 
             except Exception as e:
@@ -256,6 +297,7 @@ def main() -> int:
     # Summary
     total_records = sum(r["total_dates"] for r in results if not r["error"])
     available_count = sum(r["dates_found"] for r in results if not r["error"])
+    volume_count = sum(r["volume_count"] for r in results if not r["error"])
 
     logger.info("=" * 60)
     logger.info("Backfill Complete!")
@@ -266,6 +308,10 @@ def main() -> int:
         f"Available: {available_count:,} ({available_count * 100 // total_records if total_records else 0}%)"
     )
     logger.info(f"Unavailable: {total_records - available_count:,}")
+    # ADR-0007: Volume collection summary
+    if args.collect_volume:
+        volume_pct = volume_count * 100 // available_count if available_count > 0 else 0
+        logger.info(f"Volume metrics: {volume_count:,} ({volume_pct}% of available)")
 
     if failed_symbols:
         logger.warning(f"Failed symbols ({len(failed_symbols)}): {', '.join(failed_symbols[:10])}")

@@ -133,6 +133,7 @@ Validation checks detect expected conditions (S3 delays, listing/delisting) that
 4. **Trust human judgment** via manual review (Pushover → GitHub Release)
 
 This approach:
+
 - Eliminates false positive failures (e.g., T+3 buffer edge cases)
 - Provides full observability without noise
 - Supports human-in-the-loop data quality assessment
