@@ -1,7 +1,7 @@
 # Plan: ClickHouse E2E Test Removal
 
 **adr-id**: 0024
-**Status**: In Progress
+**Status**: Complete
 **Created**: 2025-11-25
 **Updated**: 2025-11-25
 
@@ -111,7 +111,8 @@ e2e = [
 | 6 | Remove [e2e] deps from pyproject.toml | COMPLETE | Also removed ui marker |
 | 7 | Update CLAUDE.md | COMPLETE | No references found |
 | 8 | Update CI_CD_AUDIT_REPORT.md | COMPLETE | Updated testing status |
-| 9 | Commit and verify CI/CD | IN_PROGRESS | |
+| 9 | Fix schema drift (ADR-0007 migration) | COMPLETE | Added volume columns migration |
+| 10 | Commit and verify CI/CD | COMPLETE | Run 19682724421 succeeded |
 
 ---
 
@@ -122,15 +123,18 @@ e2e = [
 - **08:30 UTC**: Investigation completed - found CI/CD blocked by ruff error
 - **08:45 UTC**: Plan created, ADR-0024 written
 - **08:50 UTC**: Beginning implementation
-- **19:00 UTC**: All tasks complete, committing changes
+- **19:00 UTC**: All cleanup tasks complete, committing changes
+- **20:05 UTC**: First workflow run failed - schema drift issue discovered
+- **20:10 UTC**: Added ADR-0007 volume columns migration to schema.py
+- **20:14 UTC**: Workflow run 19682724421 succeeded - all tasks complete
 
 ---
 
 ## 5. Success Criteria
 
-- [ ] CI/CD pipeline passes (ruff check, pytest)
-- [ ] No ClickHouse references in tests/
-- [ ] ADR-0016 deleted
-- [ ] pyproject.toml has no [e2e] group
-- [ ] CLAUDE.md updated
-- [ ] GitHub Actions workflow succeeds
+- [x] CI/CD pipeline passes (ruff check, pytest)
+- [x] No ClickHouse references in tests/
+- [x] ADR-0016 deleted
+- [x] pyproject.toml has no [e2e] group
+- [x] CLAUDE.md updated (no references found)
+- [x] GitHub Actions workflow succeeds (run 19682724421)
