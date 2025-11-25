@@ -6,6 +6,42 @@ See: docs/architecture/decisions/0019-performance-optimization-strategy.md (colu
 import duckdb
 
 
+def _migrate_add_volume_columns(conn: duckdb.DuckDBPyConnection) -> None:
+    """
+    ADR-0007 migration: Add volume columns to existing table.
+
+    This handles schema drift where the database was created before ADR-0007
+    was implemented. ALTER TABLE ADD COLUMN IF NOT EXISTS is safe to run
+    multiple times.
+
+    See: docs/architecture/decisions/0007-trading-volume-metrics.md
+    """
+    volume_columns = [
+        ("quote_volume_usdt", "DOUBLE"),
+        ("trade_count", "BIGINT"),
+        ("volume_base", "DOUBLE"),
+        ("taker_buy_volume_base", "DOUBLE"),
+        ("taker_buy_quote_volume_usdt", "DOUBLE"),
+        ("open_price", "DOUBLE"),
+        ("high_price", "DOUBLE"),
+        ("low_price", "DOUBLE"),
+        ("close_price", "DOUBLE"),
+    ]
+
+    # Check which columns already exist
+    existing_columns = {
+        row[0]
+        for row in conn.execute(
+            "SELECT column_name FROM information_schema.columns WHERE table_name = 'daily_availability'"
+        ).fetchall()
+    }
+
+    # Add missing columns
+    for column_name, column_type in volume_columns:
+        if column_name not in existing_columns:
+            conn.execute(f"ALTER TABLE daily_availability ADD COLUMN {column_name} {column_type}")
+
+
 def create_schema(conn: duckdb.DuckDBPyConnection) -> None:
     """
     Create the daily_availability table and indexes.
@@ -57,6 +93,9 @@ def create_schema(conn: duckdb.DuckDBPyConnection) -> None:
             PRIMARY KEY (date, symbol)
         )
     """)
+
+    # ADR-0007 migration: Add volume columns if they don't exist (for pre-ADR-0007 databases)
+    _migrate_add_volume_columns(conn)
 
     # Index for timeline queries (symbol -> dates)
     conn.execute("""
