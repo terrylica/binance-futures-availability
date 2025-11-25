@@ -11,6 +11,7 @@
 
 ## Quick Links
 
+- **Architecture**: [`docs/architecture/ARCHITECTURE.md`](docs/architecture/ARCHITECTURE.md) - System diagrams and component overview
 - **SSoT Plan**: [`docs/development/plan/v1.0.0/plan.yaml`](docs/development/plan/v1.0.0/plan.yaml)
 - **Schema**: [`docs/schema/availability-database.schema.json`](docs/schema/availability-database.schema.json)
 - **MADRs**: [`docs/architecture/decisions/`](docs/architecture/decisions/)
@@ -97,11 +98,6 @@ All architectural decisions documented as MADRs in `docs/architecture/decisions/
 **Decision**: Extract validated workflows into reusable skills (multi-agent investigation, DuckDB remote queries, documentation improvement)
 **Rationale**: Codify proven patterns, enable reuse across projects, reduce repeated discovery work
 
-### [0016: Playwright E2E Testing](docs/architecture/decisions/0016-playwright-e2e-testing.md)
-
-**Decision**: Playwright 1.56+ with pytest for autonomous E2E testing with screenshot capture
-**Rationale**: Visual proof of functionality, latest 2025 tools, zero manual intervention, comprehensive test coverage
-
 ### [0017: Documentation Structure Migration](docs/architecture/decisions/0017-documentation-structure-migration.md)
 
 **Decision**: Migrate ADRs to `docs/architecture/decisions/`, plans to `docs/development/plan/` with Google Design Doc format
@@ -145,6 +141,18 @@ All architectural decisions documented as MADRs in `docs/architecture/decisions/
 **Decision**: Consolidate all automation secrets to Doppler, remove 1Password from automation workflows
 **Rationale**: Single source of truth, Doppler GitHub App auto-sync, centralized audit trail
 **Implementation**: GitHub tokens migrated to Doppler `notifications/prd`, local access via service token
+
+### [0024: ClickHouse E2E Test Removal](docs/architecture/decisions/0024-clickhouse-cleanup.md)
+
+**Status**: ✅ ACCEPTED (Implemented 2025-11-25)
+**Decision**: Remove all ClickHouse-related E2E tests and artifacts (tests/e2e/, ADR-0016, [e2e] deps)
+**Rationale**: ClickHouse tests were exploratory, not connected to production DuckDB pipeline
+
+### [0025: System Architecture Documentation](docs/architecture/decisions/0025-system-architecture-documentation.md)
+
+**Status**: ✅ ACCEPTED (Implemented 2025-11-25)
+**Decision**: Create comprehensive architecture documentation with ASCII diagrams
+**Implementation**: `docs/architecture/ARCHITECTURE.md` with data flow, runtime, component, and deployment diagrams
 
 ## Core Principles
 
