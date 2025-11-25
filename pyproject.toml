@@ -21,11 +21,6 @@ dev = [
     "pytest-mock>=3.14.0",
     "ruff>=0.14.5",  # ADR-0018: Latest stable linter
 ]
-e2e = [
-    "playwright>=1.56.0",  # AI agent testing (Planner, Generator, Healer)
-    "pytest-playwright>=0.7.0",  # Pytest integration for Playwright
-    "httpx>=0.28.0",  # Async HTTP client for API testing
-]
 
 [project.scripts]
 binance-futures-availability = "binance_futures_availability.cli.main:main"
@@ -49,7 +44,6 @@ addopts = [
 markers = [
     "integration: marks tests that require live S3 Vision API (deselect with '-m \"not integration\"')",
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
-    "ui: marks E2E UI tests with Playwright (deselect with '-m \"not ui\"')",
 ]
 
 [tool.ruff]

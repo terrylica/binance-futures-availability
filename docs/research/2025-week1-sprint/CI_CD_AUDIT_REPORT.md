@@ -15,7 +15,7 @@ The project has **solid CI/CD foundations** with GitHub Actions automation, sema
 | Dimension                 | Score | Status                                          |
 | ------------------------- | ----- | ----------------------------------------------- |
 | **Workflow Automation**   | 8/10  | Excellent - Daily updates + manual triggers     |
-| **Testing Coverage**      | 7/10  | Good - 80%+ coverage but gaps in E2E            |
+| **Testing Coverage**      | 7/10  | Good - 80%+ coverage (E2E tests removed per ADR-0024) |
 | **Dependency Management** | 5/10  | Weak - No automated updates, pin latest         |
 | **Code Quality**          | 8/10  | Good - ruff linting configured                  |
 | **Observability**         | 6/10  | Moderate - Basic logging, no alerting           |

@@ -64,7 +64,7 @@ def backfill_symbol(
         # ADR-0007: Download 1d klines for volume metrics
         volume_data = {}
         if collect_volume and availability:
-            for date in availability.keys():
+            for date in availability:
                 try:
                     volume_metrics = lister.download_1d_kline(symbol, date)
                     if volume_metrics:
