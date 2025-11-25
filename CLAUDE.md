@@ -1,8 +1,8 @@
 # Binance Futures Availability Database
 
-**Version**: v1.2.0
+**Version**: v1.3.0
 **Created**: 2025-11-12
-**Updated**: 2025-11-20
+**Updated**: 2025-11-25
 **Status**: Production-ready (GitHub Actions automation enabled, infrastructure v1.2.0)
 **Pattern**: Follows `ValidationStorage` pattern from gapless-crypto-data
 **Purpose**: Track daily availability of ALL USDT perpetual futures from Binance Vision (2019-09-25 to present)
@@ -131,6 +131,20 @@ All architectural decisions documented as MADRs in `docs/architecture/decisions/
 **Decision**: Establish lightweight observability foundation: schema drift detection, correlation IDs, data catalog
 **Rationale**: 3x faster debugging (>30min → <10min), 400-500% ROI, zero infrastructure overhead
 **Impact**: Deferred to Q1 2026 for deeper integration
+
+### [0022: Pushover Workflow Notifications](docs/architecture/decisions/0022-pushover-workflow-notifications.md)
+
+**Status**: ✅ ACCEPTED (Implemented 2025-11-22)
+**Decision**: Add Pushover notifications to GitHub Actions workflow for instant status visibility
+**Rationale**: 30 hours/year saved, instant failure detection, no manual GitHub UI monitoring
+**Implementation**: Doppler SecretOps for PUSHOVER_APP_TOKEN/PUSHOVER_USER_KEY, custom curl notification
+
+### [0023: Doppler-Native Secrets Consolidation](docs/architecture/decisions/0023-doppler-secrets-consolidation.md)
+
+**Status**: ✅ ACCEPTED (Implemented 2025-11-25)
+**Decision**: Consolidate all automation secrets to Doppler, remove 1Password from automation workflows
+**Rationale**: Single source of truth, Doppler GitHub App auto-sync, centralized audit trail
+**Implementation**: GitHub tokens migrated to Doppler `notifications/prd`, local access via service token
 
 ## Core Principles
 
