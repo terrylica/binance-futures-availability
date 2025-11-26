@@ -13,14 +13,14 @@ ERROR: Could not find a version that satisfies the requirement duckdb>=1.0.0
 ```
 
 **Solution**:
-Ensure Python 3.12+ is installed:
+Ensure Python 3.11+ is installed:
 
 ```bash
-python --version  # Should be 3.12 or higher
+python --version  # Should be 3.11 or higher
 
 # If using pyenv
-pyenv install 3.12.0
-pyenv local 3.12.0
+pyenv install 3.11.0
+pyenv local 3.11.0
 
 # Retry installation
 uv pip install -e .

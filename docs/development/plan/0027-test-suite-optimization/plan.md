@@ -13,14 +13,14 @@ Comprehensive audit of 13 test files (2432 lines) revealed structural issues req
 
 **Key Findings**:
 
-| Category | Issue | Files Affected |
-| -------- | ----- | -------------- |
-| REDUNDANT | Unicode tests in 3 locations | `test_unicode_symbols.py`, `test_gap_detection.py`, `test_targeted_backfill.py` |
-| REDUNDANT | UPSERT tests in 3 locations | `test_availability_db.py`, `test_20day_lookback.py`, `test_targeted_backfill.py` |
-| REDUNDANT | Symbol parsing 6 tests | `test_targeted_backfill.py` |
-| MISSING | CLI module tests | `src/.../cli/` (0% coverage) |
-| MISSING | Schema index verification | `test_schema.py` |
-| MISSING | Edge cases for continuity/snapshots | `test_continuity.py`, `test_snapshots.py` |
+| Category  | Issue                               | Files Affected                                                                   |
+| --------- | ----------------------------------- | -------------------------------------------------------------------------------- |
+| REDUNDANT | Unicode tests in 3 locations        | `test_unicode_symbols.py`, `test_gap_detection.py`, `test_targeted_backfill.py`  |
+| REDUNDANT | UPSERT tests in 3 locations         | `test_availability_db.py`, `test_20day_lookback.py`, `test_targeted_backfill.py` |
+| REDUNDANT | Symbol parsing 6 tests              | `test_targeted_backfill.py`                                                      |
+| MISSING   | CLI module tests                    | `src/.../cli/` (0% coverage)                                                     |
+| MISSING   | Schema index verification           | `test_schema.py`                                                                 |
+| MISSING   | Edge cases for continuity/snapshots | `test_continuity.py`, `test_snapshots.py`                                        |
 
 ## Goals
 

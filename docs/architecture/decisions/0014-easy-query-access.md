@@ -51,7 +51,7 @@ Implement **documentation-first approach** to enable easy querying via remote Du
    - Show latest data freshness
 
 2. **Add Prerequisites Section**
-   - Python 3.12+ requirement
+   - Python 3.11+ requirement
    - Installation commands: `pip install duckdb` (or `uv pip install`)
    - Optional libraries: Polars, Pandas
 

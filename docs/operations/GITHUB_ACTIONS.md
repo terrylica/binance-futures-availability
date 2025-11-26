@@ -123,7 +123,7 @@ gh workflow run update-database.yml \
 
 Installs required tools:
 
-- **Python 3.12** via `actions/setup-python@v5`
+- **Python 3.11+** via `actions/setup-python@v5`
 - **uv package manager** via `astral-sh/setup-uv@v5`
 - **AWS CLI** for bulk S3 operations (backfill mode)
 - **Project dependencies** via `uv pip install -e ".[dev]"`

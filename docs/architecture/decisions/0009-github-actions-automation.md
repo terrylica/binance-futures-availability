@@ -70,7 +70,7 @@ Migrate database automation from local APScheduler daemon to **GitHub Actions wi
 
 **Pipeline Stages** (4 jobs):
 
-1. **Setup**: Python 3.12, uv package manager, AWS CLI, project dependencies
+1. **Setup**: Python 3.11+, uv package manager, AWS CLI, project dependencies
 2. **Restore**: Download existing database from GitHub Releases (if exists)
 3. **Update**: Execute `scheduler/daily_update.py` for incremental updates
 4. **Validate**: Run continuity checks, completeness checks, API cross-validation

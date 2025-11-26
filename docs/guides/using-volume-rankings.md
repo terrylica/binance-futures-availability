@@ -45,7 +45,7 @@ print(result)
 
 ## Prerequisites
 
-**Python**: 3.12 or higher
+**Python**: 3.11 or higher
 
 **Required Library**:
 

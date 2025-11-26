@@ -55,16 +55,16 @@ binance-futures-availability query range <START_DATE> <END_DATE>
 
 **Table**: `daily_availability`
 
-| Column | Type | Description |
-| ------ | ---- | ----------- |
-| date | DATE | Trading date |
-| symbol | VARCHAR | Futures symbol |
-| available | BOOLEAN | Data availability flag |
-| file_size_bytes | BIGINT | ZIP file size from S3 |
-| last_modified | TIMESTAMP | S3 upload timestamp |
-| quote_volume_usdt | DOUBLE | Daily USDT trading volume |
-| trade_count | BIGINT | Number of trades |
-| open/high/low/close_price | DOUBLE | OHLC prices |
+| Column                    | Type      | Description               |
+| ------------------------- | --------- | ------------------------- |
+| date                      | DATE      | Trading date              |
+| symbol                    | VARCHAR   | Futures symbol            |
+| available                 | BOOLEAN   | Data availability flag    |
+| file_size_bytes           | BIGINT    | ZIP file size from S3     |
+| last_modified             | TIMESTAMP | S3 upload timestamp       |
+| quote_volume_usdt         | DOUBLE    | Daily USDT trading volume |
+| trade_count               | BIGINT    | Number of trades          |
+| open/high/low/close_price | DOUBLE    | OHLC prices               |
 
 **Primary Key**: (date, symbol)
 
@@ -81,16 +81,16 @@ gh release download latest --pattern "volume-rankings-timeseries.parquet"
 
 ## Architecture Decisions
 
-| ADR | Decision |
-| --- | -------- |
-| [0001](https://github.com/terrylica/binance-futures-availability/blob/main/docs/architecture/decisions/0001-schema-design-daily-table.md) | Daily table pattern |
-| [0002](https://github.com/terrylica/binance-futures-availability/blob/main/docs/architecture/decisions/0002-storage-technology-duckdb.md) | DuckDB storage |
-| [0003](https://github.com/terrylica/binance-futures-availability/blob/main/docs/architecture/decisions/0003-error-handling-strict-policy.md) | Strict error handling |
-| [0005](https://github.com/terrylica/binance-futures-availability/blob/main/docs/architecture/decisions/0005-aws-cli-bulk-operations.md) | AWS CLI bulk operations |
-| [0007](https://github.com/terrylica/binance-futures-availability/blob/main/docs/architecture/decisions/0007-trading-volume-metrics.md) | Volume metrics collection |
-| [0009](https://github.com/terrylica/binance-futures-availability/blob/main/docs/architecture/decisions/0009-github-actions-automation.md) | GitHub Actions automation |
-| [0010](https://github.com/terrylica/binance-futures-availability/blob/main/docs/architecture/decisions/0010-dynamic-symbol-discovery.md) | Dynamic symbol discovery |
-| [0013](https://github.com/terrylica/binance-futures-availability/blob/main/docs/architecture/decisions/0013-volume-rankings-timeseries.md) | Volume rankings archive |
+| ADR                                                                                                                                          | Decision                  |
+| -------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| [0001](https://github.com/terrylica/binance-futures-availability/blob/main/docs/architecture/decisions/0001-schema-design-daily-table.md)    | Daily table pattern       |
+| [0002](https://github.com/terrylica/binance-futures-availability/blob/main/docs/architecture/decisions/0002-storage-technology-duckdb.md)    | DuckDB storage            |
+| [0003](https://github.com/terrylica/binance-futures-availability/blob/main/docs/architecture/decisions/0003-error-handling-strict-policy.md) | Strict error handling     |
+| [0005](https://github.com/terrylica/binance-futures-availability/blob/main/docs/architecture/decisions/0005-aws-cli-bulk-operations.md)      | AWS CLI bulk operations   |
+| [0007](https://github.com/terrylica/binance-futures-availability/blob/main/docs/architecture/decisions/0007-trading-volume-metrics.md)       | Volume metrics collection |
+| [0009](https://github.com/terrylica/binance-futures-availability/blob/main/docs/architecture/decisions/0009-github-actions-automation.md)    | GitHub Actions automation |
+| [0010](https://github.com/terrylica/binance-futures-availability/blob/main/docs/architecture/decisions/0010-dynamic-symbol-discovery.md)     | Dynamic symbol discovery  |
+| [0013](https://github.com/terrylica/binance-futures-availability/blob/main/docs/architecture/decisions/0013-volume-rankings-timeseries.md)   | Volume rankings archive   |
 
 ## Documentation
 

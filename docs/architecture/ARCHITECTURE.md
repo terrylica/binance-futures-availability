@@ -167,7 +167,7 @@ src/binance_futures_availability/
 │  │                                                      │  │
 │  │  Environment:                                        │  │
 │  │  - ubuntu-latest                                     │  │
-│  │  - Python 3.12                                       │  │
+│  │  - Python 3.11+                                      │  │
 │  │  - AWS CLI (pre-installed)                           │  │
 │  │  - uv package manager                                │  │
 │  │                                                      │  │

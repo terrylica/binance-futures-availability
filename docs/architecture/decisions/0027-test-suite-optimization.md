@@ -8,13 +8,13 @@
 
 Comprehensive test audit of 13 test files (2432 lines) identified optimization opportunities:
 
-| Category | Count | Lines | Impact |
-| -------- | ----- | ----- | ------ |
-| Redundant Unicode tests | 3 locations | ~85 | Maintenance burden |
-| Redundant UPSERT tests | 3 locations | ~130 | Conceptual confusion |
-| Excessive parsing tests | 6 tests | ~50 | Low-value coverage |
-| Missing CLI tests | 0 tests | 0 | Coverage gap |
-| Missing edge cases | 0 tests | 0 | Coverage gap |
+| Category                | Count       | Lines | Impact               |
+| ----------------------- | ----------- | ----- | -------------------- |
+| Redundant Unicode tests | 3 locations | ~85   | Maintenance burden   |
+| Redundant UPSERT tests  | 3 locations | ~130  | Conceptual confusion |
+| Excessive parsing tests | 6 tests     | ~50   | Low-value coverage   |
+| Missing CLI tests       | 0 tests     | 0     | Coverage gap         |
+| Missing edge cases      | 0 tests     | 0     | Coverage gap         |
 
 Key issues:
 
