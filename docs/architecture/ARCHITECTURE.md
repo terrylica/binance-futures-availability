@@ -45,12 +45,12 @@ The binance-futures-availability system tracks daily availability of USDT perpet
                               │
           ┌───────────────────┼───────────────────┐
           │                   │                   │
-    ┌─────▼─────┐       ┌─────▼─────┐       ┌─────▼─────┐
-    │VALIDATION │       │ RANKINGS  │       │  RELEASE  │
-    │           │       │           │       │           │
-    │Transparency│      │ Parquet   │       │ .duckdb   │
-    │  -first   │       │ 7d/30d    │       │ .gz       │
-    └─────┬─────┘       └─────┬─────┘       └─────┬─────┘
+    ┌───────▼───────┐   ┌───────▼───────┐   ┌───────▼───────┐
+    │  VALIDATION   │   │   RANKINGS    │   │    RELEASE    │
+    │               │   │               │   │               │
+    │ Transparency  │   │    Parquet    │   │   .duckdb     │
+    │    -first     │   │    7d/30d     │   │   .gz         │
+    └───────┬───────┘   └───────┬───────┘   └───────┬───────┘
           │                   │                   │
           └───────────────────┼───────────────────┘
                               │
@@ -64,16 +64,16 @@ The binance-futures-availability system tracks daily availability of USDT perpet
 
 **Data Flow Summary**:
 
-| Stage | Input | Output | ADR |
-|-------|-------|--------|-----|
-| Discovery | S3 XML API | symbols.json | ADR-0010 |
-| Collection | HTTP HEAD / AWS CLI | availability records | ADR-0005 |
-| Volume | 1d klines ZIP | OHLCV metrics | ADR-0007 |
-| Storage | Records | DuckDB table | ADR-0002 |
-| Validation | Database | Warnings (info only) | ADR-0003 |
-| Rankings | Database | Parquet snapshots | ADR-0013 |
-| Release | Database | GitHub Release | ADR-0009 |
-| Notification | Status | Pushover alert | ADR-0022 |
+| Stage        | Input               | Output               | ADR      |
+| ------------ | ------------------- | -------------------- | -------- |
+| Discovery    | S3 XML API          | symbols.json         | ADR-0010 |
+| Collection   | HTTP HEAD / AWS CLI | availability records | ADR-0005 |
+| Volume       | 1d klines ZIP       | OHLCV metrics        | ADR-0007 |
+| Storage      | Records             | DuckDB table         | ADR-0002 |
+| Validation   | Database            | Warnings (info only) | ADR-0003 |
+| Rankings     | Database            | Parquet snapshots    | ADR-0013 |
+| Release      | Database            | GitHub Release       | ADR-0009 |
+| Notification | Status              | Pushover alert       | ADR-0022 |
 
 ## Runtime Control Flow
 
@@ -97,12 +97,12 @@ The binance-futures-availability system tracks daily availability of USDT perpet
 
 **Execution Modes**:
 
-| Mode | Trigger | Duration | Use Case |
-|------|---------|----------|----------|
-| Schedule | Cron 3AM UTC | ~3-5 min | Daily automated updates |
-| Manual | workflow_dispatch | Variable | Custom lookback, testing |
-| CLI | binance-futures-* | <1 sec | Queries, debugging |
-| Backfill | One-time script | ~25 min | Initial setup, gap repair |
+| Mode     | Trigger            | Duration | Use Case                  |
+| -------- | ------------------ | -------- | ------------------------- |
+| Schedule | Cron 3AM UTC       | ~3-5 min | Daily automated updates   |
+| Manual   | workflow_dispatch  | Variable | Custom lookback, testing  |
+| CLI      | binance-futures-\* | <1 sec   | Queries, debugging        |
+| Backfill | One-time script    | ~25 min  | Initial setup, gap repair |
 
 ## Component Architecture
 
@@ -143,14 +143,14 @@ src/binance_futures_availability/
 
 **Module Responsibilities**:
 
-| Module | Responsibility | Key Classes |
-|--------|----------------|-------------|
-| database/ | DuckDB storage layer | `AvailabilityDatabase`, `create_schema()` |
-| probing/ | S3 data collection | `BatchProber`, `AWSS3Lister` |
-| queries/ | Data access layer | `SnapshotQueries`, `TimelineQueries` |
-| validation/ | Data quality checks | `ContinuityValidator`, `CompletenessValidator` |
-| cli/ | Command-line interface | `main()`, subcommands |
-| config/ | Symbol configuration | `load_symbols()` |
+| Module      | Responsibility         | Key Classes                                    |
+| ----------- | ---------------------- | ---------------------------------------------- |
+| database/   | DuckDB storage layer   | `AvailabilityDatabase`, `create_schema()`      |
+| probing/    | S3 data collection     | `BatchProber`, `AWSS3Lister`                   |
+| queries/    | Data access layer      | `SnapshotQueries`, `TimelineQueries`           |
+| validation/ | Data quality checks    | `ContinuityValidator`, `CompletenessValidator` |
+| cli/        | Command-line interface | `main()`, subcommands                          |
+| config/     | Symbol configuration   | `load_symbols()`                               |
 
 ## Deployment Topology
 
@@ -199,13 +199,13 @@ src/binance_futures_availability/
 
 **Infrastructure Components**:
 
-| Component | Purpose | SLA |
-|-----------|---------|-----|
-| GitHub Actions | Workflow execution | 99.9% |
-| GitHub Releases | Asset distribution | 99.9% |
-| Binance Vision S3 | Data source | Best-effort |
-| Pushover API | Notifications | 99.9% |
-| Doppler | Secrets management | 99.99% |
+| Component         | Purpose            | SLA         |
+| ----------------- | ------------------ | ----------- |
+| GitHub Actions    | Workflow execution | 99.9%       |
+| GitHub Releases   | Asset distribution | 99.9%       |
+| Binance Vision S3 | Data source        | Best-effort |
+| Pushover API      | Notifications      | 99.9%       |
+| Doppler           | Secrets management | 99.99%      |
 
 ## Related Documentation
 
