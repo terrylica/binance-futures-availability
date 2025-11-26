@@ -12,15 +12,15 @@ The project has **solid CI/CD foundations** with GitHub Actions automation, sema
 
 ### Current State Assessment
 
-| Dimension                 | Score | Status                                          |
-| ------------------------- | ----- | ----------------------------------------------- |
-| **Workflow Automation**   | 8/10  | Excellent - Daily updates + manual triggers     |
+| Dimension                 | Score | Status                                                |
+| ------------------------- | ----- | ----------------------------------------------------- |
+| **Workflow Automation**   | 8/10  | Excellent - Daily updates + manual triggers           |
 | **Testing Coverage**      | 7/10  | Good - 80%+ coverage (E2E tests removed per ADR-0024) |
-| **Dependency Management** | 5/10  | Weak - No automated updates, pin latest         |
-| **Code Quality**          | 8/10  | Good - ruff linting configured                  |
-| **Observability**         | 6/10  | Moderate - Basic logging, no alerting           |
-| **Documentation**         | 9/10  | Excellent - ADRs, schemas, comprehensive guides |
-| **Security**              | 6/10  | Moderate - No SBOM, vulnerability scanning      |
+| **Dependency Management** | 5/10  | Weak - No automated updates, pin latest               |
+| **Code Quality**          | 8/10  | Good - ruff linting configured                        |
+| **Observability**         | 6/10  | Moderate - Basic logging, no alerting                 |
+| **Documentation**         | 9/10  | Excellent - ADRs, schemas, comprehensive guides       |
+| **Security**              | 6/10  | Moderate - No SBOM, vulnerability scanning            |
 
 **Overall**: **7.1/10 - Solid foundation, ready for maturation**
 
@@ -168,7 +168,7 @@ run = "ruff format src/ tests/"
 
 **Current state**:
 
-- ADR-0016 approved Playwright 1.56+ for E2E testing
+- ~~ADR-0016 approved Playwright 1.56+ for E2E testing~~ (deleted per ADR-0024)
 - E2E tests exist (`tests/e2e/test_clickhouse*.py`)
 - Not integrated into any workflow
 - Manual-only execution

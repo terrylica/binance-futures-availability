@@ -1,6 +1,6 @@
 # ADR-0011: 20-Day Lookback for Data Reliability
 
-**Status**: Approved
+**Status**: Accepted
 
 **Date**: 2025-11-17
 

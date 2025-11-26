@@ -192,11 +192,13 @@ See `docs/plans/0007-trading-volume-metrics/plan.yaml` for detailed implementati
 ### Actual Approach
 
 **Schema Drift Fix** (not migration):
+
 - Updated `schema.py` CREATE TABLE to include 9 volume columns (single source of truth)
 - Reset databases to fresh state (no ALTER TABLE needed)
 - Rationale: Idempotent, zero risk, faster than migration system
 
 **Files Modified**:
+
 1. `src/binance_futures_availability/database/schema.py` - Added 9 DOUBLE columns, idx_quote_volume_date index
 2. `src/binance_futures_availability/database/availability_db.py` - Extended insert_batch() SQL to 17 columns
 3. `scripts/operations/backfill.py` - Added --collect-volume flag, volume merge logic, progress logging
@@ -207,12 +209,14 @@ See `docs/plans/0007-trading-volume-metrics/plan.yaml` for detailed implementati
 ### Actual Performance
 
 **Test Backfill** (5 symbols × 31 days):
+
 - Time: 2 minutes
 - Records: 155 (100% availability)
 - Volume coverage: 95% (148/155)
 - BTCUSDT sample: $27-40B daily volume, 4.5-6.9M trades
 
 **Full Historical Backfill** (715 symbols × 2,252 days):
+
 - Deferred to separate operation (long-running, 1.6M records)
 - Estimated: 30-60 minutes with optimal worker count
 

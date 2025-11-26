@@ -149,7 +149,7 @@ except RuntimeError as e:
 - Probing (S3 Vision): 87%
 - Queries: 100%
 - Validation: High (test_continuity, test_completeness)
-- E2E tests: Playwright 1.56+ with screenshot capture (ADR-0016)
+- ~~E2E tests: Playwright 1.56+ with screenshot capture (ADR-0016)~~ (removed per ADR-0024)
 
 **Test Categories**:
 

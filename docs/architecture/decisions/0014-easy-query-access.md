@@ -1,6 +1,6 @@
 # ADR-0014: Easy Query Access to Volume Rankings
 
-**Status**: Proposed
+**Status**: Accepted
 **Date**: 2025-11-17
 **Deciders**: Development Team
 **Related**: [ADR-0013: Volume Rankings Time-Series Archive](0013-volume-rankings-timeseries.md)

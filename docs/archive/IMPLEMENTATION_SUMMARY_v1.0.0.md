@@ -38,7 +38,7 @@ docs/
 
 **Created 2 New ADRs**:
 
-- 0016-playwright-e2e-testing.md (previously created)
+- 0016-playwright-e2e-testing.md (deleted per ADR-0024)
 - 0017-documentation-structure-migration.md (this migration)
 
 **Total**: 17 ADRs in new standardized location

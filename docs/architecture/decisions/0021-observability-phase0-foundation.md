@@ -1,6 +1,6 @@
 # ADR-0021: Observability Phase 0 Foundation
 
-**Status**: Accepted
+**Status**: Deferred
 
 **Date**: 2025-11-20
 

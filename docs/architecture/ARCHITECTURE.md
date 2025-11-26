@@ -78,8 +78,8 @@ The binance-futures-availability system tracks daily availability of USDT perpet
 ## Runtime Control Flow
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     TRIGGER SOURCES                         │
+┌────────────────────────────────────────────────────────────┐
+│                    TRIGGER SOURCES                         │
 ├──────────────┬──────────────┬──────────────┬───────────────┤
 │   SCHEDULE   │    MANUAL    │     CLI      │   BACKFILL    │
 │  (3AM UTC)   │  (dispatch)  │   (query)    │  (one-time)   │
@@ -115,13 +115,14 @@ src/binance_futures_availability/
 │
 ├── probing/
 │   ├── batch_prober.py       # Parallel HTTP HEAD (150 workers)
-│   ├── aws_lister.py         # AWS CLI bulk listing
+│   ├── aws_s3_lister.py      # AWS CLI bulk listing
 │   ├── s3_vision.py          # S3 URL construction
-│   └── symbol_discovery.py   # S3 XML enumeration
+│   ├── s3_symbol_discovery.py # S3 XML enumeration (current)
+│   └── symbol_discovery.py   # Legacy discovery (deprecated)
 │
 ├── queries/
-│   ├── snapshot.py           # Point-in-time queries (<1ms)
-│   ├── timeline.py           # Symbol history (<10ms)
+│   ├── snapshots.py          # Point-in-time queries (<1ms)
+│   ├── timelines.py          # Symbol history (<10ms)
 │   ├── analytics.py          # Aggregations
 │   └── volume.py             # OHLCV metrics
 │
@@ -132,7 +133,7 @@ src/binance_futures_availability/
 │
 ├── cli/
 │   ├── main.py               # Entry point
-│   └── commands.py           # Subcommands
+│   └── query.py              # Query subcommands
 │
 ├── config/
 │   └── symbol_loader.py      # Symbol list management

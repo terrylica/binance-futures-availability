@@ -270,9 +270,11 @@ Track execution here as work progresses:
 ### 2025-11-25 [Implementation] - All Phases Complete
 
 **Phase 1: Security Fix**
+
 - ✅ Fixed ~/.zshrc permissions: 644 → 600
 
 **Phase 2: Migrate Secrets**
+
 - ✅ Retrieved 3 GitHub tokens from 1Password
 - ✅ Added to Doppler notifications/prd:
   - GH_TOKEN_SEMANTIC_RELEASE
@@ -281,19 +283,23 @@ Track execution here as work progresses:
 - ✅ Verified: 8 secrets now in Doppler
 
 **Phase 3: Update Local Environment**
+
 - ✅ Created Doppler service token: "Claude Code Automation"
 - ✅ Updated ~/.zshrc: removed 1Password config, added Doppler token
 - ✅ Validated: `doppler secrets get` works without browser auth
 
 **Phase 4: GitHub Actions Sync**
+
 - ⚠️ New secrets need manual Doppler dashboard sync trigger
 - Existing 5 secrets confirmed synced
 
 **Phase 5: Cleanup 1Password**
+
 - ✅ Deleted 3 automation items from "GitHub Tokens" vault
 - ✅ Kept service account token for personal use
 
 **Phase 6: Documentation**
+
 - ✅ Updated CLAUDE.md with ADR-0022 and ADR-0023 entries
 - ✅ Updated version to v1.3.0
 - ✅ Updated plan progress log

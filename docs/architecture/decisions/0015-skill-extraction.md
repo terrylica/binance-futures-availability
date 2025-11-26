@@ -1,6 +1,6 @@
 # ADR-0015: Extract Validated Workflows into Atomic Skills
 
-**Status**: Proposed
+**Status**: Accepted
 **Date**: 2025-11-17
 **Deciders**: Development Team
 **Related**: [ADR-0013: Volume Rankings Archive](0013-volume-rankings-timeseries.md), [ADR-0014: Easy Query Access](0014-easy-query-access.md)

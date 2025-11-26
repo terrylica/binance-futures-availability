@@ -232,7 +232,7 @@ ruff>=0.14.5,
 
 - Supports Chromium 141, WebKit 26, Firefox 142
 - Python 3.9+ support (you have 3.12)
-- Part of E2E testing strategy (ADR-0016)
+- ~~Part of E2E testing strategy (ADR-0016)~~ (removed per ADR-0024)
 
 #### Recommendation
 
@@ -700,7 +700,7 @@ ruff>=0.14.5                  # Allow all 0.x (Astral maintains backward compat)
 - [ADR-0005: AWS CLI for Bulk Operations](../../architecture/decisions/0005-aws-cli-bulk-operations.md)
 - [ADR-0009: GitHub Actions Automation](../../architecture/decisions/0009-github-actions-automation.md)
 - [ADR-0013: Volume Rankings Timeseries](../../architecture/decisions/0013-volume-rankings-timeseries.md)
-- [ADR-0016: Playwright E2E Testing](../../architecture/decisions/0016-playwright-e2e-testing.md)
+- ~~[ADR-0016: Playwright E2E Testing](../../architecture/decisions/0016-playwright-e2e-testing.md)~~ (deleted per ADR-0024)
 
 ---
 

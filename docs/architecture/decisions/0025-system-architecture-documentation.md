@@ -14,6 +14,7 @@ The binance-futures-availability project lacks a comprehensive architectural vis
 4. `docs/benchmarks/worker-count-benchmark-2025-11-15.md` (L21-30) - Performance chart
 
 No single document provides:
+
 - End-to-end data flow visualization (S3 → DuckDB → Distribution)
 - Runtime control flow modes (scheduled vs manual vs CLI)
 - Component relationships and integration points

@@ -3,7 +3,7 @@
 **Version**: v1.3.0
 **Created**: 2025-11-12
 **Updated**: 2025-11-25
-**Status**: Production-ready (GitHub Actions automation enabled, infrastructure v1.2.0)
+**Status**: Production-ready (GitHub Actions automation enabled, infrastructure v1.3.0)
 **Pattern**: Follows `ValidationStorage` pattern from gapless-crypto-data
 **Purpose**: Track daily availability of ALL USDT perpetual futures from Binance Vision (2019-09-25 to present)
 
@@ -153,6 +153,12 @@ All architectural decisions documented as MADRs in `docs/architecture/decisions/
 **Status**: ✅ ACCEPTED (Implemented 2025-11-25)
 **Decision**: Create comprehensive architecture documentation with ASCII diagrams
 **Implementation**: `docs/architecture/ARCHITECTURE.md` with data flow, runtime, component, and deployment diagrams
+
+### [0026: Documentation Rectification](docs/architecture/decisions/0026-documentation-rectification.md)
+
+**Status**: ✅ ACCEPTED (Implemented 2025-11-25)
+**Decision**: Rectify 47 documentation issues across 6 severity levels
+**Implementation**: Fixed critical issues (broken class references, badges, platform syntax), removed stale ADR-0016 references, synchronized documentation with codebase
 
 ## Core Principles
 
@@ -318,15 +324,16 @@ pytest --cov=src/binance_futures_availability --cov-report=html
 
 ### Required
 
-- **duckdb>=1.0.0**: Columnar database engine
-- **urllib3>=2.0.0**: HTTP client for S3 HEAD requests
+- **duckdb>=1.4.0,<2.0.0**: Columnar database engine (ADR-0018)
+- **urllib3>=2.5.0,<3.0.0**: HTTP client for S3 HEAD requests
+- **pyarrow>=22.0.0,<23.0.0**: Parquet support for volume rankings
 
 ### Development
 
-- **pytest>=8.0.0**: Testing framework
+- **pytest>=8.4.0**: Testing framework
 - **pytest-cov>=5.0.0**: Coverage reporting
 - **pytest-mock>=3.14.0**: Mocking for unit tests
-- **ruff>=0.4.0**: Linting and formatting
+- **ruff>=0.14.5**: Linting and formatting (ADR-0018)
 
 ## Quick Start
 
@@ -378,7 +385,7 @@ uv run binance-futures-availability query snapshot 2024-01-15
 uv run binance-futures-availability query timeline BTCUSDT
 
 # Python API
-from binance_futures_availability.queries import AvailabilityQueries
+from binance_futures_availability.queries import SnapshotQueries
 ```
 
 **Volume metrics queries**: See ADR-0006 and QUERY_EXAMPLES.md
@@ -459,9 +466,12 @@ binance-futures-availability/
 ├── pyproject.toml                 # Package configuration
 │
 ├── docs/
-│   ├── decisions/                 # MADR decision records
+│   ├── architecture/
+│   │   ├── decisions/             # MADR decision records (25 ADRs)
+│   │   └── ARCHITECTURE.md        # System architecture diagrams
+│   ├── development/
+│   │   └── plan/                  # Implementation plans (Google Design Doc format)
 │   ├── schema/                    # JSON Schema specifications
-│   ├── plans/                     # SSoT implementation plans
 │   ├── guides/                    # User guides
 │   └── operations/                # Operations documentation
 │
@@ -540,11 +550,23 @@ When making changes:
 
 ## Version History
 
+### v1.3.0 (2025-11-25)
+
+- Trading volume metrics (ADR-0007): 9 OHLCV columns from Binance Vision 1d klines
+- Pushover notifications (ADR-0022): Instant workflow status alerts
+- Doppler secrets consolidation (ADR-0023): Centralized secret management
+- ClickHouse cleanup (ADR-0024): Removed exploratory E2E tests
+- System architecture documentation (ADR-0025): Comprehensive ASCII diagrams
+
+### v1.2.0 (2025-11-20)
+
+- Technology stack upgrade (ADR-0018): DuckDB 1.4, urllib3 2.5, pyarrow 22
+- CI/CD maturity improvements (ADR-0020): Dependabot, ruff linting, coverage enforcement
+
 ### v1.0.0 (2025-11-12)
 
-- Initial implementation
+- Initial implementation with 15 MADRs (ADR-0001 through ADR-0015)
 - Historical backfill (2019-09-25 to present)
-- Automated daily updates (APScheduler, later migrated to GitHub Actions per ADR-0009)
-- All 6 MADRs documented and approved
+- GitHub Actions automation (ADR-0009, supersedes APScheduler ADR-0004)
 - 80%+ test coverage achieved
 - Volume metrics collection (file_size_bytes, last_modified)

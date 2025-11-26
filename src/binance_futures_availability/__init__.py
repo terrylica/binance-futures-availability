@@ -1,15 +1,19 @@
 """
 Binance Futures Availability Database
 
-Track daily availability of 708 USDT perpetual futures from Binance Vision S3 repository.
+Track daily availability of USDT perpetual futures from Binance Vision S3 repository.
+Symbol count is dynamic (~327 currently) as instruments are listed/delisted over time.
 
 Quick Start:
-    >>> from binance_futures_availability.queries import AvailabilityQueries
-    >>> q = AvailabilityQueries()
+    >>> from binance_futures_availability.queries import SnapshotQueries
+    >>> q = SnapshotQueries()
     >>> symbols = q.get_available_symbols_on_date('2024-01-15')
-    >>> timeline = q.get_symbol_availability_timeline('BTCUSDT')
 
-For more information, see: https://github.com/terryli/binance-futures-availability
+    >>> from binance_futures_availability.queries import TimelineQueries
+    >>> t = TimelineQueries()
+    >>> timeline = t.get_symbol_availability_timeline('BTCUSDT')
+
+For more information, see: https://github.com/terrylica/binance-futures-availability
 """
 
 from binance_futures_availability.__version__ import __version__

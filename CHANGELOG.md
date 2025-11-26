@@ -2,13 +2,15 @@
 
 ### ⚠ BREAKING CHANGES
 
-* **volume:** Database schema updated from 8 to 17 columns. Users must reset local databases or re-download from GitHub Releases.
+- **volume:** Database schema updated from 8 to 17 columns. Users must reset local databases or re-download from GitHub Releases.
 
 Implements ADR-0007
 See: docs/development/plan/0007-trading-volume-metrics/plan.md
-* **notifications:** None (additive feature only)
+
+- **notifications:** None (additive feature only)
 
 Files:
+
 - ADR: docs/architecture/decisions/0022-pushover-workflow-notifications.md
 - Plan: docs/development/plan/0022-pushover-workflow-notifications/plan.md
 - Workflow: .github/workflows/update-database.yml
@@ -16,29 +18,29 @@ Files:
 
 Refs: ADR-0022, ADR-0003 (error handling), ADR-0009 (GitHub Actions)
 SLOs: Availability (instant detection), Observability (real-time visibility),
-      Maintainability (centralized secrets), Correctness (validated stats)
+Maintainability (centralized secrets), Correctness (validated stats)
 
 ### Features
 
-* implement transparency-first validation approach (never fail workflows) ([a289705](https://github.com/terrylica/binance-futures-availability/commit/a28970588af69c27f27ccc8231d69b527ca58484))
-* **notifications:** add Pushover workflow notifications (ADR-0022) ([1ce5e2d](https://github.com/terrylica/binance-futures-availability/commit/1ce5e2d79ea5a207479a7c7196b7a60c1a05d8d6))
-* **validation:** add performance validation script for ADR-0019 ([5838327](https://github.com/terrylica/binance-futures-availability/commit/5838327e73838b2c3bd2c5416b123ce2e3302e09))
-* **volume:** implement ADR-0007 volume metrics collection ([e722775](https://github.com/terrylica/binance-futures-availability/commit/e7227750542381e56c04fcec64afea5b1b20b8c3))
-* **workflow:** implement ADR-0011 Phase 3 - 20-day lookback for production ([da2bf10](https://github.com/terrylica/binance-futures-availability/commit/da2bf10b1feb537721d2513f565d2fbd7078759a))
+- implement transparency-first validation approach (never fail workflows) ([a289705](https://github.com/terrylica/binance-futures-availability/commit/a28970588af69c27f27ccc8231d69b527ca58484))
+- **notifications:** add Pushover workflow notifications (ADR-0022) ([1ce5e2d](https://github.com/terrylica/binance-futures-availability/commit/1ce5e2d79ea5a207479a7c7196b7a60c1a05d8d6))
+- **validation:** add performance validation script for ADR-0019 ([5838327](https://github.com/terrylica/binance-futures-availability/commit/5838327e73838b2c3bd2c5416b123ce2e3302e09))
+- **volume:** implement ADR-0007 volume metrics collection ([e722775](https://github.com/terrylica/binance-futures-availability/commit/e7227750542381e56c04fcec64afea5b1b20b8c3))
+- **workflow:** implement ADR-0011 Phase 3 - 20-day lookback for production ([da2bf10](https://github.com/terrylica/binance-futures-availability/commit/da2bf10b1feb537721d2513f565d2fbd7078759a))
 
 ### Bug Fixes
 
-* aggressive test pruning for CI - remove coverage requirement ([c40131b](https://github.com/terrylica/binance-futures-availability/commit/c40131b52a0671ef0c2fca2288d335fc9445432d)), closes [#7](https://github.com/terrylica/binance-futures-availability/issues/7) [#8](https://github.com/terrylica/binance-futures-availability/issues/8) [#9](https://github.com/terrylica/binance-futures-availability/issues/9) [#6](https://github.com/terrylica/binance-futures-availability/issues/6) [#5](https://github.com/terrylica/binance-futures-availability/issues/5) [#4](https://github.com/terrylica/binance-futures-availability/issues/4)
-* **ci:** resolve JQ parsing and materialized view conflicts in auto-backfill ([51fe347](https://github.com/terrylica/binance-futures-availability/commit/51fe347634c68a3597c0d61764dcf8395caa42de))
-* **ci:** resolve ruff linting errors blocking daily scheduled updates ([76b3c3a](https://github.com/terrylica/binance-futures-availability/commit/76b3c3a5998e59285fc16131a6780e5f3e1e8e11))
-* **ci:** use uv sync --all-extras to install dev dependencies in isolated environment ([280b9a8](https://github.com/terrylica/binance-futures-availability/commit/280b9a8b22b7a832665ffd200fec7003fd8e69fd))
-* E402 linting errors - move pytestmark after imports ([0b44e5e](https://github.com/terrylica/binance-futures-availability/commit/0b44e5e221cfe43254e2474ee03aeb4f96b95a40)), closes [#10](https://github.com/terrylica/binance-futures-availability/issues/10)
-* mark test_clickhouse_http as integration test ([f44cbad](https://github.com/terrylica/binance-futures-availability/commit/f44cbadf50bf2905d812a9ad664f587ab2bc6d4d)), closes [#6](https://github.com/terrylica/binance-futures-availability/issues/6)
-* **tests:** mark auto_backfill tests as integration to exclude from CI ([92a2e0c](https://github.com/terrylica/binance-futures-availability/commit/92a2e0cce5cfad1639843ce45faab4b1f879cfb9))
-* **tests:** mark UI tests as integration to exclude from CI ([cbd2ff7](https://github.com/terrylica/binance-futures-availability/commit/cbd2ff72a8e3796647c751ba7988c9f47a74b2a8))
-* **validation:** add T+2 buffer to completeness check to prevent S3 publishing delay false positives ([fd8cb0e](https://github.com/terrylica/binance-futures-availability/commit/fd8cb0e37cbde1b81023aeeadd3f0c309d05ef45))
-* **validation:** increase buffer from T+2 to T+3 for S3 publishing variability ([34fb091](https://github.com/terrylica/binance-futures-availability/commit/34fb091a87880d660f3a219f0023583077df0bd4))
-* **workflow:** use PUSHOVER_APP_TOKEN to match Doppler secret name ([fa64ef6](https://github.com/terrylica/binance-futures-availability/commit/fa64ef6076d6b18214a9dcb4504719bc872c7899))
+- aggressive test pruning for CI - remove coverage requirement ([c40131b](https://github.com/terrylica/binance-futures-availability/commit/c40131b52a0671ef0c2fca2288d335fc9445432d)), closes [#7](https://github.com/terrylica/binance-futures-availability/issues/7) [#8](https://github.com/terrylica/binance-futures-availability/issues/8) [#9](https://github.com/terrylica/binance-futures-availability/issues/9) [#6](https://github.com/terrylica/binance-futures-availability/issues/6) [#5](https://github.com/terrylica/binance-futures-availability/issues/5) [#4](https://github.com/terrylica/binance-futures-availability/issues/4)
+- **ci:** resolve JQ parsing and materialized view conflicts in auto-backfill ([51fe347](https://github.com/terrylica/binance-futures-availability/commit/51fe347634c68a3597c0d61764dcf8395caa42de))
+- **ci:** resolve ruff linting errors blocking daily scheduled updates ([76b3c3a](https://github.com/terrylica/binance-futures-availability/commit/76b3c3a5998e59285fc16131a6780e5f3e1e8e11))
+- **ci:** use uv sync --all-extras to install dev dependencies in isolated environment ([280b9a8](https://github.com/terrylica/binance-futures-availability/commit/280b9a8b22b7a832665ffd200fec7003fd8e69fd))
+- E402 linting errors - move pytestmark after imports ([0b44e5e](https://github.com/terrylica/binance-futures-availability/commit/0b44e5e221cfe43254e2474ee03aeb4f96b95a40)), closes [#10](https://github.com/terrylica/binance-futures-availability/issues/10)
+- mark test_clickhouse_http as integration test ([f44cbad](https://github.com/terrylica/binance-futures-availability/commit/f44cbadf50bf2905d812a9ad664f587ab2bc6d4d)), closes [#6](https://github.com/terrylica/binance-futures-availability/issues/6)
+- **tests:** mark auto_backfill tests as integration to exclude from CI ([92a2e0c](https://github.com/terrylica/binance-futures-availability/commit/92a2e0cce5cfad1639843ce45faab4b1f879cfb9))
+- **tests:** mark UI tests as integration to exclude from CI ([cbd2ff7](https://github.com/terrylica/binance-futures-availability/commit/cbd2ff72a8e3796647c751ba7988c9f47a74b2a8))
+- **validation:** add T+2 buffer to completeness check to prevent S3 publishing delay false positives ([fd8cb0e](https://github.com/terrylica/binance-futures-availability/commit/fd8cb0e37cbde1b81023aeeadd3f0c309d05ef45))
+- **validation:** increase buffer from T+2 to T+3 for S3 publishing variability ([34fb091](https://github.com/terrylica/binance-futures-availability/commit/34fb091a87880d660f3a219f0023583077df0bd4))
+- **workflow:** use PUSHOVER_APP_TOKEN to match Doppler secret name ([fa64ef6](https://github.com/terrylica/binance-futures-availability/commit/fa64ef6076d6b18214a9dcb4504719bc872c7899))
 
 ## [Unreleased]
 
@@ -181,7 +183,7 @@ ADR-0018, ADR-0019, ADR-0020, ADR-0021
   docs/plans/ to docs/development/plan/. See ADR-0017 for migration
   details and deprecation notices.
 
-Refs: ADR-0017, ADR-0016
+Refs: ADR-0017
 
 - **lookback:** None (default LOOKBACK_DAYS=1 preserves current behavior)
 

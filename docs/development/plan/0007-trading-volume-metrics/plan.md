@@ -541,12 +541,14 @@ grep -r "ADR-0007" docs/ CLAUDE.md README.md
 ### 2025-11-24 (Implementation)
 
 **15:05-15:30**: Phases 1-2 Complete
+
 - Fixed schema drift: added 9 volume columns to schema.py CREATE TABLE
 - Updated schema.json (17 columns, DOUBLE type, volume index)
 - Updated test expectations (test_schema.py: 8→17 columns)
 - Reset database: backup created, fresh DB with 17 columns verified
 
 **15:30-15:28**: Phases 3-5 Complete
+
 - Extended insert_batch() SQL to include 9 volume columns
 - Modified backfill.py: added --collect-volume flag, volume merge logic, progress logging
 - Validation test passed: insert with/without volume works correctly

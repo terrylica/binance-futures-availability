@@ -8,7 +8,6 @@ _Symbol count is dynamic (~327 currently) - we discover and track all perpetual 
 [![Coverage](https://img.shields.io/badge/coverage-80%25-green.svg)]()
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)]()
 [![Update Database](https://github.com/terrylica/binance-futures-availability/actions/workflows/update-database.yml/badge.svg)](https://github.com/terrylica/binance-futures-availability/actions/workflows/update-database.yml)
-[![Release](https://github.com/terrylica/binance-futures-availability/actions/workflows/release.yml/badge.svg)](https://github.com/terrylica/binance-futures-availability/actions/workflows/release.yml)
 [![PyPI version](https://badge.fury.io/py/binance-futures-availability.svg)](https://badge.fury.io/py/binance-futures-availability)
 
 ## Overview
@@ -38,7 +37,7 @@ Standalone DuckDB database tracking historical availability of Binance USDT-Marg
 gh workflow run update-database.yml \
   --field update_mode=backfill \
   --field start_date=2019-09-25 \
-  --field end_date=$(date -d "yesterday" +%Y-%m-%d)
+  --field end_date=$(date +%Y-%m-%d)
 
 # Monitor progress (estimated 25-60 minutes)
 gh run watch
@@ -104,8 +103,8 @@ uv run binance-futures-availability query range 2024-01-01 2024-03-31
 
 # Python API
 python -c "
-from binance_futures_availability.queries import AvailabilityQueries
-q = AvailabilityQueries()
+from binance_futures_availability.queries import SnapshotQueries
+q = SnapshotQueries()
 print(q.get_available_symbols_on_date('2024-01-15'))
 "
 ```

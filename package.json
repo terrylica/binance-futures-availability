@@ -14,7 +14,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/terrylica/binance-futures-availability.git"
+    "url": "git+ssh://git@github.com/terrylica/binance-futures-availability.git"
   },
   "keywords": [
     "binance",

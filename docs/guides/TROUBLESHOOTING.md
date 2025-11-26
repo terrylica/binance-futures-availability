@@ -184,75 +184,68 @@ create_schema(db.conn)  # Idempotent, won't duplicate indexes
 db.close()
 ```
 
-## Scheduler Issues
+## GitHub Actions Issues
 
-### Problem: Scheduler fails to start
-
-**Symptoms**:
-
-```
-Address already in use
-```
-
-**Solution**:
-Check for existing scheduler process:
-
-```bash
-# Find PID
-ps aux | grep start_scheduler
-
-# Kill existing process
-kill <PID>
-
-# Or use stop command
-uv run python scripts/start_scheduler.py --stop
-
-# Restart
-uv run python scripts/start_scheduler.py
-```
-
-### Problem: Daily updates not running
+### Problem: Workflow not triggering
 
 **Diagnosis**:
-Check scheduler logs:
+Check workflow status:
 
 ```bash
-tail -f ~/.cache/binance-futures/scheduler.log
+# List recent workflow runs
+gh run list --workflow=update-database.yml --limit=5
+
+# Check workflow schedule
+gh workflow view update-database.yml
 ```
 
 **Solution**:
 
-- Verify scheduler is running:
+- Verify cron schedule is correct (3:00 AM UTC)
+- Check if repository has GitHub Actions enabled
+- Manually trigger workflow to test:
 
 ```bash
-ps aux | grep start_scheduler
+gh workflow run update-database.yml
 ```
 
-- Check system time is in UTC (schedule is 2:00 AM UTC):
+### Problem: Workflow fails consistently
+
+**Diagnosis**:
+View failed run logs:
 
 ```bash
-date -u
+# Find failed run
+gh run list --workflow=update-database.yml --status=failure
+
+# View logs for specific run
+gh run view <run-id> --log-failed
 ```
-
-- Manually trigger update to test:
-
-```bash
-uv run binance-futures-availability update manual
-```
-
-### Problem: Scheduler stops unexpectedly
 
 **Solution**:
-Run in background with nohup:
+
+- Check for S3 Vision connectivity issues (Binance may be down)
+- Verify Doppler secrets are configured correctly
+- Check if repository secrets (DOPPLER_TOKEN) exist
+
+### Problem: Pushover notifications not received
+
+**Diagnosis**:
+Verify Doppler configuration:
 
 ```bash
-nohup uv run python scripts/start_scheduler.py > /dev/null 2>&1 &
+# Check if DOPPLER_TOKEN secret exists in GitHub
+gh secret list
 
-# Or use screen/tmux
-screen -S scheduler
-uv run python scripts/start_scheduler.py
-# Ctrl+A, D to detach
+# Test Doppler access locally
+doppler secrets get PUSHOVER_APP_TOKEN --project notifications --config prd
 ```
+
+**Solution**:
+
+1. Verify DOPPLER_TOKEN repository secret is set
+2. Check Pushover app token and user key in Doppler
+3. Check workflow logs for notification step errors
 
 ## Validation Issues
 
@@ -437,10 +430,11 @@ Or reduce parallel workers to avoid network congestion.
 
 **Still stuck?**
 
-1. **Check logs**:
+1. **Check GitHub Actions logs**:
 
    ```bash
-   tail -f ~/.cache/binance-futures/scheduler.log
+   gh run list --workflow=update-database.yml --limit=3
+   gh run view --log  # View latest run logs
    ```
 
 2. **Run validation**:

@@ -27,20 +27,24 @@ Remove all ClickHouse-related E2E tests and artifacts:
 **Consequences**:
 
 **Positive**:
+
 - Cleaner codebase focused on DuckDB storage
 - Reduced dependency footprint (3 fewer optional packages)
 - No confusion about storage technology choices
 - Faster CI/CD (no unused test infrastructure)
 
 **Negative**:
+
 - Loss of Playwright E2E testing framework (can be recreated if needed)
 - Historical test results deleted (documented in this ADR for reference)
 
 **Related Decisions**:
+
 - ADR-0002: Storage Technology - DuckDB (remains in effect)
 - ADR-0016: Playwright E2E Testing (SUPERSEDED by this ADR)
 
 **Artifacts Removed**:
+
 - `tests/e2e/` (14+ files including test_clickhouse_http.py, test_clickhouse_ui.py)
 - `docs/architecture/decisions/0016-playwright-e2e-testing.md`
 - `[e2e]` group in pyproject.toml

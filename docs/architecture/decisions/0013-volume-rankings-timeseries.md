@@ -1,6 +1,6 @@
 # ADR-0013: Volume Rankings Time-Series Archive
 
-**Status**: Proposed
+**Status**: Accepted
 **Date**: 2025-11-17
 **Deciders**: Terry Li, Claude Code
 **Related**: ADR-0007 (Trading Volume Metrics), ADR-0009 (GitHub Actions), ADR-0012 (Auto-Backfill)

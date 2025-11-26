@@ -1,6 +1,6 @@
 # ADR-0012: Auto-Backfill New Symbols
 
-**Status**: Proposed
+**Status**: Accepted
 **Date**: 2025-11-17
 **Relates-To**: ADR-0009 (GitHub Actions Automation), ADR-0011 (20-Day Lookback)
 

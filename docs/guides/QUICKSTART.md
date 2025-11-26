@@ -73,15 +73,23 @@ PASSED: 98.5% match (SLO: >95%)
 VALIDATION PASSED: All checks successful ✓
 ```
 
-### Step 3: Start Automated Updates
+### Step 3: Enable Automated Updates (GitHub Actions)
 
-Enable daily updates at 2:00 AM UTC:
+Daily updates are automated via GitHub Actions (ADR-0009). No local scheduler needed.
+
+**Setup**: Push code to GitHub and the workflow runs automatically at 3:00 AM UTC.
+
+**Manual trigger**:
 
 ```bash
-uv run python scripts/start_scheduler.py
+# Trigger update via GitHub CLI
+gh workflow run update-database.yml
+
+# Monitor progress
+gh run watch
 ```
 
-**Keep this process running** (or run in background with nohup/screen).
+See [GitHub Actions Automation](../operations/GITHUB_ACTIONS.md) for details.
 
 ## Basic Usage
 
@@ -155,11 +163,10 @@ Default database path: `~/.cache/binance-futures/availability.duckdb`
 ```
 ~/.cache/binance-futures/
 ├── availability.duckdb         # Main database
-├── scheduler.db                # APScheduler state
-├── scheduler.log               # Scheduler logs
-├── scheduler.pid               # Scheduler process ID
-└── backfill_checkpoint.txt     # Backfill progress
+└── backfill_checkpoint.txt     # Backfill progress (if used)
 ```
+
+**Note**: Automated updates run via GitHub Actions (ADR-0009), not local scheduler.
 
 ### Common Commands
 
@@ -173,8 +180,8 @@ uv run python scripts/validate_database.py
 # View recent symbol counts
 uv run binance-futures-availability query analytics summary
 
-# Stop scheduler
-uv run python scripts/start_scheduler.py --stop
+# Trigger GitHub Actions update
+gh workflow run update-database.yml
 ```
 
 ## Troubleshooting
@@ -201,14 +208,14 @@ print(f'Missing dates: {missing}')
 "
 ```
 
-**Scheduler not running?**
+**GitHub Actions workflow failing?**
 
 ```bash
-# Check process
-ps aux | grep start_scheduler
+# Check recent workflow runs
+gh run list --workflow=update-database.yml --limit=5
 
-# Check logs
-tail -f ~/.cache/binance-futures/scheduler.log
+# View logs for failed run
+gh run view <run-id> --log-failed
 ```
 
 For more detailed troubleshooting, see [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
