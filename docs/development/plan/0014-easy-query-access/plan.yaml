@@ -25,7 +25,7 @@ phases:
     implementation_notes:
       - Quick Start uses hardcoded date (avoid nested subqueries for beginners)
       - Remote query examples use actual GitHub Release URLs
-      - Prerequisites specify Python 3.12+ and pip install duckdb
+      - Prerequisites specify Python 3.11+ and pip install duckdb
       - Trade-offs documented (local vs remote queries)
       - Added 75 lines total: Quick Start (44 lines), Remote Queries (68 lines)
       - Fixed 5 GitHub URL placeholders across guide
@@ -83,7 +83,7 @@ testing:
     - test_quick_start_example: Copy-paste Quick Start code executes successfully
     - test_remote_query: DuckDB HTTP read completes in <3 seconds
     - test_url_validity: All GitHub Release URLs resolve (200 OK)
-    - test_prerequisites: pip install duckdb works on Python 3.12+
+    - test_prerequisites: pip install duckdb works on Python 3.11+
     - test_copy_paste: All code blocks are executable without modification
 
   integration_tests:
