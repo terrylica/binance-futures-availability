@@ -24,57 +24,25 @@ pytestmark = pytest.mark.integration
 
 
 class TestSymbolParsing:
-    """Test parsing of --symbols parameter (comma and space-separated)."""
+    """Test parsing of --symbols parameter (consolidated per ADR-0027)."""
 
-    def test_comma_separated_symbols(self):
-        """Comma-separated symbols should be parsed correctly."""
-        symbols_arg = "BTCUSDT,ETHUSDT,SOLUSDT"
-
-        # Parse using same logic as backfill.py
+    @pytest.mark.parametrize(
+        "symbols_arg,expected",
+        [
+            # Primary use cases
+            ("BTCUSDT,ETHUSDT,SOLUSDT", ["BTCUSDT", "ETHUSDT", "SOLUSDT"]),
+            ("BTCUSDT", ["BTCUSDT"]),
+            # Edge cases
+            ("BTCUSDT,  ETHUSDT  , SOLUSDT", ["BTCUSDT", "ETHUSDT", "SOLUSDT"]),
+            ("BTCUSDT,ETHUSDT,", ["BTCUSDT", "ETHUSDT"]),
+            ("", []),
+        ],
+        ids=["comma-separated", "single", "whitespace", "trailing-comma", "empty"],
+    )
+    def test_symbol_parsing(self, symbols_arg: str, expected: list[str]):
+        """Symbol parsing handles various input formats correctly."""
         symbols = [s.strip() for s in symbols_arg.replace(",", " ").split() if s.strip()]
-
-        assert symbols == ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
-
-    def test_space_separated_symbols_backward_compat(self):
-        """Space-separated symbols should still work (backward compatibility)."""
-        symbols_arg = "BTCUSDT ETHUSDT SOLUSDT"
-
-        # Parse using same logic as backfill.py
-        symbols = [s.strip() for s in symbols_arg.replace(",", " ").split() if s.strip()]
-
-        assert symbols == ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
-
-    def test_single_symbol(self):
-        """Single symbol without delimiters should work."""
-        symbols_arg = "BTCUSDT"
-
-        symbols = [s.strip() for s in symbols_arg.replace(",", " ").split() if s.strip()]
-
-        assert symbols == ["BTCUSDT"]
-
-    def test_symbols_with_extra_whitespace(self):
-        """Extra whitespace around symbols should be stripped."""
-        symbols_arg = "BTCUSDT,  ETHUSDT  , SOLUSDT"
-
-        symbols = [s.strip() for s in symbols_arg.replace(",", " ").split() if s.strip()]
-
-        assert symbols == ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
-
-    def test_trailing_comma_ignored(self):
-        """Trailing comma should not create empty symbol."""
-        symbols_arg = "BTCUSDT,ETHUSDT,"
-
-        symbols = [s.strip() for s in symbols_arg.replace(",", " ").split() if s.strip()]
-
-        assert symbols == ["BTCUSDT", "ETHUSDT"]
-
-    def test_empty_string_returns_empty_list(self):
-        """Empty string should return empty list."""
-        symbols_arg = ""
-
-        symbols = [s.strip() for s in symbols_arg.replace(",", " ").split() if s.strip()]
-
-        assert symbols == []
+        assert symbols == expected
 
 
 class TestTargetedBackfill:
@@ -266,100 +234,11 @@ class TestBackfillWorkflow:
         db.close()
 
 
-class TestUpsertIdempotency:
-    """Test that re-running backfill for same symbols is safe (UPSERT semantics)."""
+# UPSERT idempotency tests removed per ADR-0027
+# Canonical location: tests/test_database/test_availability_db.py
 
-    def test_backfill_same_symbol_twice_no_duplicates(self, tmp_path: Path):
-        """
-        Re-backfilling same symbol should not create duplicates.
-
-        Scenario: Backfill NEWUSDT, then backfill NEWUSDT again
-        Expected: Only 1 record per (date, symbol) - no duplicates
-        """
-        db_path = tmp_path / "idempotent_test.duckdb"
-        db = AvailabilityDatabase(db_path=db_path)
-
-        # First backfill
-        first_record = {
-            "symbol": "NEWUSDT",
-            "date": datetime.date(2024, 1, 15),
-            "available": True,
-            "file_size_bytes": 7000000,
-            "last_modified": None,
-            "url": "https://example.com/NEWUSDT",
-            "status_code": 200,
-            "probe_timestamp": datetime.datetime(2024, 1, 16, 10, 0, 0, tzinfo=datetime.UTC),
-        }
-        db.insert_batch([first_record])
-
-        # Verify 1 record
-        rows = db.query(
-            "SELECT COUNT(*) FROM daily_availability WHERE symbol = 'NEWUSDT' AND date = '2024-01-15'"
-        )
-        assert rows[0][0] == 1
-
-        # Second backfill (re-run) - should UPSERT, not INSERT
-        second_record = {
-            **first_record,
-            "file_size_bytes": 7500000,  # Updated file size
-            "probe_timestamp": datetime.datetime(2024, 1, 17, 10, 0, 0, tzinfo=datetime.UTC),
-        }
-        db.insert_batch([second_record])
-
-        # Verify still only 1 record (UPSERT replaced, not duplicated)
-        rows = db.query(
-            "SELECT COUNT(*) FROM daily_availability WHERE symbol = 'NEWUSDT' AND date = '2024-01-15'"
-        )
-        assert rows[0][0] == 1
-
-        # Verify file size updated (UPSERT worked)
-        rows = db.query(
-            "SELECT file_size_bytes FROM daily_availability WHERE symbol = 'NEWUSDT' AND date = '2024-01-15'"
-        )
-        assert rows[0][0] == 7500000
-
-        db.close()
-
-
-class TestUnicodeSymbolTargetedBackfill:
-    """Test targeted backfill with Unicode symbols (Chinese, emoji)."""
-
-    def test_unicode_symbol_in_targeted_backfill(self):
-        """Unicode symbols should work in comma-separated list."""
-        # Simulate: --symbols BTCUSDT,币安人生USDT,🚀USDT
-        symbols_arg = "BTCUSDT,币安人生USDT,🚀USDT"
-
-        symbols = [s.strip() for s in symbols_arg.replace(",", " ").split() if s.strip()]
-
-        assert len(symbols) == 3
-        assert "BTCUSDT" in symbols
-        assert "币安人生USDT" in symbols
-        assert "🚀USDT" in symbols
-
-    def test_unicode_symbol_backfill_integration(self, tmp_path: Path):
-        """Unicode symbols should backfill correctly into database."""
-        db_path = tmp_path / "unicode_backfill_test.duckdb"
-        db = AvailabilityDatabase(db_path=db_path)
-
-        # Backfill Chinese symbol
-        record = {
-            "symbol": "币安人生USDT",
-            "date": datetime.date(2024, 1, 15),
-            "available": True,
-            "file_size_bytes": 7000000,
-            "last_modified": None,
-            "url": "https://example.com/%E5%B8%81%E5%AE%89%E4%BA%BA%E7%94%9FUSDT",
-            "status_code": 200,
-            "probe_timestamp": datetime.datetime.now(datetime.UTC),
-        }
-        db.insert_batch([record])
-
-        # Verify symbol stored correctly
-        rows = db.query("SELECT symbol FROM daily_availability WHERE date = '2024-01-15'")
-        assert len(rows) == 1
-        assert rows[0][0] == "币安人生USDT"
-
-        db.close()
+# Unicode symbol tests removed per ADR-0027
+# Canonical location: tests/test_probing/test_unicode_symbols.py
 
 
 @pytest.mark.integration

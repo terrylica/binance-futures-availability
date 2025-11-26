@@ -59,3 +59,24 @@ def test_context_manager(populated_db, temp_db_path):
     with SnapshotQueries(db_path=temp_db_path) as queries:
         results = queries.get_available_symbols_on_date("2024-01-15")
         assert len(results) == 3
+
+
+def test_get_available_symbols_empty_database(db, temp_db_path):
+    """Test snapshot query on empty database returns empty list (ADR-0027)."""
+    queries = SnapshotQueries(db_path=temp_db_path)
+    results = queries.get_available_symbols_on_date(datetime.date(2024, 1, 15))
+
+    assert results == []
+
+    queries.close()
+
+
+def test_get_available_symbols_future_date(populated_db, temp_db_path):
+    """Test snapshot query for date with no data returns empty list (ADR-0027)."""
+    queries = SnapshotQueries(db_path=temp_db_path)
+    # Query date outside populated range (2024-01-15 to 2024-01-17)
+    results = queries.get_available_symbols_on_date(datetime.date(2025, 12, 31))
+
+    assert results == []
+
+    queries.close()

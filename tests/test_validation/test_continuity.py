@@ -66,3 +66,43 @@ def test_validate_continuity(populated_db, temp_db_path):
     assert result is True
 
     validator.close()
+
+
+def test_check_continuity_multiple_gaps(db, temp_db_path):
+    """Test continuity check detects multiple non-consecutive missing dates (ADR-0027)."""
+    # Insert dates with gaps: 2024-01-15, 2024-01-17, 2024-01-19 (missing 16, 18)
+    for date in [datetime.date(2024, 1, 15), datetime.date(2024, 1, 17), datetime.date(2024, 1, 19)]:
+        db.insert_availability(
+            date=date,
+            symbol="BTCUSDT",
+            available=True,
+            file_size_bytes=8000000,
+            last_modified=None,
+            url="https://example.com/file.zip",
+            status_code=200,
+            probe_timestamp=datetime.datetime.now(datetime.UTC),
+        )
+
+    validator = ContinuityValidator(db_path=temp_db_path)
+    missing_dates = validator.check_continuity(
+        start_date=datetime.date(2024, 1, 15), end_date=datetime.date(2024, 1, 19)
+    )
+
+    assert len(missing_dates) == 2
+    assert datetime.date(2024, 1, 16) in missing_dates
+    assert datetime.date(2024, 1, 18) in missing_dates
+
+    validator.close()
+
+
+def test_check_continuity_single_day_range(populated_db, temp_db_path):
+    """Test continuity check with single day range (start_date == end_date) (ADR-0027)."""
+    validator = ContinuityValidator(db_path=temp_db_path)
+
+    missing_dates = validator.check_continuity(
+        start_date=datetime.date(2024, 1, 15), end_date=datetime.date(2024, 1, 15)
+    )
+
+    assert len(missing_dates) == 0
+
+    validator.close()

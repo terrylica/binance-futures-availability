@@ -72,85 +72,8 @@ class TestDateRangeCalculation:
         assert yesterday == datetime.date(2024, 2, 4)
 
 
-class TestUpsertBehavior:
-    """Test UPSERT (INSERT OR REPLACE) semantics when re-probing same dates."""
-
-    def test_upsert_replaces_existing_record(self, db: AvailabilityDatabase):
-        """Re-probing same date+symbol should update existing record, not duplicate."""
-        symbol = "BTCUSDT"
-        date = datetime.date(2024, 1, 15)
-
-        # First probe: File size 8MB
-        first_probe = {
-            "symbol": symbol,
-            "date": date,
-            "available": True,
-            "file_size_bytes": 8000000,
-            "last_modified": datetime.datetime(2024, 1, 16, 2, 0, 0, tzinfo=datetime.UTC),
-            "url": f"https://data.binance.vision/data/futures/um/daily/klines/{symbol}/1m/{symbol}-1m-{date}.zip",
-            "status_code": 200,
-            "probe_timestamp": datetime.datetime(2024, 1, 16, 3, 0, 0, tzinfo=datetime.UTC),
-        }
-        db.insert_batch([first_probe])
-
-        # Second probe (re-probe): File size changed to 9MB (S3 updated)
-        second_probe = {
-            **first_probe,
-            "file_size_bytes": 9000000,
-            "probe_timestamp": datetime.datetime(2024, 1, 17, 3, 0, 0, tzinfo=datetime.UTC),
-        }
-        db.insert_batch([second_probe])
-
-        # Verify: Only ONE record exists (UPSERT replaced, not duplicated)
-        rows = db.query(
-            "SELECT file_size_bytes FROM daily_availability WHERE symbol = ? AND date = ?",
-            [symbol, date],
-        )
-
-        assert len(rows) == 1, "UPSERT should not create duplicate records"
-        assert rows[0][0] == 9000000, "UPSERT should update file_size_bytes to latest value"
-
-    def test_upsert_multiple_dates_no_duplicates(self, db: AvailabilityDatabase):
-        """Re-probing 20-day window should update all dates without duplicates."""
-        symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
-        start_date = datetime.date(2024, 1, 1)
-        end_date = datetime.date(2024, 1, 20)  # 20 days
-
-        # First batch: Probe all 20 days × 3 symbols = 60 records
-        first_batch = []
-        current_date = start_date
-        while current_date <= end_date:
-            for symbol in symbols:
-                first_batch.append(
-                    {
-                        "symbol": symbol,
-                        "date": current_date,
-                        "available": True,
-                        "file_size_bytes": 8000000,
-                        "last_modified": None,
-                        "url": f"https://example.com/{symbol}-{current_date}.zip",
-                        "status_code": 200,
-                        "probe_timestamp": datetime.datetime.now(datetime.UTC),
-                    }
-                )
-            current_date += datetime.timedelta(days=1)
-
-        db.insert_batch(first_batch)
-
-        # Second batch: Re-probe same dates (simulates 20-day lookback overlap)
-        second_batch = [
-            {**record, "file_size_bytes": 9000000}
-            for record in first_batch  # Updated file size
-        ]
-        db.insert_batch(second_batch)
-
-        # Verify: Still only 60 records (20 days × 3 symbols), no duplicates
-        total_count = db.query("SELECT COUNT(*) FROM daily_availability")[0][0]
-        assert total_count == 60, f"Expected 60 records after UPSERT, got {total_count}"
-
-        # Verify: File sizes updated to 9MB (latest probe)
-        updated_sizes = db.query("SELECT DISTINCT file_size_bytes FROM daily_availability")[0][0]
-        assert updated_sizes == 9000000, "UPSERT should update all file_size_bytes to latest value"
+# UPSERT behavior tests removed per ADR-0027
+# Canonical location: tests/test_database/test_availability_db.py
 
 
 class TestEnvironmentVariableFeatureFlag:

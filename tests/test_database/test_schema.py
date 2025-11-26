@@ -77,3 +77,26 @@ def test_schema_idempotent(db):
     ).fetchone()
 
     assert result[0] == 1  # Only one table (no duplicates)
+
+
+def test_schema_has_indexes(db):
+    """Test schema creates required indexes (ADR-0027 grow opportunity)."""
+    # Query DuckDB system catalog for indexes
+    result = db.conn.execute(
+        """
+        SELECT index_name FROM duckdb_indexes()
+        WHERE table_name = 'daily_availability'
+        """
+    ).fetchall()
+
+    index_names = [row[0] for row in result]
+
+    # Expected indexes from schema.py
+    expected_indexes = [
+        "idx_symbol_date",      # Timeline queries
+        "idx_available_date",   # Snapshot queries
+        "idx_quote_volume_date",  # Volume rankings (ADR-0007)
+    ]
+
+    for idx in expected_indexes:
+        assert idx in index_names, f"Index {idx} not found in schema"

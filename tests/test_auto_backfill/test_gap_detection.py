@@ -342,34 +342,8 @@ class TestErrorHandling:
                 query_database_symbols()
 
 
-class TestUnicodeSymbolHandling:
-    """Test handling of Unicode symbols (Chinese characters, emoji)."""
-
-    def test_unicode_symbols_in_gaps(self):
-        """Unicode symbols (e.g., 币安人生USDT) should be handled correctly."""
-        with (
-            patch(
-                "scripts.operations.detect_symbol_gaps.load_discovered_symbols",
-                return_value={"BTCUSDT", "币安人生USDT", "🚀USDT"},
-            ),
-            patch("scripts.operations.detect_symbol_gaps.AvailabilityDatabase") as mock_db_class,
-        ):
-            mock_db_instance = Mock()
-            mock_db_instance.query.return_value = [("BTCUSDT",)]
-            mock_db_class.return_value = mock_db_instance
-
-            from scripts.operations.detect_symbol_gaps import detect_gaps
-
-            new_symbols = detect_gaps()
-
-            # Verify Unicode symbols preserved
-            assert "币安人生USDT" in new_symbols
-            assert "🚀USDT" in new_symbols
-
-            # Verify JSON serializable (UTF-8)
-            json_output = json.dumps(new_symbols, ensure_ascii=False)
-            assert "币安人生USDT" in json_output
-            assert "🚀USDT" in json_output
+# Unicode symbol handling tests removed per ADR-0027
+# Canonical location: tests/test_probing/test_unicode_symbols.py
 
 
 @pytest.mark.integration
