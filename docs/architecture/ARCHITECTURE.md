@@ -38,21 +38,21 @@ The binance-futures-availability system tracks daily availability of USDT perpet
                      ┌────────▼────────┐
                      │     DUCKDB      │
                      │                 │
-                     │ daily_availability
+                     │daily_availability│
                      │ (date, symbol)  │
-                     │ 50-150 MB       │
+                     │   50-150 MB     │
                      └────────┬────────┘
                               │
-          ┌───────────────────┼───────────────────┐
-          │                   │                   │
-    ┌───────▼───────┐   ┌───────▼───────┐   ┌───────▼───────┐
-    │  VALIDATION   │   │   RANKINGS    │   │    RELEASE    │
-    │               │   │               │   │               │
-    │ Transparency  │   │    Parquet    │   │   .duckdb     │
-    │    -first     │   │    7d/30d     │   │   .gz         │
-    └───────┬───────┘   └───────┬───────┘   └───────┬───────┘
-          │                   │                   │
-          └───────────────────┼───────────────────┘
+         ┌────────────────────┼────────────────────┐
+         │                    │                    │
+   ┌─────▼─────┐        ┌─────▼─────┐        ┌─────▼─────┐
+   │ VALIDATION│        │  RANKINGS │        │  RELEASE  │
+   │           │        │           │        │           │
+   │Transparency│       │  Parquet  │        │  .duckdb  │
+   │  -first   │        │  7d/30d   │        │  .gz      │
+   └─────┬─────┘        └─────┬─────┘        └─────┬─────┘
+         │                    │                    │
+         └────────────────────┼────────────────────┘
                               │
                      ┌────────▼────────┐
                      │  NOTIFICATION   │
