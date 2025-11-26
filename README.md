@@ -1,330 +1,165 @@
-# Binance Futures Availability Database
-
-**Track daily availability of ALL USDT perpetual futures from Binance Vision (2019-09-25 to present)**
-
-_Symbol count is dynamic (~327 currently) - we discover and track all perpetual instruments available on each historical date._
+# binance-futures-availability
 
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
-[![Coverage](https://img.shields.io/badge/coverage-80%25-green.svg)]()
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)]()
-[![Update Database](https://github.com/terrylica/binance-futures-availability/actions/workflows/update-database.yml/badge.svg)](https://github.com/terrylica/binance-futures-availability/actions/workflows/update-database.yml)
-[![PyPI version](https://badge.fury.io/py/binance-futures-availability.svg)](https://badge.fury.io/py/binance-futures-availability)
+[![PyPI version](https://badge.fury.io/py/binance-futures-availability.svg)](https://pypi.org/project/binance-futures-availability/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![CI Status](https://github.com/terrylica/binance-futures-availability/actions/workflows/update-database.yml/badge.svg)](https://github.com/terrylica/binance-futures-availability/actions/workflows/update-database.yml)
 
-## Overview
+DuckDB-based availability tracker for Binance USDT-Margined perpetual futures from Binance Vision S3.
 
-Standalone DuckDB database tracking historical availability of Binance USDT-Margined (UM) perpetual futures contracts from Binance Vision S3 repository. Provides sub-second queries for "which symbols were available on date X?" with automated daily updates and volume metrics.
-
-### Key Features
-
-- **Complete Historical Data**: 2019-09-25 (first UM-futures launch) to present (~2240 days)
-- **Dynamic Symbol Discovery**: ✅ **Auto-updated daily** - Tracks all perpetual USDT contracts (~327 currently, varies by date)
-- **Fast Queries**: <1ms snapshot queries, <10ms timelines
-- **Volume Metrics**: Track file size growth and S3 freshness over time
-- **Small Footprint**: 50-150MB database (compressed columnar)
-- **Automated Updates**: ✅ **GitHub Actions** - daily 3AM UTC, zero infrastructure
-- **High Reliability**: Strict error handling, comprehensive validation checks
-
-## Quick Start
-
-### Option 1: GitHub Actions (Recommended) ✅
-
-**Production-ready automated updates with zero infrastructure overhead.**
-
-#### 1. Initial Database Creation
+## Installation
 
 ```bash
-# Trigger historical backfill via GitHub Actions (one-time setup)
-gh workflow run update-database.yml \
-  --field update_mode=backfill \
-  --field start_date=2019-09-25 \
-  --field end_date=$(date +%Y-%m-%d)
-
-# Monitor progress (estimated 25-60 minutes)
-gh run watch
-
-# Verify database created
-gh release view latest
+pip install binance-futures-availability
 ```
 
-#### 2. Download Database
+**Development installation:**
 
 ```bash
-# Download from GitHub Releases
+git clone https://github.com/terrylica/binance-futures-availability.git
+cd binance-futures-availability
+pip install -e ".[dev]"
+```
+
+## Requirements
+
+- Python ≥3.12
+- DuckDB ≥1.4.0
+- urllib3 ≥2.5.0
+- pyarrow ≥22.0.0 (for Parquet support)
+
+## Usage
+
+### Query Available Symbols
+
+```python
+from binance_futures_availability.queries import SnapshotQueries
+
+with SnapshotQueries() as q:
+    symbols = q.get_available_symbols_on_date('2024-01-15')
+    print(f"Available: {len(symbols)} symbols")
+```
+
+### Query Symbol Timeline
+
+```python
+from binance_futures_availability.queries import TimelineQueries
+
+with TimelineQueries() as q:
+    timeline = q.get_symbol_availability_timeline('BTCUSDT')
+    print(f"First available: {timeline[0]['date']}")
+```
+
+### CLI Interface
+
+```bash
+binance-futures-availability query snapshot 2024-01-15
+binance-futures-availability query timeline BTCUSDT
+binance-futures-availability query range 2024-01-01 2024-03-31
+```
+
+## Data Source
+
+**Source**: [Binance Vision S3](https://data.binance.vision/data/futures/um/daily/klines/)
+
+**Coverage**: From UM-futures inception to present (daily granularity)
+
+**Collection Methods**:
+
+| Method | Use Case | Implementation |
+|--------|----------|----------------|
+| AWS CLI S3 listing | Historical backfill | Bulk enumeration |
+| HTTP HEAD requests | Daily incremental | Parallel probing |
+
+## Database Schema
+
+**Table**: `daily_availability`
+
+| Column | Type | Description |
+|--------|------|-------------|
+| date | DATE | Trading date |
+| symbol | VARCHAR | Futures symbol (e.g., BTCUSDT) |
+| available | BOOLEAN | Data availability flag |
+| file_size_bytes | BIGINT | ZIP file size from S3 |
+| last_modified | TIMESTAMP | S3 upload timestamp |
+
+**Primary Key**: (date, symbol)
+
+**Indexes**: `idx_symbol_date`, `idx_available_date`
+
+**Storage Path**: `~/.cache/binance-futures/availability.duckdb`
+
+## Volume Rankings Archive
+
+Parquet file with daily symbol rankings by trading volume.
+
+**Asset**: `volume-rankings-timeseries.parquet` (published to GitHub Releases)
+
+```python
+import duckdb
+
+url = "https://github.com/terrylica/binance-futures-availability/releases/download/latest/volume-rankings-timeseries.parquet"
+
+result = duckdb.execute(f"""
+    SELECT symbol, rank, quote_volume_usdt
+    FROM '{url}'
+    WHERE date = (SELECT MAX(date) FROM '{url}')
+    ORDER BY rank LIMIT 10
+""").fetchdf()
+```
+
+**Schema**: See [ADR-0013](https://github.com/terrylica/binance-futures-availability/blob/main/docs/architecture/decisions/0013-volume-rankings-timeseries.md)
+
+## GitHub Releases Distribution
+
+Pre-built database available from GitHub Releases:
+
+```bash
 gh release download latest --pattern "availability.duckdb.gz"
 gunzip availability.duckdb.gz
 ```
 
-#### 3. Automated Daily Updates
-
-**No action needed** - workflow runs automatically daily at 3:00 AM UTC. Download latest database anytime from GitHub Releases.
-
-#### 4. Pushover Notifications (Optional - ADR-0022)
-
-**Get instant workflow status notifications on your phone/desktop.**
-
-To enable real-time Pushover notifications for workflow runs (success/failure/cancelled):
-
-1. **Add DOPPLER_TOKEN to GitHub repository secrets:**
-   - Navigate: [Repository Secrets](https://github.com/terrylica/binance-futures-availability/settings/secrets/actions)
-   - Create Doppler service token from [Doppler Dashboard](https://dashboard.doppler.com/workplace/*/projects/notifications/configs/prd/access)
-   - Add secret: `DOPPLER_TOKEN` = `<service_token>`
-
-2. **Verify Doppler secrets exist:**
-   - `PUSHOVER_API_TOKEN` (from [Pushover Apps](https://pushover.net/apps))
-   - `PUSHOVER_USER_KEY` (from Pushover dashboard)
-
-**What you'll get:**
-
-- Instant notifications on all workflow runs (< 5 seconds)
-- Database stats, validation status, volume rankings status
-- Direct links to workflow logs
-- No more manual GitHub UI checks (saves 30 hours/year)
-
-See [ADR-0022](docs/architecture/decisions/0022-pushover-workflow-notifications.md) for implementation details.
-
-### Option 2: Local Development
-
-```bash
-# Install package
-cd ~/eon/binance-futures-availability
-uv pip install -e ".[dev]"
-
-# Run local backfill
-uv run python scripts/operations/backfill.py
-```
-
-### Query Database
-
-```bash
-# CLI queries
-uv run binance-futures-availability query snapshot 2024-01-15
-uv run binance-futures-availability query timeline BTCUSDT
-uv run binance-futures-availability query range 2024-01-01 2024-03-31
-
-# Python API
-python -c "
-from binance_futures_availability.queries import SnapshotQueries
-q = SnapshotQueries()
-print(q.get_available_symbols_on_date('2024-01-15'))
-"
-```
-
-## Volume Rankings Archive (ADR-0013)
-
-**NEW**: Daily volume rankings time-series in Parquet format, published alongside the database.
-
-### Overview
-
-Single cumulative file containing historical daily rankings of all symbols by 24-hour trading volume (quote_volume_usdt), with rank change tracking across 1d, 7d, 14d, and 30d windows.
-
-**File**: `volume-rankings-timeseries.parquet` (20 MB, ~733K rows)
-**Format**: Parquet (columnar, SNAPPY compressed)
-**Grain**: One row per (date, symbol) combination
-**Updates**: Automated daily at 3:00 AM UTC (incremental append)
-
-### Quick Start
-
-**Option 1: Remote Query (Recommended)** - Zero download, zero local storage:
-
-```python
-# Install: pip install duckdb
-import duckdb
-
-url = "https://github.com/terryli/binance-futures-availability/releases/download/latest/volume-rankings-timeseries.parquet"
-
-# Top 10 symbols (1-3 second query)
-result = duckdb.execute(f"""
-    SELECT symbol, rank, quote_volume_usdt, rank_change_7d
-    FROM '{url}'
-    WHERE date = '2025-11-16'  -- Replace with desired date
-    ORDER BY rank LIMIT 10
-""").fetchdf()
-
-print(result)
-```
-
-**Option 2: Local Download** - For offline use:
-
-```bash
-# Download from GitHub Releases
-gh release download latest --pattern "volume-rankings-timeseries.parquet"
-
-# Query with DuckDB
-python -c "
-import duckdb
-result = duckdb.execute('''
-    SELECT symbol, rank, quote_volume_usdt, rank_change_7d
-    FROM \"volume-rankings-timeseries.parquet\"
-    WHERE date = (SELECT MAX(date) FROM \"volume-rankings-timeseries.parquet\")
-    ORDER BY rank LIMIT 10
-''').fetchdf()
-print(result)
-"
-```
-
-### Schema (13 Columns)
-
-| Column                    | Type          | Description                    |
-| ------------------------- | ------------- | ------------------------------ |
-| date                      | date32        | Trading date                   |
-| symbol                    | string        | Futures symbol                 |
-| rank                      | uint16        | Volume rank (1=highest)        |
-| quote_volume_usdt         | float64       | 24h volume (USDT)              |
-| trade_count               | uint64        | Number of trades               |
-| rank_change_1d/7d/14d/30d | int16         | Rank delta (negative=improved) |
-| percentile                | float32       | Volume percentile (0-100)      |
-| market_share_pct          | float32       | % of total market volume       |
-| days_available            | uint8         | Days available in last 30d     |
-| generation_timestamp      | timestamp[us] | File generation time           |
-
-**Use Cases**:
-
-- Portfolio universe selection (top N by volume)
-- Trend analysis (rank changes over time)
-- Survivorship bias elimination
-- Market share analysis
-
-**See**: [Using Volume Rankings Guide](docs/guides/using-volume-rankings.md) for query examples and advanced usage.
-
-## Architecture
-
-### Database Schema
-
-Single table with volume metrics (ADR-0006):
-
-`daily_availability(date, symbol, available, file_size_bytes, last_modified, url, status_code, probe_timestamp)`
-
-**Primary Key**: (date, symbol)
-**Indexes**:
-
-- idx_symbol_date (symbol, date) - fast timeline queries
-- idx_available_date (available, date) - fast symbol listings
-
-**Volume Metrics**:
-
-- `file_size_bytes`: ZIP file size from S3 (enables trend analysis)
-- `last_modified`: S3 upload timestamp (enables freshness monitoring)
-
-**Storage**: `~/.cache/binance-futures/availability.duckdb`
-
-### Data Collection (Hybrid Strategy)
-
-**Binance Vision S3**: `https://data.binance.vision/data/futures/um/daily/klines/`
-
-**Historical Backfill** (Bulk Operations):
-
-- Method: AWS CLI S3 listing (`aws s3 ls --no-sign-request`)
-- Performance: 327 symbols × 4.5 sec = ~25 minutes
-- Use case: One-time historical data collection
-
-**Daily Updates** (Incremental Operations):
-
-- Method: HTTP HEAD requests (parallel batch probing)
-- Performance: ~327 symbols in ~1.5 seconds (150 parallel workers, empirically optimized)
-- Use case: Automated daily updates via GitHub Actions (3 AM UTC)
-- Benchmark: [Worker Count Optimization](docs/benchmarks/worker-count-benchmark-2025-11-15.md)
-
-**See**: [ADR-0005: AWS CLI for Bulk Operations](docs/architecture/decisions/0005-aws-cli-bulk-operations.md)
-
-### Error Handling
-
-**Policy**: Strict raise-on-failure (ADR-0003)
-
-- No retries (workflow retries next scheduled cycle)
-- No fallbacks (no default values)
-- No silent failures (all errors logged)
-
-## Documentation
-
-**Project Memory**: [CLAUDE.md](CLAUDE.md) - AI context and patterns
-**SSoT Plan**: [docs/development/plan/v1.0.0/plan.yaml](docs/development/plan/v1.0.0/plan.yaml)
-**Schema**: [docs/schema/availability-database.schema.json](docs/schema/availability-database.schema.json)
-**MADRs**: [docs/architecture/decisions/](docs/architecture/decisions/)
-
-**Guides**:
-
-- [Quick Start](docs/guides/QUICKSTART.md)
-- [Query Examples](docs/guides/QUERY_EXAMPLES.md)
-- [Using Volume Rankings](docs/guides/using-volume-rankings.md) - ✅ NEW
-- [Troubleshooting](docs/guides/TROUBLESHOOTING.md)
-
-**Operations**:
-
-- [GitHub Actions Automation](docs/operations/GITHUB_ACTIONS.md)
-- [Backup & Restore](docs/operations/BACKUP_RESTORE.md)
-- [Monitoring](docs/operations/MONITORING.md)
-
-## Development
-
-### Run Tests
-
-```bash
-# Unit tests only (fast, no network)
-pytest -m "not integration"
-
-# All tests including integration (slow, requires network)
-pytest
-
-# With coverage report
-pytest --cov --cov-report=html
-open htmlcov/index.html
-```
-
-### Linting & Formatting
-
-```bash
-# Format code
-ruff format src/ tests/
-
-# Check linting
-ruff check src/ tests/
-
-# Fix auto-fixable issues
-ruff check --fix src/ tests/
-```
+**Automation**: Daily updates via GitHub Actions (see [ADR-0009](https://github.com/terrylica/binance-futures-availability/blob/main/docs/architecture/decisions/0009-github-actions-automation.md))
 
 ## Architecture Decisions
 
-All decisions documented as MADRs:
+| ADR | Decision |
+|-----|----------|
+| [0001](https://github.com/terrylica/binance-futures-availability/blob/main/docs/architecture/decisions/0001-schema-design-daily-table.md) | Daily table pattern |
+| [0002](https://github.com/terrylica/binance-futures-availability/blob/main/docs/architecture/decisions/0002-storage-technology-duckdb.md) | DuckDB storage |
+| [0003](https://github.com/terrylica/binance-futures-availability/blob/main/docs/architecture/decisions/0003-error-handling-strict-policy.md) | Strict error handling |
+| [0005](https://github.com/terrylica/binance-futures-availability/blob/main/docs/architecture/decisions/0005-aws-cli-bulk-operations.md) | AWS CLI bulk operations |
+| [0009](https://github.com/terrylica/binance-futures-availability/blob/main/docs/architecture/decisions/0009-github-actions-automation.md) | GitHub Actions automation |
+| [0010](https://github.com/terrylica/binance-futures-availability/blob/main/docs/architecture/decisions/0010-dynamic-symbol-discovery.md) | Dynamic symbol discovery |
+| [0013](https://github.com/terrylica/binance-futures-availability/blob/main/docs/architecture/decisions/0013-volume-rankings-timeseries.md) | Volume rankings archive |
 
-- **[ADR-0001](docs/architecture/decisions/0001-schema-design-daily-table.md)**: Daily table pattern (not range table)
-- **[ADR-0002](docs/architecture/decisions/0002-storage-technology-duckdb.md)**: DuckDB for storage
-- **[ADR-0003](docs/architecture/decisions/0003-error-handling-strict-policy.md)**: Strict error handling
-- **[ADR-0004](docs/architecture/decisions/0004-automation-apscheduler.md)**: APScheduler for automation (superseded by ADR-0009)
-- **[ADR-0005](docs/architecture/decisions/0005-aws-cli-bulk-operations.md)**: AWS CLI for bulk operations
-- **[ADR-0006](docs/architecture/decisions/0006-volume-metrics-collection.md)**: Volume metrics collection
-- **[ADR-0009](docs/architecture/decisions/0009-github-actions-automation.md)**: ✅ **GitHub Actions automation** (production)
-- **[ADR-0010](docs/architecture/decisions/0010-dynamic-symbol-discovery.md)**: ✅ **Dynamic symbol discovery** (daily S3 auto-update)
-- **[ADR-0013](docs/architecture/decisions/0013-volume-rankings-timeseries.md)**: ✅ **Volume rankings time-series archive** (Parquet)
+## Documentation
 
-## SLOs (Service Level Objectives)
+- [Architecture Overview](https://github.com/terrylica/binance-futures-availability/blob/main/docs/architecture/ARCHITECTURE.md)
+- [Quick Start Guide](https://github.com/terrylica/binance-futures-availability/blob/main/docs/guides/QUICKSTART.md)
+- [Query Examples](https://github.com/terrylica/binance-futures-availability/blob/main/docs/guides/QUERY_EXAMPLES.md)
+- [Troubleshooting](https://github.com/terrylica/binance-futures-availability/blob/main/docs/guides/TROUBLESHOOTING.md)
+- [GitHub Actions Operations](https://github.com/terrylica/binance-futures-availability/blob/main/docs/operations/GITHUB_ACTIONS.md)
+- [Database Schema (JSON)](https://github.com/terrylica/binance-futures-availability/blob/main/docs/schema/availability-database.schema.json)
 
-**Availability**: 95% of daily updates complete successfully
-**Correctness**: >95% match with Binance exchangeInfo API
-**Observability**: All failures logged with full context
-**Maintainability**: 80%+ test coverage, all functions documented
+## Development
 
-## Related Projects
+```bash
+# Run tests
+pytest -m "not integration"
 
-- **[gapless-crypto-data](https://github.com/terrylica/gapless-crypto-data)**: Spot OHLCV collection (similar ValidationStorage pattern)
-- **[vision-futures-explorer](../gapless-crypto-data/scratch/vision-futures-explorer/)**: Initial futures discovery (source of probe functions)
+# Run with coverage
+pytest --cov --cov-fail-under=80
+
+# Lint and format
+ruff check src/ tests/
+ruff format src/ tests/
+```
 
 ## License
 
-MIT License
+[MIT](https://github.com/terrylica/binance-futures-availability/blob/main/LICENSE)
 
-## Contributing
+## Related
 
-This is a specialized internal tool. For major changes, please open an issue first to discuss what you would like to change.
-
-Ensure tests pass and coverage remains ≥80%:
-
-```bash
-pytest --cov --cov-fail-under=80
-```
-
-## Support
-
-**Documentation**: See [CLAUDE.md](CLAUDE.md) for complete project context
-**Issues**: File issues in project repository
-**Questions**: Consult docs/guides/ for common scenarios
+- [gapless-crypto-data](https://github.com/terrylica/gapless-crypto-data) - Spot OHLCV collection
