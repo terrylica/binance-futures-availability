@@ -504,12 +504,12 @@ jobs:
           conn = duckdb.connect('availability.duckdb', read_only=True)
           result = conn.execute('SELECT * FROM daily_availability LIMIT 10').fetchall()
 
-          # Query rankings with DuckDB
+          # Query latest rankings with DuckDB
           import duckdb
           conn = duckdb.connect()
           rankings = conn.execute('''
               SELECT * FROM read_parquet('volume-rankings-timeseries.parquet')
-              WHERE date = '2025-11-16'
+              WHERE date = (SELECT MAX(date) FROM read_parquet('volume-rankings-timeseries.parquet'))
               ORDER BY rank
               LIMIT 10
           ''').fetchall()

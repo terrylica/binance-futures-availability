@@ -66,8 +66,10 @@ def get_latest_date_from_parquet(parquet_file: Path) -> str | None:
         return None
 
     try:
+        import pyarrow.compute as pc
         table = pq.read_table(parquet_file, columns=['date'])
-        max_date = table['date'].to_pandas().max()
+        # Use PyArrow compute instead of pandas for max date
+        max_date = pc.max(table['date']).as_py()
         return max_date.strftime('%Y-%m-%d')
     except Exception as e:
         logging.warning(f"Could not read existing Parquet: {e}")
@@ -382,15 +384,20 @@ def main() -> int:
         # Write Parquet file
         write_parquet(final_table, args.output, logger)
 
-        # Print summary
-        dates = final_table['date'].to_pandas()
+        # Print summary (using PyArrow compute, no pandas dependency)
+        import pyarrow.compute as pc
+        date_col = final_table['date']
+        min_date = pc.min(date_col).as_py()
+        max_date = pc.max(date_col).as_py()
+        unique_dates = pc.count_distinct(date_col).as_py()
+
         logger.info("")
         logger.info("=" * 70)
         logger.info("SUMMARY")
         logger.info("=" * 70)
         logger.info(f"Total rows: {len(final_table):,}")
-        logger.info(f"Date range: {dates.min()} to {dates.max()}")
-        logger.info(f"Unique dates: {dates.nunique():,}")
+        logger.info(f"Date range: {min_date} to {max_date}")
+        logger.info(f"Unique dates: {unique_dates:,}")
         logger.info(f"Output file: {args.output}")
         logger.info("=" * 70)
 
