@@ -27,7 +27,7 @@ class TestSymbolParsing:
     """Test parsing of --symbols parameter (consolidated per ADR-0027)."""
 
     @pytest.mark.parametrize(
-        "symbols_arg,expected",
+        ("symbols_arg", "expected"),
         [
             # Primary use cases
             ("BTCUSDT,ETHUSDT,SOLUSDT", ["BTCUSDT", "ETHUSDT", "SOLUSDT"]),
