@@ -1,13 +1,13 @@
 {
   "metadata": {
-    "discovery_date": "2025-12-27",
-    "last_discovery": "2025-12-27T03:54:17.421875+00:00",
+    "discovery_date": "2025-12-28",
+    "last_discovery": "2025-12-28T04:06:02.747277+00:00",
     "source": "S3 Vision bucket: s3://data.binance.vision/data/futures/um/daily/klines/",
     "discovery_method": "S3 XML API",
     "note": "Symbols with historical data availability on S3 Vision (auto-updated daily)",
     "total_perpetual": 728,
-    "total_delivery": 44,
-    "total_all": 772
+    "total_delivery": 46,
+    "total_all": 774
   },
   "perpetual_symbols": [
     "0GUSDT",
@@ -763,6 +763,7 @@
     "BTCUSDT_250926",
     "BTCUSDT_251226",
     "BTCUSDT_260327",
+    "BTCUSDT_260626",
     "ETHUSDT_210326",
     "ETHUSDT_210625",
     "ETHUSDT_210924",
@@ -783,6 +784,7 @@
     "ETHUSDT_250627",
     "ETHUSDT_250926",
     "ETHUSDT_251226",
-    "ETHUSDT_260327"
+    "ETHUSDT_260327",
+    "ETHUSDT_260626"
   ]
 }
