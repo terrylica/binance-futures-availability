@@ -1,13 +1,13 @@
 {
   "metadata": {
-    "discovery_date": "2026-01-21",
-    "last_discovery": "2026-01-21T04:04:50.356034+00:00",
+    "discovery_date": "2026-01-22",
+    "last_discovery": "2026-01-22T04:07:45.324372+00:00",
     "source": "S3 Vision bucket: s3://data.binance.vision/data/futures/um/daily/klines/",
     "discovery_method": "S3 XML API",
     "note": "Symbols with historical data availability on S3 Vision (auto-updated daily)",
-    "total_perpetual": 736,
+    "total_perpetual": 737,
     "total_delivery": 46,
-    "total_all": 782
+    "total_all": 783
   },
   "perpetual_symbols": [
     "0GUSDT",
@@ -56,6 +56,7 @@
     "AGTUSDT",
     "AI16ZUSDT",
     "AIAUSDT",
+    "AIAUSDTSETTLED",
     "AINUSDT",
     "AIOTUSDT",
     "AIOUSDT",
