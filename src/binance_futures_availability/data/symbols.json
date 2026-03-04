@@ -1,13 +1,13 @@
 {
   "metadata": {
-    "discovery_date": "2026-03-03",
-    "last_discovery": "2026-03-03T04:44:23.328703+00:00",
+    "discovery_date": "2026-03-04",
+    "last_discovery": "2026-03-04T04:27:19.111496+00:00",
     "source": "S3 Vision bucket: s3://data.binance.vision/data/futures/um/daily/klines/",
     "discovery_method": "S3 XML API",
     "note": "Symbols with historical data availability on S3 Vision (auto-updated daily)",
-    "total_perpetual": 762,
+    "total_perpetual": 763,
     "total_delivery": 46,
-    "total_all": 808
+    "total_all": 809
   },
   "perpetual_symbols": [
     "0GUSDT",
@@ -389,6 +389,7 @@
     "KAITOUSDC",
     "KAITOUSDT",
     "KASUSDT",
+    "KATUSDT",
     "KAVAUSDT",
     "KDAUSDT",
     "KEEPUSDT",
