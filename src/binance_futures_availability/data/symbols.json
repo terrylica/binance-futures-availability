@@ -1,13 +1,13 @@
 {
   "metadata": {
-    "discovery_date": "2026-03-26",
-    "last_discovery": "2026-03-26T05:03:55.499275+00:00",
+    "discovery_date": "2026-03-27",
+    "last_discovery": "2026-03-27T05:05:10.096906+00:00",
     "source": "S3 Vision bucket: s3://data.binance.vision/data/futures/um/daily/klines/",
     "discovery_method": "S3 XML API",
     "note": "Symbols with historical data availability on S3 Vision (auto-updated daily)",
-    "total_perpetual": 771,
+    "total_perpetual": 772,
     "total_delivery": 46,
-    "total_all": 817
+    "total_all": 818
   },
   "perpetual_symbols": [
     "0GUSDT",
@@ -167,6 +167,7 @@
     "BROCCOLI714USDT",
     "BROCCOLIF3BUSDT",
     "BRUSDT",
+    "BSBUSDT",
     "BSVUSDT",
     "BSWUSDT",
     "BTCBUSD",
