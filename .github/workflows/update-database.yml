@@ -599,8 +599,10 @@ jobs:
       - name: Send Pushover Notification
         if: always()  # Run on all statuses (success/failure/cancelled)
         env:
-          # Pushover credentials (synced from Doppler GitHub App)
-          PUSHOVER_API_TOKEN: ${{ secrets.PUSHOVER_APP_TOKEN }}
+          # Pushover credentials (synced from Doppler GitHub App, notifications/prd).
+          # Dedicated app "🔶 binance-fut" (separation of concerns) — NOT the shared
+          # claude_code channel. Token lives in Doppler PUSHOVER_APP_TOKEN_BINANCE_FUTURES.
+          PUSHOVER_API_TOKEN: ${{ secrets.PUSHOVER_APP_TOKEN_BINANCE_FUTURES }}
           PUSHOVER_USER_KEY: ${{ secrets.PUSHOVER_USER_KEY }}
           # Workflow context
           JOB_STATUS: ${{ job.status }}
