@@ -11,7 +11,7 @@ license = {text = "MIT"}
 dependencies = [
     "duckdb>=1.4.0,<2.0.0",  # ADR-0018: Upgrade to 1.4 LTS with compression features
     "urllib3>=2.5.0,<3.0.0",  # ADR-0018: Latest stable with connection pooling
-    "pyarrow>=22.0.0,<23.0.0",  # ADR-0018: Latest stable for Parquet (ADR-0013)
+    "pyarrow>=22.0.0,<24.0.0",  # ADR-0018: Latest stable for Parquet (ADR-0013)
 ]
 
 [project.optional-dependencies]
