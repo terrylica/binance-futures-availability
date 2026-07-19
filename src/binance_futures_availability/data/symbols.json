@@ -1,13 +1,13 @@
 {
   "metadata": {
-    "discovery_date": "2026-07-18",
-    "last_discovery": "2026-07-18T05:22:23.490168+00:00",
+    "discovery_date": "2026-07-19",
+    "last_discovery": "2026-07-19T05:49:04.568152+00:00",
     "source": "S3 Vision bucket: s3://data.binance.vision/data/futures/um/daily/klines/",
     "discovery_method": "S3 XML API",
     "note": "Symbols with historical data availability on S3 Vision (auto-updated daily)",
-    "total_perpetual": 916,
+    "total_perpetual": 918,
     "total_delivery": 50,
-    "total_all": 966
+    "total_all": 968
   },
   "perpetual_symbols": [
     "0GUSDT",
@@ -548,6 +548,7 @@
     "MILKUSDT",
     "MINAUSDT",
     "MINAUSDTSETTLED",
+    "MINIMAXUSDT",
     "MIRAUSDT",
     "MITOUSDT",
     "MKRUSDT",
@@ -913,6 +914,7 @@
     "ZEREBROUSDT",
     "ZESTUSDT",
     "ZETAUSDT",
+    "ZHIPUUSDT",
     "ZILUSDT",
     "ZKCUSDT",
     "ZKJUSDT",
