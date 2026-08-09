@@ -521,7 +521,7 @@ jobs:
 
       - name: Create/Update release
         if: steps.check_db.outputs.db_ready == 'true'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: latest
           name: Latest Database Snapshot
