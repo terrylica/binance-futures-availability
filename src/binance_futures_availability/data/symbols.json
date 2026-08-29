@@ -1,13 +1,13 @@
 {
   "metadata": {
-    "discovery_date": "2026-08-28",
-    "last_discovery": "2026-08-28T14:52:24.957600+00:00",
+    "discovery_date": "2026-08-29",
+    "last_discovery": "2026-08-29T09:42:20.284215+00:00",
     "source": "S3 Vision bucket: s3://data.binance.vision/data/futures/um/daily/klines/",
     "discovery_method": "S3 XML API",
     "note": "Symbols with historical data availability on S3 Vision (auto-updated daily)",
-    "total_perpetual": 962,
+    "total_perpetual": 967,
     "total_delivery": 50,
-    "total_all": 1012
+    "total_all": 1017
   },
   "perpetual_symbols": [
     "0GUSDT",
@@ -462,6 +462,7 @@
     "INTWUSDT",
     "INUSDT",
     "INXUSDT",
+    "IONQUSDT",
     "IOSTUSDT",
     "IOTAUSDT",
     "IOTXUSDT",
@@ -545,6 +546,7 @@
     "MANAUSDT",
     "MANTAUSDT",
     "MANTRAUSDT",
+    "MARAUSDT",
     "MASKUSDT",
     "MATICBUSD",
     "MATICUSDC",
@@ -581,6 +583,7 @@
     "MORPHOUSDT",
     "MOVEUSDT",
     "MOVRUSDT",
+    "MRKUSDT",
     "MRNAUSDT",
     "MRVLUSDT",
     "MSFTUSDT",
@@ -653,6 +656,7 @@
     "PARTIUSDT",
     "PAXGUSDT",
     "PAYPUSDT",
+    "PDDUSDT",
     "PENDLEUSDT",
     "PENGUSDT",
     "PENGUUSDC",
@@ -831,6 +835,7 @@
     "TAOUSDT",
     "TAUSDT",
     "TBTUSDT",
+    "TEMUSDT",
     "TENCENTUSDT",
     "TERUSDT",
     "THETAUSDT",
