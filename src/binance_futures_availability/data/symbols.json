@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "discovery_date": "2026-10-02",
-    "last_discovery": "2026-10-02T09:19:38.308316+00:00",
+    "discovery_date": "2026-10-03",
+    "last_discovery": "2026-10-03T08:50:50.551249+00:00",
     "source": "S3 Vision bucket: s3://data.binance.vision/data/futures/um/daily/klines/",
     "discovery_method": "S3 XML API",
     "note": "Symbols with historical data availability on S3 Vision (auto-updated daily)",
