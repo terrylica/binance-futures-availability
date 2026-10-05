@@ -1,6 +1,6 @@
 # ADR-0015: Extract Validated Workflows into Atomic Skills
 
-**Status**: Accepted
+**Status**: Superseded (2026-10-05). The skills in `./skills/` were never loaded: Claude Code loads project skills only from `.claude/skills/`. They also encoded generic workflows current models perform unaided, so they were removed. The last copy is on the [v1.4.0 tag](https://github.com/terrylica/binance-futures-availability/tree/v1.4.0/skills).
 **Date**: 2025-11-17
 **Deciders**: Development Team
 **Related**: [ADR-0013: Volume Rankings Archive](0013-volume-rankings-timeseries.md), [ADR-0014: Easy Query Access](0014-easy-query-access.md)
@@ -113,15 +113,15 @@ Add "Reusable Skills" section after "Related Projects", before "SSoT Documentati
 
 Domain-specific skills extracted from this project for reuse across workspaces:
 
-### [Multi-Agent Parallel Investigation](skills/multi-agent-parallel-investigation/SKILL.md)
+### [Multi-Agent Parallel Investigation](https://github.com/terrylica/binance-futures-availability/blob/v1.4.0/skills/multi-agent-parallel-investigation/SKILL.md)
 
 Decompose complex questions into 4-6 parallel investigations with different perspectives, synthesize into phased decision framework
 
-### [DuckDB Remote Parquet Query](skills/duckdb-remote-parquet-query/SKILL.md)
+### [DuckDB Remote Parquet Query](https://github.com/terrylica/binance-futures-availability/blob/v1.4.0/skills/duckdb-remote-parquet-query/SKILL.md)
 
 Query Parquet files on remote storage without downloading using DuckDB's httpfs extension with HTTP range requests
 
-### [Documentation Improvement Workflow](skills/documentation-improvement-workflow/SKILL.md)
+### [Documentation Improvement Workflow](https://github.com/terrylica/binance-futures-availability/blob/v1.4.0/skills/documentation-improvement-workflow/SKILL.md)
 
 Transform reference docs into quick-start structure by adding Quick Start, Prerequisites, and practical examples
 ```
