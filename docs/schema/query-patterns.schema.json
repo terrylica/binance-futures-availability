@@ -109,7 +109,7 @@
           ],
           "performanceTarget": {
             "latency": "<1ms",
-            "explanation": "Primary use case, returns ~708 rows with idx_available_date index"
+            "explanation": "Primary use case, returns ~708 rows via a columnar scan with date zone-map pruning (no index on `available`; see schema.py)"
           },
           "example": {
             "parameters": {

@@ -80,9 +80,6 @@ Extended `daily_availability` table with 9 new columns (all nullable for backwar
 ALTER TABLE daily_availability ADD COLUMN quote_volume_usdt DOUBLE;
 ALTER TABLE daily_availability ADD COLUMN trade_count BIGINT;
 -- ... 7 more columns
-
-CREATE INDEX idx_quote_volume_date
-    ON daily_availability(quote_volume_usdt DESC, date);
 ```
 
 ## Data Collection
@@ -110,7 +107,7 @@ uv run python scripts/operations/backfill_volume.py \
 
 ## Query Performance
 
-With `idx_quote_volume_date` index:
+Columnar scan with date zone-map pruning (no index on volume columns, which broke upserts on DuckDB 1.4.x):
 
 - **Top 100 by volume**: <10ms
 - **Volume ranking**: <5ms

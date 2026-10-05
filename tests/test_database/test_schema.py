@@ -91,12 +91,5 @@ def test_schema_has_indexes(db):
 
     index_names = [row[0] for row in result]
 
-    # Expected indexes from schema.py
-    expected_indexes = [
-        "idx_symbol_date",      # Timeline queries
-        "idx_available_date",   # Snapshot queries
-        "idx_quote_volume_date",  # Volume rankings (ADR-0007)
-    ]
-
-    for idx in expected_indexes:
-        assert idx in index_names, f"Index {idx} not found in schema"
+    # Only key-column indexes: indexing a mutable column broke upserts (schema.py)
+    assert index_names == ["idx_symbol_date"]

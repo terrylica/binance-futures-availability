@@ -10,7 +10,7 @@ See also: [Query Patterns Schema](../schema/query-patterns.schema.json)
 
 **Use case**: "Which symbols were available on 2024-01-15?"
 
-**Performance**: <1ms (idx_available_date index)
+**Performance**: <10ms (columnar scan, date zone-map pruning)
 
 **CLI**:
 

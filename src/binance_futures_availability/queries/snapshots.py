@@ -14,7 +14,7 @@ class SnapshotQueries:
     """
     Snapshot queries for point-in-time availability.
 
-    Performance target: <1ms per query (idx_available_date index)
+    Performance target: <10ms per query (columnar scan, date zone-map pruning)
     """
 
     def __init__(self, db_path: Path | None = None) -> None:

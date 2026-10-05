@@ -208,16 +208,6 @@
                   "name": "idx_symbol_date",
                   "columns": ["symbol", "date"],
                   "purpose": "Fast timeline queries (get_symbol_availability_timeline)"
-                },
-                {
-                  "name": "idx_available_date",
-                  "columns": ["available", "date"],
-                  "purpose": "Fast snapshot queries (get_available_symbols_on_date)"
-                },
-                {
-                  "name": "idx_quote_volume_date",
-                  "columns": ["quote_volume_usdt", "date"],
-                  "purpose": "ADR-0007: Fast volume ranking queries (top N symbols by volume)"
                 }
               ]
             }
@@ -340,16 +330,6 @@
             "name": "idx_symbol_date",
             "columns": ["symbol", "date"],
             "purpose": "Fast timeline queries (get_symbol_availability_timeline)"
-          },
-          {
-            "name": "idx_available_date",
-            "columns": ["available", "date"],
-            "purpose": "Fast snapshot queries (get_available_symbols_on_date)"
-          },
-          {
-            "name": "idx_quote_volume_date",
-            "columns": ["quote_volume_usdt", "date"],
-            "purpose": "ADR-0007: Fast volume ranking queries (top N symbols by volume)"
           }
         ]
       }

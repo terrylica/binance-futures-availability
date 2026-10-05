@@ -6,7 +6,45 @@ from typing import Any
 
 import duckdb
 
-from binance_futures_availability.database.schema import create_schema
+from binance_futures_availability.database.schema import (
+    create_schema,
+    refresh_daily_symbol_counts,
+)
+
+_PROBE_COLUMNS = (
+    "available",
+    "file_size_bytes",
+    "last_modified",
+    "url",
+    "status_code",
+    "probe_timestamp",
+)
+# ADR-0007 volume metrics. Nullable, and kept on conflict when the new row carries none, so an
+# availability-only re-probe never wipes volume collected earlier.
+VOLUME_COLUMNS = (
+    "quote_volume_usdt",
+    "trade_count",
+    "volume_base",
+    "taker_buy_volume_base",
+    "taker_buy_quote_volume_usdt",
+    "open_price",
+    "high_price",
+    "low_price",
+    "close_price",
+)
+_ALL_COLUMNS = ("date", "symbol", *_PROBE_COLUMNS, *VOLUME_COLUMNS)
+
+# Explicit ON CONFLICT, never INSERT OR REPLACE: DuckDB 1.4.x's OR REPLACE skipped indexed
+# non-key columns (see schema._UPSERT_BREAKING_INDEXES), corrupting `available` for ~10 months.
+_UPSERT_SQL = (
+    f"INSERT INTO daily_availability ({', '.join(_ALL_COLUMNS)}) "
+    f"VALUES ({', '.join('?' * len(_ALL_COLUMNS))}) "
+    "ON CONFLICT (date, symbol) DO UPDATE SET "
+    + ", ".join(
+        [f"{c} = excluded.{c}" for c in _PROBE_COLUMNS]
+        + [f"{c} = COALESCE(excluded.{c}, daily_availability.{c})" for c in VOLUME_COLUMNS]
+    )
+)
 
 
 class AvailabilityDatabase:
@@ -67,7 +105,7 @@ class AvailabilityDatabase:
         close_price: float | None = None,
     ) -> None:
         """
-        Insert or update a single availability record (UPSERT).
+        Insert or update a single availability record (UPSERT via insert_batch).
 
         Args:
             date: Trading date (UTC)
@@ -91,37 +129,29 @@ class AvailabilityDatabase:
         Raises:
             RuntimeError: On database error (ADR-0003: strict raise policy)
         """
-        try:
-            self.conn.execute(
-                """
-                INSERT OR REPLACE INTO daily_availability
-                (date, symbol, available, file_size_bytes, last_modified, url, status_code, probe_timestamp,
-                 quote_volume_usdt, trade_count, volume_base, taker_buy_volume_base,
-                 taker_buy_quote_volume_usdt, open_price, high_price, low_price, close_price)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                [
-                    date,
-                    symbol,
-                    available,
-                    file_size_bytes,
-                    last_modified,
-                    url,
-                    status_code,
-                    probe_timestamp,
-                    quote_volume_usdt,
-                    trade_count,
-                    volume_base,
-                    taker_buy_volume_base,
-                    taker_buy_quote_volume_usdt,
-                    open_price,
-                    high_price,
-                    low_price,
-                    close_price,
-                ],
-            )
-        except Exception as e:
-            raise RuntimeError(f"Failed to insert availability for {symbol} on {date}: {e}") from e
+        self.insert_batch(
+            [
+                {
+                    "date": date,
+                    "symbol": symbol,
+                    "available": available,
+                    "file_size_bytes": file_size_bytes,
+                    "last_modified": last_modified,
+                    "url": url,
+                    "status_code": status_code,
+                    "probe_timestamp": probe_timestamp,
+                    "quote_volume_usdt": quote_volume_usdt,
+                    "trade_count": trade_count,
+                    "volume_base": volume_base,
+                    "taker_buy_volume_base": taker_buy_volume_base,
+                    "taker_buy_quote_volume_usdt": taker_buy_quote_volume_usdt,
+                    "open_price": open_price,
+                    "high_price": high_price,
+                    "low_price": low_price,
+                    "close_price": close_price,
+                }
+            ]
+        )
 
     def insert_batch(self, records: list[dict[str, Any]]) -> None:
         """
@@ -158,36 +188,7 @@ class AvailabilityDatabase:
 
         try:
             self.conn.executemany(
-                """
-                INSERT OR REPLACE INTO daily_availability
-                (date, symbol, available, file_size_bytes, last_modified, url, status_code, probe_timestamp,
-                 quote_volume_usdt, trade_count, volume_base, taker_buy_volume_base,
-                 taker_buy_quote_volume_usdt, open_price, high_price, low_price, close_price)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                [
-                    (
-                        r["date"],
-                        r["symbol"],
-                        r["available"],
-                        r.get("file_size_bytes"),
-                        r.get("last_modified"),
-                        r["url"],
-                        r["status_code"],
-                        r["probe_timestamp"],
-                        # ADR-0007: Volume metrics (all nullable)
-                        r.get("quote_volume_usdt"),
-                        r.get("trade_count"),
-                        r.get("volume_base"),
-                        r.get("taker_buy_volume_base"),
-                        r.get("taker_buy_quote_volume_usdt"),
-                        r.get("open_price"),
-                        r.get("high_price"),
-                        r.get("low_price"),
-                        r.get("close_price"),
-                    )
-                    for r in records
-                ],
+                _UPSERT_SQL, [tuple(r.get(c) for c in _ALL_COLUMNS) for r in records]
             )
             # ADR-0019: Auto-refresh materialized views after batch insert
             # Skip if disabled (for parallel operations to avoid concurrent conflicts)
@@ -227,19 +228,7 @@ class AvailabilityDatabase:
             RuntimeError: On refresh error (ADR-0003: strict raise policy)
         """
         try:
-            # Incremental refresh: Only recompute dates that changed
-            # DELETE + INSERT is faster than full recomputation
-            self.conn.execute("""
-                INSERT OR REPLACE INTO daily_symbol_counts
-                SELECT
-                    date,
-                    COUNT(*) as total_symbols,
-                    SUM(CASE WHEN available THEN 1 ELSE 0 END) as available_symbols,
-                    SUM(CASE WHEN NOT available THEN 1 ELSE 0 END) as unavailable_symbols,
-                    CURRENT_TIMESTAMP as last_updated
-                FROM daily_availability
-                GROUP BY date
-            """)
+            refresh_daily_symbol_counts(self.conn)
         except Exception as e:
             raise RuntimeError(f"Failed to refresh materialized views: {e}") from e
 

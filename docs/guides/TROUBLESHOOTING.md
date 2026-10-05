@@ -173,7 +173,7 @@ db.close()
 
 **Solution**:
 
-- Expected indexes: `idx_symbol_date`, `idx_available_date`
+- Expected indexes: `idx_symbol_date` only (non-key indexes were dropped; they broke upserts on DuckDB 1.4.x)
 - If missing, recreate schema:
 
 ```python
