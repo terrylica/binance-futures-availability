@@ -247,7 +247,7 @@ print("Restore from Parquet completed")
 5. **Validate restored database**:
 
    ```bash
-   uv run python scripts/validate_database.py
+   uv run python scripts/operations/validate.py
    ```
 
 6. **Backfill missing dates** (if backup is old):
@@ -274,7 +274,7 @@ rm -rf ~/.cache/binance-futures/
 uv run python scripts/operations/backfill.py
 
 # Validate
-uv run python scripts/validate_database.py
+uv run python scripts/operations/validate.py
 
 # Start scheduler
 uv run python scripts/start_scheduler.py

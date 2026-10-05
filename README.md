@@ -91,6 +91,7 @@ gh release download latest --pattern "volume-rankings-timeseries.parquet"
 | [0009](https://github.com/terrylica/binance-futures-availability/blob/main/docs/architecture/decisions/0009-github-actions-automation.md)    | GitHub Actions automation |
 | [0010](https://github.com/terrylica/binance-futures-availability/blob/main/docs/architecture/decisions/0010-dynamic-symbol-discovery.md)     | Dynamic symbol discovery  |
 | [0013](https://github.com/terrylica/binance-futures-availability/blob/main/docs/architecture/decisions/0013-volume-rankings-timeseries.md)   | Volume rankings archive   |
+| [0028](https://github.com/terrylica/binance-futures-availability/blob/main/docs/architecture/decisions/0028-upsert-integrity-and-volume-collection.md) | Upsert integrity gate, daily volume |
 
 ## Documentation
 
@@ -102,9 +103,7 @@ gh release download latest --pattern "volume-rankings-timeseries.parquet"
 ## Development
 
 ```bash
-pytest -m "not integration"
-pytest --cov --cov-fail-under=80
-ruff check src/ tests/
+./scripts/check.sh   # ruff + format check + full test suite (the local quality gate)
 ```
 
 ## License

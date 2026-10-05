@@ -440,7 +440,7 @@ Or reduce parallel workers to avoid network congestion.
 2. **Run validation**:
 
    ```bash
-   uv run python scripts/validate_database.py --verbose
+   uv run python scripts/operations/validate.py --verbose
    ```
 
 3. **Check database state**:

@@ -123,12 +123,8 @@ This document analyzes the risks and limitations of using GitHub Actions for aut
 
 **Mitigation**:
 
-- ✅ **Comprehensive validation** before publishing:
-  - Continuity check (no missing dates)
-  - Completeness check (≥700 symbols per date)
-  - Cross-check with Binance API (>95% match SLO)
-  - Test suite runs (≥80% coverage)
-- ✅ **Workflow fails if validation fails** (no bad data published)
+- ✅ **Integrity gate** before publishing: row-level invariant violations fail the workflow, so no corrupt data is published (ADR-0028)
+- ℹ️ Continuity, completeness and API cross-check findings are informational only (ADR-0003)
 - ✅ **Versioned releases** (users can roll back if needed)
 - ✅ **T+1 update window** (3 AM UTC = 1 hour after S3 Vision updates at 2 AM)
 

@@ -178,15 +178,9 @@ uv run python scripts/operations/validate.py --verbose
 - Database is NOT published if validation fails
 - Error details logged to Actions summary
 
-### Step 5: Test
+### Step 5: Validate
 
-Runs pytest test suite (excluding integration tests):
-
-```bash
-uv run pytest -m "not integration" --cov-fail-under=80
-```
-
-**Coverage requirement:** ≥80% test coverage (enforced)
+`scripts/operations/validate.py`: row-level integrity invariants are a hard gate (a violation fails the run and nothing is published, ADR-0028); continuity, completeness and the API cross-check are informational (ADR-0003). Tests and lint run locally via `./scripts/check.sh`, not in Actions.
 
 ### Step 6: Publish
 
@@ -453,14 +447,7 @@ The workflow uses `GITHUB_TOKEN` with minimal required permissions:
 
 ### 4. Database Integrity
 
-**Validation before publish:**
-
-- ✅ Continuity checks (no missing dates)
-- ✅ Completeness checks (≥700 symbols per date)
-- ✅ Cross-check with Binance API (>95% match)
-- ✅ Test suite passes (≥80% coverage)
-
-**Only valid databases are published** - Failures prevent release.
+**Validation before publish:** integrity invariants block publishing (ADR-0028); continuity, completeness and API cross-check findings are reported in the release notes but never block (ADR-0003).
 
 ## Migration from Local Scheduler
 

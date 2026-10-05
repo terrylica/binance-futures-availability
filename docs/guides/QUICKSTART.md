@@ -55,7 +55,7 @@ Backfill Complete! Records inserted: 732,534
 Verify data quality after backfill:
 
 ```bash
-uv run python scripts/validate_database.py
+uv run python scripts/operations/validate.py
 ```
 
 **Expected output**:
@@ -175,7 +175,7 @@ Default database path: `~/.cache/binance-futures/availability.duckdb`
 uv run binance-futures-availability update manual --date 2024-01-15
 
 # Run validation
-uv run python scripts/validate_database.py
+uv run python scripts/operations/validate.py
 
 # View recent symbol counts
 uv run binance-futures-availability query analytics summary
