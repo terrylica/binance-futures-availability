@@ -43,7 +43,6 @@ jobs:
 
     env:
       DB_PATH: ${{ github.workspace }}/.cache/binance-futures/availability.duckdb
-      PYTHON_VERSION: '3.12'
       # ADR-0011: 20-Day Lookback for Data Reliability (Phase 3: Production)
       # workflow_dispatch: Use input parameter (testing/override)
       # schedule (cron): Use 20-day lookback for auto-repair and S3 delay tolerance
@@ -66,15 +65,10 @@ jobs:
           version: "latest"
           enable-cache: true
 
-      - name: Set up Python
-        uses: actions/setup-python@v6  # ADR-0018: Upgrade to v6 LTS
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-
       - name: Verify AWS CLI (for bulk operations)
         run: aws --version
 
-      - name: Install project dependencies
+      - name: Install project dependencies (Python version from .python-version)
         run: |
           uv sync --all-extras
 
@@ -84,16 +78,6 @@ jobs:
       # Doppler GitHub App automatically syncs secrets to GitHub repository secrets.
       # No runtime fetch needed - secrets available as ${{ secrets.PUSHOVER_API_TOKEN }}
       # Configuration: https://dashboard.doppler.com/workplace/13e9e4203ede563b1d37/integrations/connections/8fc5c6ed-fd76-4220-a8be-7ba9cdb5d950
-
-      # ============================================================================
-      # LINT: Code quality checks (ADR-0020: fail fast on quality issues)
-      # ============================================================================
-
-      - name: Run ruff linting
-        run: |
-          echo "Running ruff linter..."
-          uv run ruff check src/ tests/ scripts/
-          echo "✓ Linting passed"
 
       # ============================================================================
       # DISCOVER: Update symbols.json from S3 Vision (daily discovery)

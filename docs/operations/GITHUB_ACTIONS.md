@@ -384,12 +384,7 @@ schedule:
 
 ### Change Python Version
 
-Edit in workflow:
-
-```yaml
-env:
-  PYTHON_VERSION: "3.12" # Change to 3.11, 3.13, etc.
-```
+Edit `.python-version` at the repo root (single source for local runs and CI; `uv sync` provisions it).
 
 ### Add Notifications
 

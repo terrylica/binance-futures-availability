@@ -349,11 +349,6 @@ def test_market_share_calculation(populated_db: Path):
 # ============================================================================
 
 
-
-
-
-
-
 def test_empty_database_fails_validation(temp_db: Path):
     """An empty database yields an empty table, which validation rejects."""
     table = query_rankings(temp_db, logger=None)

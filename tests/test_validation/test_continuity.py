@@ -71,7 +71,11 @@ def test_validate_continuity(populated_db, temp_db_path):
 def test_check_continuity_multiple_gaps(db, temp_db_path):
     """Test continuity check detects multiple non-consecutive missing dates (ADR-0027)."""
     # Insert dates with gaps: 2024-01-15, 2024-01-17, 2024-01-19 (missing 16, 18)
-    for date in [datetime.date(2024, 1, 15), datetime.date(2024, 1, 17), datetime.date(2024, 1, 19)]:
+    for date in [
+        datetime.date(2024, 1, 15),
+        datetime.date(2024, 1, 17),
+        datetime.date(2024, 1, 19),
+    ]:
         db.insert_availability(
             date=date,
             symbol="BTCUSDT",

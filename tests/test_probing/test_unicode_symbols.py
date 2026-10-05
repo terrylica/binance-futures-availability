@@ -12,15 +12,15 @@ Root cause: ASCII encoding error for newly discovered Chinese symbol
 """
 
 import datetime
-import urllib.error
 from unittest.mock import Mock, patch
 
 import pytest
+import urllib3
 
+from binance_futures_availability.probing import s3_vision
 from binance_futures_availability.probing.s3_vision import check_symbol_availability
 
-# Mark entire module as integration - tests edge cases with live S3 API interactions
-pytestmark = pytest.mark.integration
+POOL_REQUEST = (s3_vision.HTTP_POOL, "request")
 
 
 class TestUnicodeSymbolHandling:
@@ -33,15 +33,13 @@ class TestUnicodeSymbolHandling:
 
         # Mock successful response
         mock_response = Mock()
-        mock_response.__enter__ = Mock(return_value=mock_response)
-        mock_response.__exit__ = Mock(return_value=False)
         mock_response.status = 200
         mock_response.headers = {
             "Content-Length": "8000000",
             "Last-Modified": "Mon, 15 Jan 2024 02:00:00 GMT",
         }
 
-        with patch("urllib.request.urlopen", return_value=mock_response) as mock_urlopen:
+        with patch.object(*POOL_REQUEST, return_value=mock_response) as mock_request:
             result = check_symbol_availability(symbol, date)
 
             # Verify result contains original symbol (not encoded)
@@ -52,8 +50,8 @@ class TestUnicodeSymbolHandling:
             expected_encoded = "%E5%B8%81%E5%AE%89%E4%BA%BA%E7%94%9FUSDT"
             assert expected_encoded in result["url"]
 
-            # Verify urlopen was called (encoding worked, no ASCII error)
-            assert mock_urlopen.called
+            # Verify the request was made (encoding worked, no ASCII error)
+            assert mock_request.called
 
     def test_emoji_symbol_url_encoding(self):
         """Emoji characters in symbol names should be properly URL-encoded."""
@@ -61,12 +59,10 @@ class TestUnicodeSymbolHandling:
         date = datetime.date(2024, 1, 15)
 
         mock_response = Mock()
-        mock_response.__enter__ = Mock(return_value=mock_response)
-        mock_response.__exit__ = Mock(return_value=False)
         mock_response.status = 200
         mock_response.headers = {"Content-Length": "8000000"}
 
-        with patch("urllib.request.urlopen", return_value=mock_response):
+        with patch.object(*POOL_REQUEST, return_value=mock_response):
             result = check_symbol_availability(symbol, date)
 
             assert result["symbol"] == "🚀USDT"
@@ -80,12 +76,10 @@ class TestUnicodeSymbolHandling:
         date = datetime.date(2024, 1, 15)
 
         mock_response = Mock()
-        mock_response.__enter__ = Mock(return_value=mock_response)
-        mock_response.__exit__ = Mock(return_value=False)
         mock_response.status = 200
         mock_response.headers = {"Content-Length": "8000000"}
 
-        with patch("urllib.request.urlopen", return_value=mock_response):
+        with patch.object(*POOL_REQUEST, return_value=mock_response):
             result = check_symbol_availability(symbol, date)
 
             assert result["symbol"] == "TEST币安USDT"
@@ -100,12 +94,10 @@ class TestUnicodeSymbolHandling:
         date = datetime.date(2024, 1, 15)
 
         mock_response = Mock()
-        mock_response.__enter__ = Mock(return_value=mock_response)
-        mock_response.__exit__ = Mock(return_value=False)
         mock_response.status = 200
         mock_response.headers = {"Content-Length": "8000000"}
 
-        with patch("urllib.request.urlopen", return_value=mock_response):
+        with patch.object(*POOL_REQUEST, return_value=mock_response):
             result = check_symbol_availability(symbol, date)
 
             assert result["symbol"] == "BTCUSDT"
@@ -118,16 +110,7 @@ class TestUnicodeSymbolHandling:
         symbol = "币安人生USDT"
         date = datetime.date(2024, 1, 15)
 
-        # Mock 404 response
-        http_error = urllib.error.HTTPError(
-            url="https://example.com",
-            code=404,
-            msg="Not Found",
-            hdrs={},
-            fp=None,
-        )
-
-        with patch("urllib.request.urlopen", side_effect=http_error):
+        with patch.object(*POOL_REQUEST, return_value=Mock(status=404, headers={})):
             result = check_symbol_availability(symbol, date)
 
             assert result["symbol"] == "币安人生USDT"
@@ -140,9 +123,9 @@ class TestUnicodeSymbolHandling:
         symbol = "币安人生USDT"
         date = datetime.date(2024, 1, 15)
 
-        url_error = urllib.error.URLError("Network timeout")
-
-        with patch("urllib.request.urlopen", side_effect=url_error):
+        with patch.object(
+            *POOL_REQUEST, side_effect=urllib3.exceptions.HTTPError("Network timeout")
+        ):
             with pytest.raises(RuntimeError, match="Network error probing 币安人生USDT"):
                 check_symbol_availability(symbol, date)
 

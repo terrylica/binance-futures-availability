@@ -37,21 +37,23 @@ except ImportError as e:
 # Note: DuckDB returns signed integers (SMALLINT=int16, BIGINT=int64, TINYINT=int8)
 # even though these values are semantically unsigned (ranks, counts, days).
 # We use signed types to match DuckDB's output and avoid casting overhead.
-RANKINGS_SCHEMA = pa.schema([
-    ('date', pa.date32()),
-    ('symbol', pa.string()),
-    ('rank', pa.int16()),  # DuckDB SMALLINT (signed)
-    ('quote_volume_usdt', pa.float64()),
-    ('trade_count', pa.int64()),  # DuckDB BIGINT (signed)
-    ('rank_change_1d', pa.int16()),
-    ('rank_change_7d', pa.int16()),
-    ('rank_change_14d', pa.int16()),
-    ('rank_change_30d', pa.int16()),
-    ('percentile', pa.float32()),
-    ('market_share_pct', pa.float32()),
-    ('days_available', pa.int8()),  # DuckDB TINYINT (signed)
-    ('generation_timestamp', pa.timestamp('us')),  # Allow timezone from CURRENT_TIMESTAMP
-])
+RANKINGS_SCHEMA = pa.schema(
+    [
+        ("date", pa.date32()),
+        ("symbol", pa.string()),
+        ("rank", pa.int16()),  # DuckDB SMALLINT (signed)
+        ("quote_volume_usdt", pa.float64()),
+        ("trade_count", pa.int64()),  # DuckDB BIGINT (signed)
+        ("rank_change_1d", pa.int16()),
+        ("rank_change_7d", pa.int16()),
+        ("rank_change_14d", pa.int16()),
+        ("rank_change_30d", pa.int16()),
+        ("percentile", pa.float32()),
+        ("market_share_pct", pa.float32()),
+        ("days_available", pa.int8()),  # DuckDB TINYINT (signed)
+        ("generation_timestamp", pa.timestamp("us")),  # Allow timezone from CURRENT_TIMESTAMP
+    ]
+)
 
 
 def generate_rankings_sql() -> str:
@@ -64,7 +66,7 @@ def generate_rankings_sql() -> str:
     Returns:
         SQL query string
     """
-    return f"""
+    return """
     WITH daily_ranks AS (
         SELECT
             date,
@@ -175,20 +177,17 @@ def validate_rankings_table(table: pa.Table, logger: logging.Logger | None = Non
     """
     # Check schema matches specification
     if not table.schema.equals(RANKINGS_SCHEMA):
-        raise ValueError(
-            f"Schema mismatch:\nExpected: {RANKINGS_SCHEMA}\nActual: {table.schema}"
-        )
+        raise ValueError(f"Schema mismatch:\nExpected: {RANKINGS_SCHEMA}\nActual: {table.schema}")
 
     # Check row count reasonable
     if len(table) == 0:
         raise ValueError("Rankings table is empty (no rows)")
 
-    if len(table) > 2_000_000:  # Sanity check: ~2K dates × 700 symbols = 1.4M rows
-        if logger:
-            logger.warning(f"Unexpectedly large table: {len(table):,} rows")
+    if logger and len(table) > 2_000_000:  # Sanity check: ~2.5K dates × ~800 symbols
+        logger.warning(f"Unexpectedly large table: {len(table):,} rows")
 
     # Check ranks are positive
-    ranks = table['rank'].to_pylist()
+    ranks = table["rank"].to_pylist()
     if any(r is None or r < 1 for r in ranks):
         raise ValueError("Invalid ranks found (NULL or <1)")
 
@@ -212,9 +211,9 @@ def write_parquet(table: pa.Table, output_path: Path, logger: logging.Logger | N
         pq.write_table(
             table,
             output_path,
-            compression='snappy',
+            compression="snappy",
             use_dictionary=True,
-            version='2.6',  # Modern Parquet format
+            version="2.6",  # Modern Parquet format
         )
 
         file_size_mb = output_path.stat().st_size / 1024 / 1024
@@ -281,7 +280,8 @@ def main() -> int:
 
         # Print summary (using PyArrow compute, no pandas dependency)
         import pyarrow.compute as pc
-        date_col = final_table['date']
+
+        date_col = final_table["date"]
         min_date = pc.min(date_col).as_py()
         max_date = pc.max(date_col).as_py()
         unique_dates = pc.count_distinct(date_col).as_py()

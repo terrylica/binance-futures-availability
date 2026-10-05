@@ -1,0 +1,3 @@
+# Toolchain pins (proto). Python is pinned by .python-version and provisioned by uv.
+node = "25"  # semantic-release (npm run release)
+uv = "latest"
