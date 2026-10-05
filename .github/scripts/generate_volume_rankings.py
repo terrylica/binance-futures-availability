@@ -6,10 +6,13 @@ Calculates daily volume rankings for all symbols using quote_volume_usdt metric,
 tracks rank changes over 1-day, 7-day, 14-day, and 30-day windows, and outputs
 single cumulative Parquet file for analytical database consumption.
 
+Always regenerated in full from the database (~1s): rankings are a derived view, so
+volume that arrives late (T+1 lag, catch-up backfills) is reflected on the next run, and
+LAG()-based rank changes always see full history.
+
 Usage:
     uv run python .github/scripts/generate_volume_rankings.py \\
         --db-path ~/.cache/binance-futures/availability.duckdb \\
-        --existing-file volume-rankings-timeseries.parquet \\
         --output volume-rankings-timeseries.parquet
 
 See: docs/architecture/decisions/0013-volume-rankings-timeseries.md
@@ -18,7 +21,6 @@ See: docs/architecture/decisions/0013-volume-rankings-timeseries.md
 import argparse
 import logging
 import sys
-from datetime import datetime
 from pathlib import Path
 
 try:
@@ -52,46 +54,16 @@ RANKINGS_SCHEMA = pa.schema([
 ])
 
 
-def get_latest_date_from_parquet(parquet_file: Path) -> str | None:
-    """
-    Extract latest date from existing Parquet file for incremental append.
-
-    Args:
-        parquet_file: Path to existing Parquet file
-
-    Returns:
-        Latest date as YYYY-MM-DD string, or None if file doesn't exist
-    """
-    if not parquet_file.exists():
-        return None
-
-    try:
-        import pyarrow.compute as pc
-        table = pq.read_table(parquet_file, columns=['date'])
-        # Use PyArrow compute instead of pandas for max date
-        max_date = pc.max(table['date']).as_py()
-        return max_date.strftime('%Y-%m-%d')
-    except Exception as e:
-        logging.warning(f"Could not read existing Parquet: {e}")
-        return None
-
-
-def generate_rankings_sql(start_date: str | None) -> str:
+def generate_rankings_sql() -> str:
     """
     Generate SQL query for volume rankings with rank change tracking.
 
     Uses DENSE_RANK() for consistent rankings (no gaps when ties exist).
     Calculates rank changes over 1d, 7d, 14d, 30d windows using LAG().
 
-    Args:
-        start_date: Optional start date (YYYY-MM-DD) for incremental append.
-                   If None, queries all historical dates.
-
     Returns:
         SQL query string
     """
-    date_filter = f"AND date > '{start_date}'" if start_date else ""
-
     return f"""
     WITH daily_ranks AS (
         SELECT
@@ -105,7 +77,6 @@ def generate_rankings_sql(start_date: str | None) -> str:
         FROM daily_availability
         WHERE available = TRUE
           AND quote_volume_usdt IS NOT NULL
-          {date_filter}
     ),
     trailing_availability AS (
         SELECT
@@ -119,7 +90,6 @@ def generate_rankings_sql(start_date: str | None) -> str:
         FROM daily_availability
         WHERE available = TRUE
           AND quote_volume_usdt IS NOT NULL
-          {date_filter}
     ),
     rank_changes AS (
         SELECT
@@ -153,13 +123,12 @@ def generate_rankings_sql(start_date: str | None) -> str:
     """
 
 
-def query_rankings(db_path: Path, start_date: str | None, logger: logging.Logger | None = None) -> pa.Table:
+def query_rankings(db_path: Path, logger: logging.Logger | None = None) -> pa.Table:
     """
     Query database for volume rankings.
 
     Args:
         db_path: Path to DuckDB database
-        start_date: Optional start date for incremental append
         logger: Logger instance (optional, defaults to None for testing)
 
     Returns:
@@ -176,9 +145,9 @@ def query_rankings(db_path: Path, start_date: str | None, logger: logging.Logger
             logger.info(f"Connecting to database: {db_path}")
         conn = duckdb.connect(str(db_path), read_only=True)
 
-        sql = generate_rankings_sql(start_date)
+        sql = generate_rankings_sql()
         if logger:
-            logger.info(f"Querying rankings (start_date={start_date or 'all history'})")
+            logger.info("Querying rankings (full history)")
 
         # Execute query and convert to PyArrow
         result = conn.execute(sql).fetch_arrow_table()
@@ -256,43 +225,6 @@ def write_parquet(table: pa.Table, output_path: Path, logger: logging.Logger | N
         raise RuntimeError(f"Failed to write Parquet: {e}") from e
 
 
-def merge_tables(existing_table: pa.Table, new_table: pa.Table, logger: logging.Logger | None = None) -> pa.Table:
-    """
-    Merge existing and new rankings tables (append new rows).
-
-    Args:
-        existing_table: Existing historical rankings
-        new_table: New rankings to append
-        logger: Logger instance (optional, defaults to None for testing)
-
-    Returns:
-        Merged PyArrow table
-
-    Raises:
-        ValueError: If tables have duplicate dates
-    """
-    # Check for overlapping dates
-    existing_dates = set(existing_table['date'].to_pylist())
-    new_dates = set(new_table['date'].to_pylist())
-
-    overlap = existing_dates & new_dates
-    if overlap:
-        raise ValueError(
-            f"Duplicate dates found (cannot append): {sorted(overlap)[:5]}..."
-        )
-
-    # Concatenate tables
-    merged = pa.concat_tables([existing_table, new_table])
-
-    if logger:
-        logger.info(
-            f"Merged tables: {len(existing_table):,} existing + "
-            f"{len(new_table):,} new = {len(merged):,} total rows"
-        )
-
-    return merged
-
-
 def main() -> int:
     """
     Main ranking generation execution.
@@ -308,11 +240,6 @@ def main() -> int:
         type=Path,
         required=True,
         help="Path to DuckDB database (availability.duckdb)",
-    )
-    parser.add_argument(
-        "--existing-file",
-        type=Path,
-        help="Path to existing Parquet file (for incremental append)",
     )
     parser.add_argument(
         "--output",
@@ -344,39 +271,7 @@ def main() -> int:
     logger.info("")
 
     try:
-        # Determine if incremental append or full generation
-        start_date = None
-        existing_table = None
-
-        if args.existing_file and args.existing_file.exists():
-            logger.info(f"Existing file found: {args.existing_file}")
-            start_date = get_latest_date_from_parquet(args.existing_file)
-
-            if start_date:
-                logger.info(f"Latest date in existing file: {start_date}")
-                logger.info("Mode: INCREMENTAL APPEND")
-
-                # Load existing table for merging
-                existing_table = pq.read_table(args.existing_file)
-                logger.info(f"Existing table: {len(existing_table):,} rows")
-            else:
-                logger.info("Could not determine latest date, falling back to full generation")
-        else:
-            logger.info("No existing file found")
-            logger.info("Mode: FULL HISTORICAL GENERATION")
-
-        # Query new rankings from database
-        new_table = query_rankings(args.db_path, start_date, logger)
-
-        if len(new_table) == 0:
-            logger.info("No new rankings to add (database up to date)")
-            return 0
-
-        # Merge with existing if applicable
-        if existing_table is not None:
-            final_table = merge_tables(existing_table, new_table, logger)
-        else:
-            final_table = new_table
+        final_table = query_rankings(args.db_path, logger)
 
         # Validate final table
         validate_rankings_table(final_table, logger)

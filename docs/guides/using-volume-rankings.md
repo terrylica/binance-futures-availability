@@ -470,7 +470,7 @@ ORDER BY date DESC
 **Automated**:
 
 - GitHub Actions updates daily at 3:00 AM UTC
-- New rows appended automatically (incremental)
+- Regenerated in full from the database on every run (late-arriving volume is reflected)
 - Published to GitHub Releases "latest" tag
 
 **Manual Regeneration** (if needed):

@@ -19,6 +19,7 @@ from pathlib import Path
 
 import duckdb
 import pyarrow as pa
+import pyarrow.compute  # noqa: F401  (registers pa.compute)
 import pyarrow.parquet as pq
 import pytest
 
@@ -26,8 +27,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / ".github" / "script
 from generate_volume_rankings import (
     RANKINGS_SCHEMA,
     generate_rankings_sql,
-    get_latest_date_from_parquet,
-    merge_tables,
     query_rankings,
     validate_rankings_table,
     write_parquet,
@@ -160,23 +159,23 @@ def test_schema_definition():
     # Verify data types
     assert RANKINGS_SCHEMA.field("date").type == pa.date32()
     assert RANKINGS_SCHEMA.field("symbol").type == pa.string()
-    assert RANKINGS_SCHEMA.field("rank").type == pa.uint16()
+    assert RANKINGS_SCHEMA.field("rank").type == pa.int16()
     assert RANKINGS_SCHEMA.field("quote_volume_usdt").type == pa.float64()
-    assert RANKINGS_SCHEMA.field("trade_count").type == pa.uint64()
+    assert RANKINGS_SCHEMA.field("trade_count").type == pa.int64()
     assert RANKINGS_SCHEMA.field("rank_change_1d").type == pa.int16()
     assert RANKINGS_SCHEMA.field("rank_change_7d").type == pa.int16()
     assert RANKINGS_SCHEMA.field("rank_change_14d").type == pa.int16()
     assert RANKINGS_SCHEMA.field("rank_change_30d").type == pa.int16()
     assert RANKINGS_SCHEMA.field("percentile").type == pa.float32()
     assert RANKINGS_SCHEMA.field("market_share_pct").type == pa.float32()
-    assert RANKINGS_SCHEMA.field("days_available").type == pa.uint8()
+    assert RANKINGS_SCHEMA.field("days_available").type == pa.int8()
     assert RANKINGS_SCHEMA.field("generation_timestamp").type == pa.timestamp("us")
 
 
 def test_validate_rankings_table_valid(populated_db: Path, temp_parquet: Path):
     """Test validation passes for correctly generated rankings table."""
     # Generate rankings
-    table = query_rankings(populated_db, start_date=None, logger=None)
+    table = query_rankings(populated_db, logger=None)
 
     # Should not raise
     validate_rankings_table(table, logger=None)
@@ -189,7 +188,7 @@ def test_validate_rankings_table_schema_mismatch():
         [
             ("date", pa.date32()),
             ("symbol", pa.string()),
-            ("rank", pa.int32()),  # Wrong type (should be uint16)
+            ("rank", pa.int32()),  # Wrong type (should be int16)
         ]
     )
 
@@ -246,7 +245,7 @@ def test_validate_rankings_table_invalid_ranks():
 
 def test_ranking_calculation_order(populated_db: Path):
     """Test rankings are ordered by quote_volume_usdt DESC."""
-    table = query_rankings(populated_db, start_date=None, logger=None)
+    table = query_rankings(populated_db, logger=None)
 
     # Check first date's rankings
     first_date_data = table.filter(
@@ -265,7 +264,7 @@ def test_ranking_calculation_order(populated_db: Path):
 def test_dense_rank_no_gaps():
     """Test DENSE_RANK produces consecutive ranks (no gaps)."""
     # This test validates the SQL algorithm choice
-    sql = generate_rankings_sql(start_date=None)
+    sql = generate_rankings_sql()
 
     # Verify DENSE_RANK is used (not RANK which creates gaps)
     assert "DENSE_RANK()" in sql, "Should use DENSE_RANK for consecutive rankings"
@@ -274,7 +273,7 @@ def test_dense_rank_no_gaps():
 
 def test_rank_change_calculation(populated_db: Path):
     """Test rank change windows (1d, 7d, 14d, 30d) are calculated correctly."""
-    table = query_rankings(populated_db, start_date=None, logger=None)
+    table = query_rankings(populated_db, logger=None)
 
     # Day 2: Check 1-day rank change (should be 0 for all, since relative order unchanged)
     day2_data = table.filter(
@@ -290,7 +289,7 @@ def test_rank_change_calculation(populated_db: Path):
 
 def test_rank_change_null_for_insufficient_history(populated_db: Path):
     """Test rank_change_7d/14d/30d are NULL when insufficient history."""
-    table = query_rankings(populated_db, start_date=None, logger=None)
+    table = query_rankings(populated_db, logger=None)
 
     # Day 1: No prior history, all rank changes should be NULL
     day1_data = table.filter(
@@ -307,7 +306,7 @@ def test_rank_change_null_for_insufficient_history(populated_db: Path):
 
 def test_percentile_calculation(populated_db: Path):
     """Test percentile rank calculation (0-100, 0=top)."""
-    table = query_rankings(populated_db, start_date=None, logger=None)
+    table = query_rankings(populated_db, logger=None)
 
     # Check first date
     day1_data = table.filter(
@@ -333,7 +332,7 @@ def test_percentile_calculation(populated_db: Path):
 
 def test_market_share_calculation(populated_db: Path):
     """Test market_share_pct sums to ~100% per date."""
-    table = query_rankings(populated_db, start_date=None, logger=None)
+    table = query_rankings(populated_db, logger=None)
 
     # Check first date
     day1_data = table.filter(
@@ -350,100 +349,17 @@ def test_market_share_calculation(populated_db: Path):
 # ============================================================================
 
 
-def test_get_latest_date_from_parquet(populated_db: Path, temp_parquet: Path):
-    """Test extracting latest date from existing Parquet file."""
-    # Generate initial rankings
-    table = query_rankings(populated_db, start_date=None, logger=None)
-    write_parquet(table, temp_parquet, logger=None)
-
-    # Extract latest date
-    latest_date = get_latest_date_from_parquet(temp_parquet)
-
-    assert latest_date == "2024-01-19", "Should extract latest date from Parquet"
 
 
-def test_get_latest_date_nonexistent_file():
-    """Test returns None for non-existent Parquet file."""
-    nonexistent = Path("/tmp/nonexistent_file.parquet")
-
-    latest_date = get_latest_date_from_parquet(nonexistent)
-
-    assert latest_date is None, "Should return None for missing file"
 
 
-def test_merge_tables_no_overlap(populated_db: Path, temp_parquet: Path):
-    """Test merging tables with no duplicate dates."""
-    # Create two non-overlapping tables
-    table1 = query_rankings(populated_db, start_date=None, logger=None)
 
-    # Simulate new data by filtering to later dates
-    table1_subset = table1.filter(pa.compute.less(table1["date"], datetime.date(2024, 1, 17)))
-
-    table2_subset = table1.filter(
-        pa.compute.greater_equal(table1["date"], datetime.date(2024, 1, 17))
-    )
-
-    # Merge should succeed
-    merged = merge_tables(table1_subset, table2_subset, logger=None)
-
-    assert len(merged) == len(table1), "Merged table should have all rows"
-
-
-def test_merge_tables_with_overlap_raises():
-    """Test merging tables with duplicate dates raises ValueError."""
-    # Create overlapping tables
-    data = {
-        "date": [datetime.date(2024, 1, 15)],
-        "symbol": ["BTCUSDT"],
-        "rank": [1],
-        "quote_volume_usdt": [1000000.0],
-        "trade_count": [10000],
-        "rank_change_1d": [None],
-        "rank_change_7d": [None],
-        "rank_change_14d": [None],
-        "rank_change_30d": [None],
-        "percentile": [0.0],
-        "market_share_pct": [100.0],
-        "days_available": [1],
-        "generation_timestamp": [datetime.datetime.now()],
-    }
-
-    table1 = pa.table(data, schema=RANKINGS_SCHEMA)
-    table2 = pa.table(data, schema=RANKINGS_SCHEMA)  # Same date!
-
-    with pytest.raises(ValueError, match="Duplicate dates found"):
-        merge_tables(table1, table2, logger=None)
-
-
-def test_incremental_append_query(populated_db: Path):
-    """Test SQL query with start_date filters correctly."""
-    # Query all data
-    full_table = query_rankings(populated_db, start_date=None, logger=None)
-
-    # Query only dates > 2024-01-16
-    incremental_table = query_rankings(populated_db, start_date="2024-01-16", logger=None)
-
-    # Should have fewer rows (3 days instead of 5)
-    assert len(incremental_table) < len(full_table), "Incremental query should return fewer rows"
-
-    # Verify no dates <= 2024-01-16
-    dates = incremental_table["date"].to_pylist()
-    assert all(d > datetime.date(2024, 1, 16) for d in dates), (
-        "Incremental table should only have dates > start_date"
-    )
-
-
-# ============================================================================
-# Edge Case Tests
-# ============================================================================
-
-
-def test_empty_database_raises(temp_db: Path):
-    """Test querying empty database raises error."""
-    # temp_db has no data
-
-    with pytest.raises(RuntimeError, match="Rankings query failed"):
-        query_rankings(temp_db, start_date=None, logger=None)
+def test_empty_database_fails_validation(temp_db: Path):
+    """An empty database yields an empty table, which validation rejects."""
+    table = query_rankings(temp_db, logger=None)
+    assert len(table) == 0
+    with pytest.raises(ValueError, match="empty"):
+        validate_rankings_table(table, logger=None)
 
 
 def test_single_symbol_ranking(temp_db: Path):
@@ -460,7 +376,7 @@ def test_single_symbol_ranking(temp_db: Path):
     """)
     conn.close()
 
-    table = query_rankings(temp_db, start_date=None, logger=None)
+    table = query_rankings(temp_db, logger=None)
 
     assert len(table) == 1, "Should handle single symbol correctly"
     assert table["rank"][0].as_py() == 1, "Single symbol should have rank 1"
@@ -487,7 +403,7 @@ def test_tied_volumes_same_rank(temp_db: Path):
     )
     conn.close()
 
-    table = query_rankings(temp_db, start_date=None, logger=None)
+    table = query_rankings(temp_db, logger=None)
     data = table.to_pydict()
 
     # Both tied symbols should have rank 1
@@ -517,7 +433,7 @@ def test_inactive_symbols_excluded(temp_db: Path):
     """)
     conn.close()
 
-    table = query_rankings(temp_db, start_date=None, logger=None)
+    table = query_rankings(temp_db, logger=None)
     symbols = table["symbol"].to_pylist()
 
     assert "ACTIVEUSDT" in symbols, "Active symbol should be included"
@@ -535,7 +451,7 @@ def test_null_volume_excluded(temp_db: Path):
     """)
     conn.close()
 
-    table = query_rankings(temp_db, start_date=None, logger=None)
+    table = query_rankings(temp_db, logger=None)
 
     assert len(table) == 0, "Symbols with NULL volume should be excluded"
 
@@ -547,7 +463,7 @@ def test_null_volume_excluded(temp_db: Path):
 
 def test_write_parquet_creates_file(populated_db: Path, temp_parquet: Path):
     """Test Parquet file is created with correct format."""
-    table = query_rankings(populated_db, start_date=None, logger=None)
+    table = query_rankings(populated_db, logger=None)
 
     write_parquet(table, temp_parquet, logger=None)
 
@@ -557,7 +473,7 @@ def test_write_parquet_creates_file(populated_db: Path, temp_parquet: Path):
 
 def test_parquet_schema_preserved(populated_db: Path, temp_parquet: Path):
     """Test schema is preserved after write/read cycle."""
-    table = query_rankings(populated_db, start_date=None, logger=None)
+    table = query_rankings(populated_db, logger=None)
     write_parquet(table, temp_parquet, logger=None)
 
     # Read back
@@ -568,7 +484,7 @@ def test_parquet_schema_preserved(populated_db: Path, temp_parquet: Path):
 
 def test_parquet_data_integrity(populated_db: Path, temp_parquet: Path):
     """Test data is preserved after write/read cycle."""
-    original_table = query_rankings(populated_db, start_date=None, logger=None)
+    original_table = query_rankings(populated_db, logger=None)
     write_parquet(original_table, temp_parquet, logger=None)
 
     # Read back

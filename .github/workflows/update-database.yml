@@ -334,30 +334,6 @@ jobs:
       # RANKINGS: Generate volume rankings time-series archive (ADR-0013)
       # ============================================================================
 
-      - name: Download existing rankings archive
-        id: download_rankings
-        if: steps.check_db.outputs.db_ready == 'true'
-        run: |
-          RANKINGS_FILE="${{ github.workspace }}/.cache/binance-futures/volume-rankings-timeseries.parquet"
-
-          echo "Attempting to download existing rankings archive..."
-
-          # Try to download from latest release (may not exist on first run)
-          if gh release download latest \
-            --pattern "volume-rankings-timeseries.parquet" \
-            --output "$RANKINGS_FILE" \
-            --clobber \
-            2>/dev/null; then
-
-            echo "✅ Existing rankings file found: $(ls -lh "$RANKINGS_FILE" | awk '{print $5}')"
-            echo "rankings_exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "ℹ️ No existing rankings file, will generate from scratch"
-            echo "rankings_exists=false" >> $GITHUB_OUTPUT
-          fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Generate volume rankings
         id: generate_rankings
         if: steps.check_db.outputs.db_ready == 'true'
@@ -367,21 +343,9 @@ jobs:
 
           echo "Generating volume rankings time-series archive..."
 
-          # Build command with optional existing file
-          CMD="uv run python .github/scripts/generate_volume_rankings.py \
-            --db-path \"$DB_PATH\" \
-            --output \"$RANKINGS_FILE\""
-
-          # Add existing file parameter if available (incremental append)
-          if [ -f "$RANKINGS_FILE" ]; then
-            CMD="$CMD --existing-file \"$RANKINGS_FILE\""
-            echo "Mode: INCREMENTAL APPEND"
-          else
-            echo "Mode: FULL HISTORICAL GENERATION"
-          fi
-
-          # Execute generation script
-          eval $CMD
+          uv run python .github/scripts/generate_volume_rankings.py \
+            --db-path "$DB_PATH" \
+            --output "$RANKINGS_FILE"
 
           if [ $? -eq 0 ]; then
             echo "rankings_generated=true" >> $GITHUB_OUTPUT
