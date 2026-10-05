@@ -6,7 +6,7 @@ Validation layers:
     0. Integrity: Row-level invariants. A violation is corruption: exit 1, never publish
     1. Continuity: Check for missing dates
     2. Completeness: Verify recent symbol counts
-    3. Cross-check: Compare with Binance exchangeInfo API
+    3. Cross-check: Recall of Binance exchangeInfo TRADING perpetuals (local only; HTTP 451 in CI)
 
 Usage:
     uv run python scripts/operations/validate.py [--verbose]
@@ -146,19 +146,23 @@ def main() -> int:
         logger.info(f"Match percentage: {result['match_percentage']}%")
 
         if result["slo_met"]:
-            logger.info(f"✓ {result['match_percentage']}% match (SLO: >95%)")
+            logger.info(f"✓ {result['match_percentage']}% recall on {result['date']} (SLO: >95%)")
         else:
-            logger.warning(f"WARNING: {result['match_percentage']}% match (SLO: >95%)")
+            logger.warning(
+                f"WARNING: {result['match_percentage']}% recall on {result['date']} (SLO: >95%)"
+            )
             has_warnings = True
 
         # Show discrepancies
         if result["only_in_db"]:
-            logger.info(f"Symbols only in DB: {len(result['only_in_db'])}")
+            logger.info(
+                f"Symbols only in DB (settling/delisted, expected): {len(result['only_in_db'])}"
+            )
             for symbol in result["only_in_db"][:5]:
                 logger.info(f"  - {symbol}")
 
         if result["only_in_api"]:
-            logger.info(f"Symbols only in API: {len(result['only_in_api'])}")
+            logger.info(f"TRADING in API but missing from DB: {len(result['only_in_api'])}")
             for symbol in result["only_in_api"][:5]:
                 logger.info(f"  - {symbol}")
 

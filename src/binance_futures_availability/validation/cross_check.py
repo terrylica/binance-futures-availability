@@ -1,5 +1,10 @@
 """Cross-check validation: Verify against Binance exchangeInfo API.
 
+Metric is recall: of the perpetuals the API lists as TRADING, the share with a Vision file in
+the database on the checked date. Symbols only in the database are expected and not errors:
+SETTLING (delisting) contracts keep publishing daily files (133 such symbols on 2026-10-05).
+Binance geo-blocks the API (HTTP 451) on GitHub's US runners, so this check runs locally only.
+
 See: docs/development/plan/v1.0.0-implementation-plan.yaml (slos.correctness)
 """
 
@@ -11,12 +16,19 @@ from typing import Any
 
 from binance_futures_availability.database.availability_db import AvailabilityDatabase
 
+# Vision's um/daily/klines tree holds both; quarterly delivery contracts are out of scope.
+PERPETUAL_CONTRACT_TYPES = frozenset({"PERPETUAL", "TRADIFI_PERPETUAL"})
+
+# Same S3 publishing buffer as the continuity/completeness checks: a first probe of "yesterday"
+# often 404s under the T+1 lag (measured: 93% recall at T-1 vs 100% at T-2 on 2026-10-05).
+DEFAULT_LAG_DAYS = 3
+
 
 class CrossCheckValidator:
     """
     Verify database accuracy against Binance exchangeInfo API.
 
-    SLO: >95% match with exchangeInfo API for current date
+    SLO: >95% of API TRADING perpetuals available in the database (recall)
     See: docs/development/plan/v1.0.0-implementation-plan.yaml (slos.correctness)
 
     Note:
@@ -36,10 +48,10 @@ class CrossCheckValidator:
 
     def fetch_current_symbols_from_api(self) -> set[str]:
         """
-        Fetch currently trading USDT perpetual symbols from Binance API.
+        Fetch every perpetual the API lists as TRADING (any quote asset, incl. TradFi perps).
 
         Returns:
-            Set of symbol strings (e.g., {'BTCUSDT', 'ETHUSDT', ...})
+            Set of symbol strings (e.g., {'BTCUSDT', '1000PEPEUSDC', 'AAPLUSDT', ...})
 
         Raises:
             RuntimeError: On API request failure
@@ -64,13 +76,11 @@ class CrossCheckValidator:
             with urllib.request.urlopen(self.api_url, timeout=10) as response:
                 data = json.loads(response.read().decode())
 
-            # Filter for USDT perpetual contracts with TRADING status
             return {
                 s["symbol"]
                 for s in data["symbols"]
-                if s.get("contractType") == "PERPETUAL"
+                if s.get("contractType") in PERPETUAL_CONTRACT_TYPES
                 and s.get("status") == "TRADING"
-                and s["symbol"].endswith("USDT")
             }
 
         except Exception as e:
@@ -81,7 +91,7 @@ class CrossCheckValidator:
         Compare database symbols against live exchangeInfo API.
 
         Args:
-            date: Date to check (default: yesterday, since today may be incomplete)
+            date: Date to check (default: today - DEFAULT_LAG_DAYS)
 
         Returns:
             Dict with keys:
@@ -89,8 +99,8 @@ class CrossCheckValidator:
                 - db_symbols: Set of symbols in database
                 - api_symbols: Set of symbols from API
                 - match_count: Number of matching symbols
-                - match_percentage: Percentage match (0-100)
-                - only_in_db: Symbols in database but not in API (potential delistings)
+                - match_percentage: Recall of API TRADING perpetuals in the database (0-100)
+                - only_in_db: Symbols in database but not TRADING in API (expected: settling/delisted)
                 - only_in_api: Symbols in API but not in database (potential missing data)
 
         Raises:
@@ -105,9 +115,8 @@ class CrossCheckValidator:
         SLO:
             match_percentage > 95% (docs/development/plan/v1.0.0-implementation-plan.yaml)
         """
-        # Default: check yesterday (today may be incomplete)
         if date is None:
-            date = datetime.date.today() - datetime.timedelta(days=1)
+            date = datetime.date.today() - datetime.timedelta(days=DEFAULT_LAG_DAYS)
         elif isinstance(date, str):
             date = datetime.date.fromisoformat(date)
 
@@ -131,9 +140,9 @@ class CrossCheckValidator:
             only_in_db = db_symbols - api_symbols
             only_in_api = api_symbols - db_symbols
 
-            total_unique = len(db_symbols | api_symbols)
+            # Recall over the API's TRADING set; DB-only symbols are expected (see module doc)
             match_percentage = (
-                (len(matching_symbols) / total_unique * 100) if total_unique > 0 else 0.0
+                (len(matching_symbols) / len(api_symbols) * 100) if api_symbols else 0.0
             )
 
             return {
@@ -144,7 +153,7 @@ class CrossCheckValidator:
                 "match_percentage": round(match_percentage, 2),
                 "only_in_db": sorted(only_in_db),
                 "only_in_api": sorted(only_in_api),
-                "slo_met": match_percentage > 95.0,  # SLO: >95% match
+                "slo_met": match_percentage > 95.0,  # SLO: >95% recall
             }
 
         except Exception as e:
@@ -155,7 +164,7 @@ class CrossCheckValidator:
         Validate that database matches API (assertion-style check).
 
         Args:
-            date: Date to check (default: yesterday)
+            date: Date to check (default: today - DEFAULT_LAG_DAYS)
 
         Returns:
             True if match_percentage > 95%, False otherwise

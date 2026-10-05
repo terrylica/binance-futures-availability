@@ -20,3 +20,7 @@ reason = "pytest suite of the existing Python package"
 [[allow]]
 path = "tests/test_database/test_upsert_integrity.py"
 reason = "pytest suite of the existing Python package"
+
+[[allow]]
+path = "tests/test_validation/test_cross_check.py"
+reason = "pytest suite of the existing Python package"

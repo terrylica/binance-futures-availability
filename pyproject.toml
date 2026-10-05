@@ -39,7 +39,7 @@ addopts = [
     "--cov=src/binance_futures_availability",
     "--cov-report=term-missing",
     "--cov-report=html",
-    "--cov-fail-under=45",  # Ratchet at measured floor (2026-10-05: 45%); ADR-0020 target 80%
+    "--cov-fail-under=48",  # Ratchet: raise as coverage climbs, never lower; ADR-0020 target 80%
     "--strict-markers",
 ]
 markers = [
