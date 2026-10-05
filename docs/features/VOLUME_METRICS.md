@@ -132,5 +132,5 @@ result = db.query("""
 ## References
 
 - **ADR**: [docs/architecture/decisions/0007-trading-volume-metrics.md](../architecture/decisions/0007-trading-volume-metrics.md)
-- **Plan**: [docs/development/plan/0007-trading-volume-metrics/plan.yaml](../development/plan/0007-trading-volume-metrics/plan.yaml)
+- **Plan**: [docs/development/plan/0007-trading-volume-metrics/plan.yaml](https://github.com/terrylica/binance-futures-availability/blob/v1.4.0/docs/development/plan/0007-trading-volume-metrics/plan.yaml) (v1.4.0)
 - **API Docs**: [VolumeQueries](../../src/binance_futures_availability/queries/volume.py)

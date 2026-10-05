@@ -266,7 +266,7 @@ dev = [
 
 ## Links
 
-- **Research**: `docs/research/2025-week1-sprint/TECHNOLOGY_STACK_ANALYSIS.md` (21KB, comprehensive version analysis)
+- **Research**: [`docs/research/2025-week1-sprint/TECHNOLOGY_STACK_ANALYSIS.md`](https://github.com/terrylica/binance-futures-availability/blob/v1.4.0/docs/research/2025-week1-sprint/TECHNOLOGY_STACK_ANALYSIS.md) (v1.4.0) (21KB, comprehensive version analysis)
 - **DuckDB 1.4 LTS Announcement**: https://duckdb.org/2025/09/16/announcing-duckdb-140
 - **urllib3 v2 Migration Guide**: https://urllib3.readthedocs.io/en/stable/v2-migration-guide.html
 - **pytest 9.0 Release Notes**: https://pypi.org/project/pytest/

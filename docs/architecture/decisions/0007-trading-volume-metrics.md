@@ -235,7 +235,7 @@ See `docs/plans/0007-trading-volume-metrics/plan.yaml` for detailed implementati
 
 ## References
 
-- Implementation plan: `docs/development/plan/0007-trading-volume-metrics/plan.md`
+- Implementation plan: [`docs/development/plan/0007-trading-volume-metrics/plan.md`](https://github.com/terrylica/binance-futures-availability/blob/v1.4.0/docs/development/plan/0007-trading-volume-metrics/plan.md) (v1.4.0)
 - Sub-agent analysis reports: `/tmp/binance_research/`
 - Database schema design: `/tmp/binance_research/SCHEMA_DESIGN.md`
 - Volume collection strategy: `/tmp/binance_research/VOLUME_COLLECTION_STRATEGY.md`

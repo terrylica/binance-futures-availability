@@ -55,7 +55,7 @@ All diagrams use ASCII art for universal compatibility (no external rendering to
 **Artifacts Created**:
 
 - `docs/architecture/ARCHITECTURE.md` - Comprehensive architecture documentation
-- `docs/development/plan/0025-system-architecture-documentation/plan.md` - Implementation plan
+- [`docs/development/plan/0025-system-architecture-documentation/plan.md`](https://github.com/terrylica/binance-futures-availability/blob/v1.4.0/docs/development/plan/0025-system-architecture-documentation/plan.md) (v1.4.0) - Implementation plan
 
 **SLO Compliance**:
 

@@ -261,7 +261,7 @@ Per ADR-0003 (strict error policy):
 - **Doppler GitHub Integration**: https://github.com/settings/installations/88898750
 - **Pushover API**: https://pushover.net/api
 - **Related ADRs**: ADR-0003 (error handling), ADR-0009 (GitHub Actions automation)
-- **Implementation Plan**: `docs/development/plan/0022-pushover-workflow-notifications/plan.md`
+- **Implementation Plan**: [`docs/development/plan/0022-pushover-workflow-notifications/plan.md`](https://github.com/terrylica/binance-futures-availability/blob/v1.4.0/docs/development/plan/0022-pushover-workflow-notifications/plan.md) (v1.4.0)
 
 ## Notes
 

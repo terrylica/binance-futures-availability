@@ -5,7 +5,6 @@ the database on the checked date. Symbols only in the database are expected and 
 SETTLING (delisting) contracts keep publishing daily files (133 such symbols on 2026-10-05).
 Binance geo-blocks the API (HTTP 451) on GitHub's US runners, so this check runs locally only.
 
-See: docs/development/plan/v1.0.0-implementation-plan.yaml (slos.correctness)
 """
 
 import datetime
@@ -29,7 +28,6 @@ class CrossCheckValidator:
     Verify database accuracy against Binance exchangeInfo API.
 
     SLO: >95% of API TRADING perpetuals available in the database (recall)
-    See: docs/development/plan/v1.0.0-implementation-plan.yaml (slos.correctness)
 
     Note:
         exchangeInfo only provides CURRENT data (no historical snapshots).
@@ -113,7 +111,7 @@ class CrossCheckValidator:
             98.5  # 98.5% match (exceeds 95% SLO)
 
         SLO:
-            match_percentage > 95% (docs/development/plan/v1.0.0-implementation-plan.yaml)
+            match_percentage > 95%
         """
         if date is None:
             date = datetime.date.today() - datetime.timedelta(days=DEFAULT_LAG_DAYS)

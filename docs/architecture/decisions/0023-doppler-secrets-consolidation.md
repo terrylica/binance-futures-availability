@@ -173,6 +173,6 @@ chmod 600 ~/.zshrc
 ## References
 
 - **Related ADRs**: ADR-0022 (Pushover Notifications - established Doppler pattern)
-- **Implementation Plan**: `docs/development/plan/0023-doppler-secrets-consolidation/plan.md`
+- **Implementation Plan**: [`docs/development/plan/0023-doppler-secrets-consolidation/plan.md`](https://github.com/terrylica/binance-futures-availability/blob/v1.4.0/docs/development/plan/0023-doppler-secrets-consolidation/plan.md) (v1.4.0)
 - **Doppler Dashboard**: https://dashboard.doppler.com
 - **1Password Vault**: "GitHub Tokens" (to be cleaned up)

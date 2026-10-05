@@ -15,7 +15,6 @@ class CompletenessValidator:
     Verify expected symbol counts for data completeness.
 
     SLO: Recent dates should have ~708 symbols (allowing for delistings)
-    See: docs/development/plan/v1.0.0-implementation-plan.yaml (success_criteria.functional)
     """
 
     def __init__(self, db_path: Path | None = None) -> None:

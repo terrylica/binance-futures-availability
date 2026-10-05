@@ -336,9 +336,9 @@ All observability components follow ADR-0003 strict raise policy:
 
 ## Links
 
-- **Research**: `docs/research/2025-week1-sprint/observability-research-report.md` (43KB, comprehensive tool comparison)
-- **Phase 0 Implementation Checklist**: `docs/research/2025-week1-sprint/phase-0-implementation-checklist.md` (29KB, 200 lines of code)
-- **Great Expectations vs Soda**: `docs/research/2025-week1-sprint/tool-comparison-matrix.md` (18KB, evaluation)
+- **Research**: [`docs/research/2025-week1-sprint/observability-research-report.md`](https://github.com/terrylica/binance-futures-availability/blob/v1.4.0/docs/research/2025-week1-sprint/observability-research-report.md) (v1.4.0) (43KB, comprehensive tool comparison)
+- **Phase 0 Implementation Checklist**: [`docs/research/2025-week1-sprint/phase-0-implementation-checklist.md`](https://github.com/terrylica/binance-futures-availability/blob/v1.4.0/docs/research/2025-week1-sprint/phase-0-implementation-checklist.md) (v1.4.0) (29KB, 200 lines of code)
+- **Great Expectations vs Soda**: [`docs/research/2025-week1-sprint/tool-comparison-matrix.md`](https://github.com/terrylica/binance-futures-availability/blob/v1.4.0/docs/research/2025-week1-sprint/tool-comparison-matrix.md) (v1.4.0) (18KB, evaluation)
 - **Related ADRs**:
   - ADR-0003: Error Handling - Strict Policy (error propagation)
   - ADR-0010: Dynamic Symbol Discovery (schema drift risk source)

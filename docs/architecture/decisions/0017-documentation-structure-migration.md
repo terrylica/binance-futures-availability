@@ -231,4 +231,4 @@ Migration script will:
 
 ## Notes
 
-This ADR itself follows the new format and serves as example for future ADRs. The associated plan is at `docs/development/plan/0017-documentation-structure-migration/plan.md`.
+This ADR itself follows the new format and serves as example for future ADRs. The associated plan is at [`docs/development/plan/0017-documentation-structure-migration/plan.md`](https://github.com/terrylica/binance-futures-availability/blob/v1.4.0/docs/development/plan/0017-documentation-structure-migration/plan.md) (v1.4.0).

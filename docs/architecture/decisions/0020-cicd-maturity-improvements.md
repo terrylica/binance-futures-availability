@@ -289,7 +289,7 @@ All CI/CD changes follow ADR-0003 strict raise policy:
 
 ## Links
 
-- **Research**: `docs/research/2025-week1-sprint/CI_CD_AUDIT_REPORT.md` (30KB, comprehensive audit)
+- **Research**: [`docs/research/2025-week1-sprint/CI_CD_AUDIT_REPORT.md`](https://github.com/terrylica/binance-futures-availability/blob/v1.4.0/docs/research/2025-week1-sprint/CI_CD_AUDIT_REPORT.md) (v1.4.0) (30KB, comprehensive audit)
 - **Dependabot Documentation**: https://docs.github.com/en/code-security/dependabot
 - **GitHub Actions Best Practices**: https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions
 - **Related ADRs**:
@@ -342,6 +342,6 @@ All CI/CD changes follow ADR-0003 strict raise policy:
 
 ## Notes
 
-This improvement is part of Week 1-2 Sprint (comprehensive infrastructure improvements). Associated plan: `docs/development/plan/week1-2-sprint-infrastructure-upgrade/plan.md` with `adr-id=0020`.
+This improvement is part of Week 1-2 Sprint (comprehensive infrastructure improvements). Associated plan: [`docs/development/plan/week1-2-sprint-infrastructure-upgrade/plan.md`](https://github.com/terrylica/binance-futures-availability/blob/v1.4.0/docs/development/plan/week1-2-sprint-infrastructure-upgrade/plan.md) (v1.4.0) with `adr-id=0020`.
 
 **Maturity Tracking**: Current 7.1/10 → Phase 1: 7.8/10 → Phase 2: 8.2/10 → Phase 3: 8.5/10 (audit report roadmap).

@@ -306,7 +306,7 @@ Optimizations follow ADR-0003 strict raise policy:
 
 ## Links
 
-- **Research**: `docs/research/2025-week1-sprint/PERFORMANCE_OPTIMIZATION_REPORT.md` (16KB, empirical benchmarks)
+- **Research**: [`docs/research/2025-week1-sprint/PERFORMANCE_OPTIMIZATION_REPORT.md`](https://github.com/terrylica/binance-futures-availability/blob/v1.4.0/docs/research/2025-week1-sprint/PERFORMANCE_OPTIMIZATION_REPORT.md) (v1.4.0) (16KB, empirical benchmarks)
 - **urllib3 Documentation**: https://urllib3.readthedocs.io/en/stable/
 - **DuckDB Compression**: https://duckdb.org/docs/sql/statements/create_table#compression
 - **Related ADRs**:
