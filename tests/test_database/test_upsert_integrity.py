@@ -11,7 +11,7 @@ import duckdb
 from binance_futures_availability.database.availability_db import AvailabilityDatabase
 
 DAY = datetime.date(2026, 9, 17)
-NOW = datetime.datetime(2026, 10, 5, 10, 0, 0)
+NOW = datetime.datetime(2026, 10, 5, 10, 0, 0, tzinfo=datetime.UTC)
 
 
 def _probe(symbol: str, status: int, **extra) -> dict:

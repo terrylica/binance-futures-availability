@@ -3,13 +3,13 @@
 Run all validation checks on the availability database.
 
 Validation layers:
+    0. Integrity: Row-level invariants. A violation is corruption: exit 1, never publish
     1. Continuity: Check for missing dates
     2. Completeness: Verify recent symbol counts
     3. Cross-check: Compare with Binance exchangeInfo API
 
 Usage:
-    python scripts/validate_database.py
-    python scripts/validate_database.py --verbose
+    uv run python scripts/operations/validate.py [--verbose]
 """
 
 import argparse
@@ -20,18 +20,19 @@ import sys
 from binance_futures_availability.validation.completeness import CompletenessValidator
 from binance_futures_availability.validation.continuity import ContinuityValidator
 from binance_futures_availability.validation.cross_check import CrossCheckValidator
+from binance_futures_availability.validation.integrity import IntegrityValidator
 
 
 def main() -> int:
     """
     Run all validation checks.
 
-    This script performs comprehensive validation but NEVER fails the workflow.
-    All findings are logged for human review via GitHub Release notes and Pushover.
-    Philosophy: Full transparency over binary pass/fail - show all facts, trust human judgment.
+    Data-quality findings (layers 1-3) are informational and never fail the workflow
+    (ADR-0003 transparency-first). Integrity violations (layer 0) are corruption: they
+    return 1 so the workflow fails and the corrupt database is not published.
 
     Returns:
-        Always 0 (success) - warnings are informational only
+        1 if any integrity invariant is violated, else 0
     """
     parser = argparse.ArgumentParser(description="Validate availability database")
 
@@ -59,6 +60,17 @@ def main() -> int:
     logger.info("=" * 70)
 
     has_warnings = False
+
+    # 0. Integrity (hard gate)
+    logger.info("\n[0/3] Integrity Check: Row-level invariants...")
+    with IntegrityValidator() as validator:
+        violations = validator.check_integrity()
+    if violations:
+        for name, count in violations.items():
+            logger.error(f"INTEGRITY FAILURE: {count:,} rows violate: {name}")
+        logger.error("Database is corrupt - refusing to pass validation (not publishing)")
+        return 1
+    logger.info("✓ All integrity invariants hold")
 
     # 1. Continuity Check
     logger.info("\n[1/3] Continuity Check: Detecting missing dates...")
@@ -108,9 +120,7 @@ def main() -> int:
                 logger.warning(f"  ... and {len(incomplete_dates) - 10} more")
             has_warnings = True
         else:
-            logger.info(
-                f"✓ All dates have ≥{min_symbols} symbols (checked through {end_date})"
-            )
+            logger.info(f"✓ All dates have ≥{min_symbols} symbols (checked through {end_date})")
 
         # Show summary (same end_date buffer as validation check)
         summary = validator.get_symbol_counts_summary(days=7, end_date=end_date)
@@ -180,7 +190,7 @@ def main() -> int:
     else:
         logger.info("VALIDATION COMPLETE: All checks passed ✓")
     logger.info("=" * 70)
-    return 0  # Always succeed - trust human judgment over automated thresholds
+    return 0  # Data-quality warnings are informational (ADR-0003)
 
 
 if __name__ == "__main__":
