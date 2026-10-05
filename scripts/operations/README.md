@@ -66,5 +66,4 @@ uv run python scripts/operations/validate.py --check continuity
 
 ## See Also
 
-- Legacy scripts: `scripts/legacy/` (deprecated methods)
 - Documentation: `docs/guides/QUICKSTART.md`
