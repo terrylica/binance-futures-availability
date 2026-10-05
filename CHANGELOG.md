@@ -1,3 +1,269 @@
+## [1.5.0](https://github.com/terrylica/binance-futures-availability/compare/v1.4.0...v1.5.0) (2026-10-05)
+
+### Features
+
+* **volume:** collect 1d-kline volume in the daily update ([ff042b4](https://github.com/terrylica/binance-futures-availability/commit/ff042b46a8ddfa47d6a7f396e9752b32f1323870))
+
+The daily path never collected volume (only full backfills did), so the
+volume columns and the rankings parquet were essentially empty after
+2025-11 (302 ranking rows over 112 days). The ADR-0007 historical backfill
+was never run either: no row before 2025-11-26 has volume.
+
+- probing/volume_fetcher.py: one ~350-byte GET per row over the shared
+  HTTP pool, with the parser moved out of AWSS3Lister (single parser).
+  404 means not yet published and is retried next run
+- every successful fetch is persisted before a failure raises. Measured:
+  1 transient DNS error in 43,060 fetches used to discard all 43k
+- daily update: a volume failure is logged as an ERROR and does not block
+  publishing availability; failed rows stay NULL and are retried next run.
+  This is a scoped exception to ADR-0003, since volume is supplementary;
+  integrity stays a hard gate
+- the workflow_dispatch input volume_start_date widens the window for a
+  one-time catch-up (~720k rows, ~35 min at the measured 352 rows/s)
+- backfill.py: one volume pass after the availability pass, replacing a
+  sequential per-date AWS CLI loop that silently swallowed failures
+- backfill_volume.py: 395-line AWS CLI script becomes a thin CLI over the
+  same function
+- s3_vision.MAX_WORKERS is the single worker/pool-size constant; pool size
+  now equals the worker count, which ends the "pool is full" warning spam
+- remove the dead BatchProber rate_limit and the unimplemented
+  ERROR_RATE_THRESHOLD circuit breaker
+
+
+### Bug Fixes
+
+* **db:** stop silent available-flag corruption on upsert ([1cdc7ab](https://github.com/terrylica/binance-futures-availability/commit/1cdc7ab9ef170db024580b15dac8bf820ed2b42a))
+
+Under DuckDB 1.4.2, INSERT OR REPLACE silently skipped every column that
+belonged to a secondary index. `available` (idx_available_date) and
+`quote_volume_usdt` (idx_quote_volume_date) were never overwritten on
+conflict. When the first probe of a date hit S3's T+1 lag (404), the 20-day
+lookback re-probe got a 200, but the row stayed available=false. The
+published DB carries ~201k rows with status_code=200 and available=false
+(2025-11 to 2026-10), and every run still reported success.
+
+- duckdb >=1.5.6 (fixed upstream; verified against a copy of the real DB)
+- drop both non-key indexes; scans with date zone-map pruning run 2-4 ms
+- one-time migration: when a legacy index exists, drop it and repair with
+  available = (status_code = 200), which is exact and needs no network
+- explicit ON CONFLICT DO UPDATE instead of OR REPLACE; volume columns use
+  COALESCE so an availability-only re-probe never wipes collected volume
+- insert_availability delegates to insert_batch (one upsert path)
+- regression tests reproduce the production signature (False, 200) on the old code
+
+* **notify:** route Pushover to dedicated "binance-fut" app ([7245632](https://github.com/terrylica/binance-futures-availability/commit/72456327098d83b40028b4652c818071bf6913a6))
+
+Separation of concerns: binance-futures-availability now notifies through its
+own Pushover app "binance-fut" instead of the shared claude_code channel
+(notifications/prd PUSHOVER_APP_TOKEN, used by ~10 repos). Dedicated token lives
+in Doppler + GitHub secret PUSHOVER_APP_TOKEN_BINANCE_FUTURES; the shared token is
+left untouched. Validated with a live test push (status=1).
+
+* **rankings:** regenerate the rankings archive in full every run ([5cb9310](https://github.com/terrylica/binance-futures-availability/commit/5cb931058085b07008c7408d70c895fdaf60afda))
+
+Append-only generation from the last stored date froze history: dates
+whose volume arrived later (T+1 lag, catch-up backfills) never got
+rankings, and LAG()-based rank changes were computed over only the
+appended rows, so they were NULL for every appended date.
+
+Rankings are a pure derived view of the database and regenerate in ~1s,
+so the archive is now rebuilt from the DB each run.
+
+- drop --existing-file, merge_tables, get_latest_date_from_parquet and
+  the workflow's download-existing-archive step
+- revive the rankings tests, which are integration-marked and never ran
+  in CI (missing pyarrow.compute import, stale uint schema assertions)
+
+* remove pandas dependency from volume rankings generation ([77fb931](https://github.com/terrylica/binance-futures-availability/commit/77fb931a87fb892e901f45ed719cb4eb3f83aee3))
+
+- Replace .to_pandas() with PyArrow compute (pc.max, pc.min, pc.count_distinct)
+- Fix hardcoded date '2025-11-16' in release notes with dynamic MAX(date) query
+- Rankings generation was failing in CI due to missing pandas module
+
+* use tuple for pytest.mark.parametrize first argument (PT006) ([6acfd29](https://github.com/terrylica/binance-futures-availability/commit/6acfd297d700d55ce12d39bcb1613c5d9a6e8b58))
+
+Ruff PT006 rule requires tuple instead of comma-separated string.
+
+* **validation:** fail the run on row-level integrity violations ([070a1a6](https://github.com/terrylica/binance-futures-availability/commit/070a1a621ad95d8f3dba563993e4dfeb68ca213c))
+
+Validation never failed by design (ADR-0003, transparency-first), so the
+`available` corruption shipped in every daily release for ~10 months while
+each run reported success. Data-quality findings (gaps, symbol counts, API
+match) stay informational. Invariant violations are corruption, not a data
+gap, so they now exit 1. The release step then skips, the failure Pushover
+fires, and a corrupt DB is never published.
+
+Invariants (all hold on the migrated production DB):
+- available <=> status_code = 200
+- status_code in (200, 404)
+- file_size_bytes present exactly when available
+- volume only on available rows
+
+* **validation:** measure cross-check as recall over TRADING perps ([67694a4](https://github.com/terrylica/binance-futures-availability/commit/67694a49c51a6d1d3ed8c46cde0bab086bdc0e2e))
+
+The cross-check reported 54.8% against a >95% SLO because it compared
+the wrong sets. It ran a union-based ratio between all available DB
+symbols and the API's USDT-quoted PERPETUAL/TRADING subset. It also
+probed "yesterday", which the T+1 lag leaves incomplete. Production never
+saw this, because Binance geo-blocks the API (HTTP 451) on US runners.
+
+- scope: every TRADING perpetual (PERPETUAL and TRADIFI_PERPETUAL, any
+  quote asset). 781 symbols on 2026-10-05, previously 525
+- metric: recall (API TRADING symbols present in the DB). DB-only symbols
+  are expected, since 133 SETTLING contracts still publish daily files
+- date: today - 3, the same S3 buffer continuity/completeness use
+  (measured recall: 93% at T-1, 100% at T-2)
+- on the repaired production DB: 100.0% recall, validation clean
+
+
+### Documentation
+
+* lean CLAUDE.md, add ADR-0028, fix false gate claims ([1437fcc](https://github.com/terrylica/binance-futures-availability/commit/1437fcc68ec552b545a5ac28160c1ea006ceaa32))
+
+- CLAUDE.md drops from 24 KB to a short link farm: where things live, the
+  local gate, pipeline dispatch commands, and the invariants that cost real
+  data. The hand-kept ADR digest, version history and generic dev
+  instructions are retired; the digest had already drifted (it omitted
+  ADR-0027)
+- ADR-0028 records the upsert incident, the integrity gate (amends
+  ADR-0003), daily volume collection (amends ADR-0007) and full rankings
+  regeneration (amends ADR-0013)
+- operations docs claimed CI ran tests at >=80% coverage and that any
+  validation failure blocked publishing; neither was ever true. They now
+  describe the real gates
+- validate_database.py -> scripts/operations/validate.py in the guides
+- remove the docs/decisions and docs/plans redirect stubs (2025-11
+  migration compatibility layer)
+
+* retire dated sprint reports, implementation plans and archive ([0efd470](https://github.com/terrylica/binance-futures-availability/commit/0efd47066526a69770963af95296f4dd104a9d83))
+
+29 files (~400 KB) from the 2025-11 sprints: docs/research (sprint audit
+reports), docs/development/plan (per-ADR implementation plans, including
+the v1.0.0 plan.yaml) and docs/archive. Their decisions live in the ADRs;
+git history is the archive.
+
+- ADR and feature-doc links now point at permalinks on the v1.4.0 tag,
+  where all 29 files exist, so no reference 404s
+- six paths that never existed (placeholders, plans named in ADRs but
+  never written) stay as plain text
+- validation docstrings drop the "See: v1.0.0 plan" pointers; each
+  docstring already states its SLO
+
+* secrets management architecture and ASCII diagram tooling comparison ([#14](https://github.com/terrylica/binance-futures-availability/issues/14)) ([817837b](https://github.com/terrylica/binance-futures-availability/commit/817837b0a0f693dfd85650796318b8b83a16b57c))
+
+* docs: add secrets management architecture diagrams
+
+Comprehensive ASCII diagrams covering:
+- GitHub Secrets scope hierarchy (repo vs org level)
+- Doppler integration flow with GitHub App sync
+- Secret visibility matrix across repositories
+- Local development vs CI/CD patterns
+- Simple secure architecture recommendation
+- Doppler vs GitHub Secrets comparison
+- Security threat model with mitigations
+- Decision matrix for choosing approach
+
+* docs: add ASCII diagram tools comparison guide
+
+Comprehensive comparison of tools for architecture diagrams:
+- Graph::Easy (RECOMMENDED): Perfect alignment, multi-path flows, labeled edges
+- boxes: Good for component labels
+- ditaa: Image output only (not for ASCII)
+- pyfiglet: Text banners only
+
+Includes syntax reference and examples for creating:
+- Architecture diagrams
+- CI/CD workflows
+- Secrets hierarchy flows
+
+* update Python version references from 3.12 to 3.11 ([6562c19](https://github.com/terrylica/binance-futures-availability/commit/6562c19c538842a43429f0934e939bb764ed4fa4))
+
+All user-facing documentation now correctly reflects Python 3.11+
+compatibility as specified in pyproject.toml.
+
+* update user prerequisites from Python 3.12 to 3.11 ([f016f82](https://github.com/terrylica/binance-futures-availability/commit/f016f8261ca1c0c688ef6c390b3ed01dad52fa27))
+
+Plan file references for user prerequisites now correctly reflect
+package compatibility (3.11+) vs CI runtime (3.12).
+
+
+### Build
+
+* local-first quality gate, uv-pinned Python, drop mise ([97813de](https://github.com/terrylica/binance-futures-availability/commit/97813de25c5125ec7da65e2c5861cc7cec812e34))
+
+- scripts/check.sh is the single local gate: ruff check and format over
+  src, tests, scripts and .github/scripts, then the full pytest suite
+- GitHub Actions now runs only the data pipeline; the ruff step is removed
+  (local-first CI policy)
+- .python-version (3.12, what production has run on) is the single Python
+  pin; uv provisions it locally and in CI, replacing setup-python and the
+  duplicate PYTHON_VERSION env
+- .mise.toml removed (policy: never mise); .prototools pins node for
+  semantic-release, plus uv
+- revive the integration-marked tests that never ran anywhere: pytest
+  pythonpath for scripts.operations imports, unicode probe tests re-pointed
+  from urllib.request (stale) to the urllib3 pool and reclassified as unit
+  tests (they are fully mocked). Full suite: 106 passed
+- coverage fail-under: 80 -> 45. The 80% target was never met (45% measured
+  with the full suite) and only "passed" because nothing ran the gate. It is
+  now a ratchet at the measured floor; ADR-0020's 80% stays the target
+
+* **proto:** auto-bump pins to latest ([6670cfc](https://github.com/terrylica/binance-futures-availability/commit/6670cfc255a28613ae9f8a63d79200ecbd0c8dc2))
+
+Written by proto-toolchain-autoupdate.sh at 2026-10-05T20:23:05Z.
+Unconditional latest-tracking, per the 2026-09-02 operator decision.
+
+< node = "25"  # semantic-release (npm run release) > node = "26.10.0"
+
+NOT gated: no test suite ran against these versions before this commit.
+Revert with `git revert` if a build breaks; the routine will re-apply on
+its next run unless the pin is changed deliberately or the tool is held.
+
+* **release:** derive release config from the shared semrel base ([8303ce9](https://github.com/terrylica/binance-futures-availability/commit/8303ce974efe4324402612d310c46ee75411878a))
+
+.releaserc.yml becomes .releaserc.cjs, which extends
+~/.claude/tools/semrel/release.base.cjs (body-preserving notes, plus a
+narrative from docs/release-notes/<tag>.md published above them). It keeps
+this repo's Python steps: the pyproject/__version__ bump, uv lock/build,
+and uv publish to PyPI, inserted before @semantic-release/git, whose
+assets gain the version files and uv.lock. The plugins list is derived,
+not copied, so base changes flow through.
+
+- npm scripts: release/release:dry run --no-ci; the duplicate
+  release:auto is removed
+- docs/release-notes/v1.5.0.md: narrative for the integrity-repair release
+
+* **release:** hide bot symbols commits from release notes ([e4cc10f](https://github.com/terrylica/binance-futures-availability/commit/e4cc10f370c4b5d8af80d577e1efd86f1232d3f6))
+
+The daily workflow's chore(symbols) auto-update commits (~315 since v1.4.0) flooded the Maintenance section. A scoped hidden type entry ahead of the generic chore entry drops them; writerOpts.transform is left untouched, because overriding it breaks the preset's section mapping.
+
+* **release:** track package-lock.json ([843f674](https://github.com/terrylica/binance-futures-availability/commit/843f674f7fa0562789b4e6928e87405d7071a282))
+
+The lockfile was gitignored, so `npm ci` resolved whatever was newest. The shared semrel base depends on conventional-changelog-conventionalcommits staying on ^9, because v10 needs a writer that release-notes-generator 14.x does not ship. Locked at semantic-release 25.0.2 and conventionalcommits 9.1.0.
+
+
+### Maintenance
+
+* remove dead scripts, one-shot rollout tools and stale config ([1c85a56](https://github.com/terrylica/binance-futures-availability/commit/1c85a56c3acc6f63698971311823311b8df73f66))
+
+Each item verified as having no live reference, or as superseded:
+- tmp/binance-futures-upgrade-exploration/: scratch research
+- migrations/: v1.1.0 volume SQL, superseded by
+  schema._migrate_add_volume_columns
+- scripts/legacy/README.md: describes scripts already deleted
+- ADR-0009/0019 one-shot rollout tools: test-workflow-locally.sh,
+  validate-workflow-deployment.sh, verify-database-consistency.py
+  (compared against the retired APScheduler DB), validation/validate_performance.py
+- monitor_workflow.sh, monitor-workflow-metrics.sh: superseded by the
+  workflow's own Pushover notifications (ADR-0022)
+- test-secrets-validation.yml: checked tokens the pipeline does not use
+- catalog-info.yaml: no Backstage consumer
+- .lycheecache: tracked despite .gitignore
+
+* retire never-loaded repo-root skills (supersede ADR-0015) ([089ec31](https://github.com/terrylica/binance-futures-availability/commit/089ec31d12bdd821753019762bb807b191ba5ae4))
+
+Claude Code loads project skills only from .claude/skills/, so the three skills under ./skills/ (multi-agent investigation, DuckDB remote Parquet query, documentation improvement) never activated. They also encode generic workflows current models perform unaided. ADR-0015 is marked superseded, and its links point at the v1.4.0 tag's copies.
+
 ## [1.3.0](https://github.com/terrylica/binance-futures-availability/compare/v1.2.0...v1.3.0) (2025-11-25)
 
 ### ⚠ BREAKING CHANGES
