@@ -23,8 +23,22 @@ const python = [
   },
 ];
 
+// The daily workflow commits `chore(symbols): auto-update from S3 discovery` (~300 per release);
+// hide them from the notes. A `types` entry with a scope must precede the generic `chore` entry.
+const hideBotCommits = ([name, options]) => [
+  name,
+  {
+    ...options,
+    presetConfig: {
+      ...options.presetConfig,
+      types: [{ type: "chore", scope: "symbols", hidden: true }, ...options.presetConfig.types],
+    },
+  },
+];
+
 const plugins = base.plugins.flatMap((plugin) => {
   const name = Array.isArray(plugin) ? plugin[0] : plugin;
+  if (name === "@semantic-release/release-notes-generator") return [hideBotCommits(plugin)];
   if (name !== "@semantic-release/git") return [plugin];
   const [, options] = plugin;
   return [python, [name, { ...options, assets: [...options.assets, ...VERSION_FILES, "uv.lock"] }]];
