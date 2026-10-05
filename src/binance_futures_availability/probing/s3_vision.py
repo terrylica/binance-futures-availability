@@ -11,12 +11,16 @@ from typing import TypedDict
 
 import urllib3  # ADR-0019: HTTP connection pooling
 
+# Concurrency for S3 probing and volume fetching; also the pool size, so no worker ever finds
+# the pool full (a pool smaller than the worker count discards connections and spams warnings).
+# Empirically optimal: docs/benchmarks/worker-count-benchmark-2025-11-15.md
+MAX_WORKERS = 150
+
 # ADR-0019: Global HTTP connection pool (reuses SSL/TLS connections)
-# Default pool size: 10 connections, sufficient for parallel probing
 HTTP_POOL = urllib3.PoolManager(
-    num_pools=1,  # Single pool for all requests
-    maxsize=10,  # Max connections per pool
-    timeout=urllib3.Timeout(connect=5.0, read=10.0),  # Connect + read timeouts
+    num_pools=1,
+    maxsize=MAX_WORKERS,
+    timeout=urllib3.Timeout(connect=5.0, read=10.0),
     retries=False,  # ADR-0003: No automatic retries
 )
 

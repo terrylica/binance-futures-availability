@@ -11,7 +11,11 @@ import socket  # ADR-0019: DNS cache warming
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
 
-from binance_futures_availability.probing.s3_vision import ProbeResult, check_symbol_availability
+from binance_futures_availability.probing.s3_vision import (
+    MAX_WORKERS,
+    ProbeResult,
+    check_symbol_availability,
+)
 from binance_futures_availability.probing.symbol_discovery import load_discovered_symbols
 
 logger = logging.getLogger(__name__)
@@ -25,26 +29,18 @@ class BatchProber:
     Parallel batch probing of futures availability.
 
     Uses ThreadPoolExecutor for concurrent HTTP HEAD requests.
-    Conservative rate limiting to avoid S3 throttling.
 
     See: docs/architecture/decisions/0003-error-handling-strict-policy.md
     """
 
-    def __init__(self, max_workers: int = 150, rate_limit: float = 2.0) -> None:
+    def __init__(self, max_workers: int = MAX_WORKERS) -> None:
         """
         Initialize batch prober.
 
         Args:
-            max_workers: Maximum concurrent threads (default: 150)
-            rate_limit: Target requests per second (default: 2.0)
-
-        Note:
-            Empirically tested optimal: 150 workers (1.48s for 327 symbols).
-            No S3 rate limiting observed up to 10,000 concurrent workers.
-            See: docs/benchmarks/worker-count-benchmark-2025-11-15.md
+            max_workers: Maximum concurrent threads (default: s3_vision.MAX_WORKERS)
         """
         self.max_workers = max_workers
-        self.rate_limit = rate_limit
 
     def _warm_dns_cache(self) -> None:
         """

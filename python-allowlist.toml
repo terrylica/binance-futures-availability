@@ -1,0 +1,22 @@
+# Python is this project's established language (DuckDB + pyarrow data pipeline, uv-managed).
+# New .py files extend the existing package and its test suite.
+
+[[allow]]
+path = "src/binance_futures_availability/probing/volume_fetcher.py"
+reason = "Extends the existing Python package (ADR-0007 volume collection)"
+
+[[allow]]
+path = "src/binance_futures_availability/validation/integrity.py"
+reason = "Extends the existing Python package (integrity hard gate)"
+
+[[allow]]
+path = "tests/test_probing/test_volume_fetcher.py"
+reason = "pytest suite of the existing Python package"
+
+[[allow]]
+path = "tests/test_validation/test_integrity.py"
+reason = "pytest suite of the existing Python package"
+
+[[allow]]
+path = "tests/test_database/test_upsert_integrity.py"
+reason = "pytest suite of the existing Python package"

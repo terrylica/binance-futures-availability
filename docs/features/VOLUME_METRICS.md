@@ -84,26 +84,18 @@ ALTER TABLE daily_availability ADD COLUMN trade_count BIGINT;
 
 ## Data Collection
 
+### Daily Collection
+
+The daily update fills volume for every available row in its 20-day lookback window that lacks it (`probing/volume_fetcher.py`: one ~350-byte 1d-kline GET per row over the shared HTTP pool). A 1d file not yet published is retried by the next run; a re-probe never wipes collected volume (`COALESCE` on conflict).
+
 ### Backfill Historical Data
 
 ```bash
-# Backfill all dates with missing volume data
-uv run python scripts/operations/backfill_volume.py
-
-# Specific date range
-uv run python scripts/operations/backfill_volume.py \
-    --start-date 2024-01-01 --end-date 2024-01-31
-
-# Specific symbols only
-uv run python scripts/operations/backfill_volume.py \
-    --symbols BTCUSDT ETHUSDT
+uv run python scripts/operations/backfill_volume.py --start-date 2025-11-01
+uv run python scripts/operations/backfill_volume.py --start-date 2024-01-01 --end-date 2024-01-31
 ```
 
-### Performance
-
-- **File size**: 350 bytes per 1d kline (vs 57 KB for 1m klines)
-- **Collection rate**: ~10 records/second
-- **Historical coverage**: Same as availability (2019-09-25 to present)
+In CI, a one-time catch-up runs by dispatching the workflow with `volume_start_date`.
 
 ## Query Performance
 

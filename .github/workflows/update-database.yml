@@ -28,6 +28,10 @@ on:
         required: false
         default: '1'
         type: string
+      volume_start_date:
+        description: 'Daily mode: fill missing volume back to this date (YYYY-MM-DD) - one-time catch-up (ADR-0007)'
+        required: false
+        type: string
 
 permissions:
   contents: write  # For creating releases and pushing database
@@ -240,8 +244,9 @@ jobs:
         run: |
           echo "Running daily update for yesterday's data..."
 
-          # Run update for yesterday
           uv run python .github/scripts/run_daily_update.py
+        env:
+          VOLUME_START_DATE: ${{ inputs.volume_start_date }}
 
       - name: Run backfill (manual backfill mode)
         if: github.event_name == 'workflow_dispatch' && inputs.update_mode == 'backfill'
