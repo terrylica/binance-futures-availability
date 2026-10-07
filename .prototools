@@ -1,3 +1,3 @@
 # Toolchain pins (proto). Python is pinned by .python-version and provisioned by uv.
-node = "26.10.0"
+node = "26.11.0"
 uv = "latest"
