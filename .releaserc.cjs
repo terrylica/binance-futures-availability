@@ -19,7 +19,9 @@ const python = [
       "rm -rf dist && uv build",
     ].join(" && "),
     publishCmd:
-      "UV_PUBLISH_TOKEN=$(doppler secrets get PYPI_TOKEN --project claude-config --config prd --plain) uv publish",
+      // Machine-local project name (not published): ~/.config/cc-skills/doppler-project.
+      // No ${...} here: semantic-release/exec runs this through a lodash template.
+      'UV_PUBLISH_TOKEN=$(doppler secrets get PYPI_TOKEN --project "$(cat "$HOME/.config/cc-skills/doppler-project")" --config prd --plain) uv publish',
   },
 ];
 

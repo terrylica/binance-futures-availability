@@ -77,7 +77,7 @@ jobs:
       # ============================================================================
       # Doppler GitHub App automatically syncs secrets to GitHub repository secrets.
       # No runtime fetch needed - secrets available as ${{ secrets.PUSHOVER_API_TOKEN }}
-      # Configuration: https://dashboard.doppler.com/workplace/13e9e4203ede563b1d37/integrations/connections/8fc5c6ed-fd76-4220-a8be-7ba9cdb5d950
+      # Configuration: Doppler dashboard > Integrations > GitHub (this repository)
 
       # ============================================================================
       # DISCOVER: Update symbols.json from S3 Vision (daily discovery)
