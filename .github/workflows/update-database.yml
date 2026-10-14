@@ -55,7 +55,7 @@ jobs:
       # ============================================================================
 
       - name: Checkout repository
-        uses: actions/checkout@v6  # ADR-0018: Upgrade to v6 LTS
+        uses: actions/checkout@v7  # ADR-0018: Upgrade to v6 LTS
         with:
           fetch-depth: 0  # Full history for git operations
 
