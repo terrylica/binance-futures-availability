@@ -5,6 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 PY_DIRS=(src tests scripts .github/scripts)
-uv run ruff check "${PY_DIRS[@]}"
-uv run ruff format --check "${PY_DIRS[@]}"
-uv run pytest -q "$@"
+# pytest and ruff live in the `dev` extra; without it a freshly built .venv has no pytest.
+uv run --extra dev ruff check "${PY_DIRS[@]}"
+uv run --extra dev ruff format --check "${PY_DIRS[@]}"
+uv run --extra dev pytest -q "$@"
