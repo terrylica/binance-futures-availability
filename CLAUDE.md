@@ -17,6 +17,15 @@ Daily availability (and 1d-kline volume) of every Binance USDT-M perpetual on Bi
 
 GitHub Actions runs only the data pipeline, never tests or lint. Python comes from `.python-version` via uv; Node (semantic-release only) comes from `.prototools`.
 
+## Where sessions run
+
+Sessions for this repository run on the team's shared GPU workstation, in a checkout at the same home-relative path (`~/eon/binance-futures-availability`). The laptop keeps no checkout.
+
+- **Commit identity:** the clone there commits with the GitHub noreply address (set in the clone with `git config user.email`), never a work or personal address: this repository is public.
+- **Privacy gate:** on that machine git hooks screen every commit and push before it leaves. A block names the file, the line and a term id, never the word. A block that says the screening service cannot be reached means wait, not bypass.
+- **Local gate:** unchanged, `./scripts/check.sh`.
+- **Releases:** `npm run release` needs the release base file under `~/.claude/tools/semrel/` and a PyPI token, which that machine does not have yet. Until it does, a release is cut from a temporary clone on a machine that has both.
+
 ## Operating the pipeline
 
 ```bash
