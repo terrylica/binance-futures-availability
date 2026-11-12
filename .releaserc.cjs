@@ -19,9 +19,13 @@ const python = [
       "rm -rf dist && uv build",
     ].join(" && "),
     publishCmd:
-      // Machine-local project name (not published): ~/.config/cc-skills/doppler-project.
+      // The PyPI token comes from this machine's own source, never from the repository: an executable
+      // ~/.config/cc-skills/pypi-token-cmd that prints it (a machine without Doppler), else Doppler with the
+      // machine-local project name in ~/.config/cc-skills/doppler-project. An empty token stops the publish.
       // No ${...} here: semantic-release/exec runs this through a lodash template.
-      'UV_PUBLISH_TOKEN=$(doppler secrets get PYPI_TOKEN --project "$(cat "$HOME/.config/cc-skills/doppler-project")" --config prd --plain) uv publish',
+      'if [ -x "$HOME/.config/cc-skills/pypi-token-cmd" ]; then t=$("$HOME/.config/cc-skills/pypi-token-cmd"); ' +
+      'else t=$(doppler secrets get PYPI_TOKEN --project "$(cat "$HOME/.config/cc-skills/doppler-project")" --config prd --plain); fi ' +
+      '&& [ -n "$t" ] && UV_PUBLISH_TOKEN="$t" uv publish',
   },
 ];
 
